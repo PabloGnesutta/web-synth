@@ -17,28 +17,15 @@ class Node {
     this.outputs = []
   }
 
-  destroy(haventOwnNode) {
+  destroy() {
     this.outputNode.disconnect()
 
     this.outputs = null
     this.audioParams = null
 
-    if (!haventOwnNode) {
-      this.node.disconnect()
-      this.node = null
-    }
-
+    this.node.disconnect()
+    this.node = null
     this.outputNode = null
-  }
-
-  initGain(initialGain) {
-    this.gain = initialGain
-
-    this.level = Node.context.createGain()
-    this.level.gain.setValueAtTime(this.gain, 0)
-    this.outputNode = this.level
-
-    this.node.connect(this.outputNode)
   }
 
   connect(Node) {
@@ -56,23 +43,11 @@ class Node {
     this.outputs.push({ name: Node.name + ' ' + audioParam.name, node: Node.node[audioParam.name] })
   }
 
-  connectInnerNodeAudioParam(Node, INAudioParam, INAPIndex) {
-    const param = Node.innerNodeAudioParams[INAPIndex]
+  connectCustomParam(Node, customParam, cpIndex) {
+    const param = Node.customParams[cpIndex]
     const destination = param.node[param.nodeAudioParam]
     this.outputNode.connect(destination)
     this.outputs.push({ name: Node.name + ' ' + param.name, node: destination })
-  }
-
-  setInnerNodeAudioParam(index, value) {
-    const innerNodeAudioParam = this.innerNodeAudioParams[index];
-    innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
-    this.innerNodeAudioParams[index].value = parseFloat(value);
-  }
-
-  setCustomParam(index, value) {
-    const innerNodeAudioParam = this.customParams[index];
-    innerNodeAudioParam.value = value
-    innerNodeAudioParam.set(parseFloat(value))
   }
 
   connectOutputNode(Node) { //outuputNode = level gainNode
@@ -81,7 +56,7 @@ class Node {
   }
 
   // al conectar el delay, el delay se conecta automáticamente al primer output...
-  // puede haber casos en que el primer output de este nodo no sea  una gananci.
+  // puede haber casos en que el primer output de este nodo no sea la una ganancia, y puede haber problemas
   // es para evitar tener que conectar manualmente el delay a una ganancia luego de conectarlo a este nodo
   // no se puede conectar a this.outputNode porque genera feedback infinito
   connectDelay(Delay) {
@@ -117,24 +92,18 @@ class Node {
   //debería entender tanto indice como nombre del parámetro
   setAudioParam(index, value) {
     const param = this.audioParams[index];
-    let curvedValue = parseFloat(value)
-    // console.log(curvedValue)
-    // if (curvedValue <= 2000) {
-    //   curvedValue = curvedValue.map(0, 2000, 0, 1000)
-    // } else if (curvedValue <= 4000) {
-    //   curvedValue = curvedValue.map(2001, 4000, 1000, 4000)
-    // } else {
-    //   curvedValue = curvedValue.map(4001, 7000, 4000, 7000)
-    // }
-    this.node[param.name].setValueAtTime(curvedValue, 0);
+    this.node[param.name].setValueAtTime(value, 0);
     this.audioParams[index].value = parseFloat(value);
   }
 
-
+  setCustomParam(index, value) {
+    const customParam = this.customParams[index];
+    customParam.node[customParam.nodeAudioParam].setValueAtTime(value, 0);
+    this.customParams[index].value = parseFloat(value);
+  }
 
   setType(type) {
     this.node.type = type
-    this.type = type //test
   }
 
   getAudioParams(exludedKeys) {
@@ -148,7 +117,6 @@ class Node {
             minValue: 0,
             maxValue: 3000,
             value: this.node[key].value,
-            defaultValue: this.node[key].value,
           })
         }
       }

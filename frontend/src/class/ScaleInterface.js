@@ -1,166 +1,171 @@
 const Node = require("./Node")
 const ADSROscillator = require("./Oscillator/ADSROscillator")
-const scale = require("../data/scale")
+const notes = require("../data/notes")
+const noteKeys = require("../data/noteKeys")
 
 const initialGain = 0.5
+const initialA = 0
+const initialD = 0
+const initialS = 1
+const initialR = 0.1
 
 class Delay extends Node {
-  static delayCount = 0
+  static SICOunt = 0
 
-  constructor(name) {
+  constructor(tpye, name) {
     super(name)
-    this.name = name || "Piano 1"
-    this.nodeType = "Scale Interface"
+    this.name = name || "Justinton " + ++Delay.SICOunt
+    this.nodeType = "ScaleInterface"
     this.types = ["sine", "triangle", "sawtooth", "square"]
-    this.oscType = "triangle"
+    this.type = tpye || this.types[0]
 
     this.octave = 3
     this.transpose = 0
 
+    this.A = initialA
+    this.D = initialD
+    this.S = initialS
+    this.R = initialR
+
     this.scaleNodes = []
 
-    this.A = 0
-    this.D = 0
-    this.S = 1
-    this.R = 0.5
-
-    this.initGain(initialGain)
+    this.initGain()
     this.initCustomParams()
     this.initOscillators()
   }
 
-  initGain(initialGain) {
-    this.gain = initialGain
+  destroy() {
+    super.destroy(true)
+    this.scaleNodes.forEach(sn => {
+      sn.destroy()
+      sn.ADSRGain.disconnect()
+      sn.ADSRGain = null
+      sn.level.disconnect()
+      sn.level = null
+      sn = null;
+    })
+    this.scaleNodes = []
+  }
 
+  initGain() {
+    this.gain = initialGain
     this.level = Node.context.createGain()
     this.level.gain.setValueAtTime(this.gain, 0)
     this.outputNode = this.level
   }
 
   initOscillators() {
-    scale.forEach((s) => {
-      const osc = new ADSROscillator(this.oscType, s.freq);
+    noteKeys.forEach((nk) => {
+      const osc = new ADSROscillator(this.type, notes[nk.noteIndex].freq);
+      osc.A = initialA
+      osc.D = initialD
+      osc.S = initialS
+      osc.R = initialR
       osc.connectNativeNode(this.outputNode);
       this.scaleNodes.push(osc);
     });
   }
 
-  start(e) {
-    const index = scale.findIndex((s) => e.key === s.key);
-    if (index == -1) return
-    //esto tendría que setearse en foreach al cambiar el valor, una vez por cada nodo, y no en cada start
-    // this.scaleNodes[index].A = this.A
-    // this.scaleNodes[index].D = this.D
-    // this.scaleNodes[index].S = this.S
-    // this.scaleNodes[index].R = this.R
-    this.scaleNodes[index].start(this.octave, this.transpose);
-    this.scaleNodes[index].node.detune.setValueAtTime(this.customParams[0].value, 0)
-  }
-
-  stop(e) { //keyup
-    const index = scale.findIndex((s) => e.key === s.key);
-    if (index != -1) this.scaleNodes[index].stop();
-
-    if (e.key === "z" && this.octave > 1) this.octave--;
-    if (e.key === "x") this.octave++;
-  }
-
   setType(value) {
-    this.oscType = value
+    this.type = value
     this.scaleNodes.forEach(sn => {
       sn.oscType = value
       sn.node.type = value
     })
   }
 
+  playNote(i) {
+    let noteIndex = i + 12 * this.octave + this.transpose
+    if (noteIndex < 0) noteIndex = 0
+    if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
+    this.scaleNodes[i].startWithFrequency(notes[noteIndex].freq); //.waveLength probar
+    this.scaleNodes[i].node.detune.setValueAtTime(this.customParams[0].value, 0)
+  }
+
+  stopNote(i) {
+    this.scaleNodes[i].stop();
+  }
+
+  onOtherKeyup(key) {
+    if (key === "z" && this.octave > 1) this.octave--;
+    if (key === "x") this.octave++;
+    if (key === "c") this.transpose--;
+    if (key === "v") this.transpose++;
+  }
+
+  processKeydown(e) {
+    const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk.key);
+    if (noteKeyIndex != -1) this.playNote(noteKeyIndex)
+    // else this.onOtherKeydown()
+  }
+
+  processKeyup(e) {
+    const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk.key);
+    if (noteKeyIndex != -1) this.stopNote(noteKeyIndex)
+    else this.onOtherKeyup(e.key)
+  }
+
   initCustomParams() {
-    const that = this;
-    this.detune = {
-      value: {
-        setValueAtTime(value) {
-          that.scaleNodes.forEach(sn => {
-            sn.node.detune.setValueAtTime(value, 0)
-          })
-        },
-      },
+    //set destination node audio param
+    const setDetune = (value) => {
+      this.scaleNodes.forEach(sn => {
+        sn.node.detune.setValueAtTime(value, 0)
+      })
     }
 
-    this.adsr = {
-      attack: {
-        setValueAtTime(value) {
-          that.scaleNodes.forEach(sn => {
-            sn.A = parseFloat(value)
-          })
-        },
-      },
-      decay: {
-        setValueAtTime(value) {
-          that.scaleNodes.forEach(sn => {
-            sn.D = parseFloat(value)
-          })
-        },
-      },
-      sustain: {
-        setValueAtTime(value) {
-          that.scaleNodes.forEach(sn => {
-            sn.S = parseFloat(value)
-          })
-        },
-      },
-      release: {
-        setValueAtTime(value) {
-          that.scaleNodes.forEach(sn => {
-            sn.R = parseFloat(value)
-          })
-        },
-      },
+    //set destination simple value
+    const setADSR = (param, value) => {
+      this.scaleNodes.forEach(sn => {
+        sn[param] = value
+      })
     }
 
     this.customParams = [
-      {
-        name: "detune",
-        minValue: -100, //1 semitono
-        maxValue: 100,
-        value: 0,
-        step: 0.1,
-        node: this.detune,
-        nodeAudioParam: "value",
-      },
+
       {
         name: "attack",
         minValue: 0,
         maxValue: 1,
-        value: 0,
+        value: initialA,
+        defaultValue: initialA,
         step: 0.01,
-        node: this.adsr,
-        nodeAudioParam: "attack",
+        set(v) { setADSR("A", v) }
       },
       {
         name: "decay",
         minValue: 0.01,
         maxValue: 1,
-        value: 0.01,
+        value: initialD,
+        defaultValue: initialD,
         step: 0.01,
-        node: this.adsr,
-        nodeAudioParam: "decay",
+        set(v) { setADSR("D", v) }
       },
       {
         name: "sustain",
         minValue: 0,
         maxValue: 1,
-        value: 1,
+        value: initialS,
+        defaultValue: initialS,
         step: 0.01,
-        node: this.adsr,
-        nodeAudioParam: "sustain",
+        set(v) { setADSR("S", v) }
       },
       {
         name: "release",
-        minValue: 0,
+        minValue: 0.001,
         maxValue: 3,
-        value: 0.01,
+        value: initialR,
+        defaultValue: initialR,
         step: 0.001,
-        node: this.adsr,
-        nodeAudioParam: "release",
+        set(v) { setADSR("R", v) }
+      },
+      {
+        name: "detune",
+        minValue: -100,
+        maxValue: 100,
+        value: 0,
+        defaultValue: 0,
+        step: 0.1,
+        set(v) { setDetune(v) }
       },
     ]
 

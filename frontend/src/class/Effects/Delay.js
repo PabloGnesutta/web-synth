@@ -1,11 +1,13 @@
 const Node = require("../Node")
 
+const initialGain = 1
+
 const maxDelayTime = 3
 const initialDelayTime = 0.3
 const initialFeddback = 0.6
 
 const minMaxStep = [
-  { name: 'gain', minValue: 0, maxValue: 1, value: 1, step: 0.01 },
+  { name: 'gain', minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.01 },
 ]
 
 class Delay extends Node {
@@ -14,39 +16,42 @@ class Delay extends Node {
   constructor(name) {
     super(name)
 
+    this.customParams = []
+
     this.name = name || "Delay " + ++Delay.delayCount
     this.nodeType = "Delay"
 
     this.delay = Node.context.createDelay(maxDelayTime);
     this.delay.delayTime.value = initialDelayTime;
 
-    this.feedback = Node.context.createGain();
-    this.feedback.gain.value = initialFeddback;
+    this.feedbackGain = Node.context.createGain();
+    this.feedbackGain.gain.value = initialFeddback;
 
     this.bypass = Node.context.createGain();
     this.bypass.gain.value = 1;
 
-    this.delay.connect(this.feedback);
-    this.feedback.connect(this.delay);
+    this.delay.connect(this.feedbackGain);
+    this.feedbackGain.connect(this.delay);
 
-    this.delayGain = Node.context.createGain();
-    this.delayGain.gain.value = 1;
+    this.wetGain = Node.context.createGain();
+    this.wetGain.gain.value = 1;
 
-    this.delay.connect(this.delayGain);
-    this.delayGain.connect(this.bypass);
+    this.delay.connect(this.wetGain);
+    this.wetGain.connect(this.bypass);
 
     this.node = Node.context.createGain();
-    this.node.connect(this.feedback)
+    this.node.connect(this.feedbackGain)
 
-    this.bypassGain = Node.context.createGain();
-    this.bypassGain.gain.value = 1;
-    this.bypassGain.connect(this.bypass)
+    this.dryGain = Node.context.createGain();
+    this.dryGain.gain.value = 1;
+    this.dryGain.connect(this.bypass)
 
-    this.node.connect(this.bypassGain)
+    this.node.connect(this.dryGain)
 
-    this.initGain()
 
-    super.getAudioParams()
+    // super.getAudioParams()
+    this.initGain(initialGain)
+    this.initInnerNodeAudioParams()
     this.initCustomParams()
 
     super.setMinMaxStep(minMaxStep)
@@ -54,40 +59,49 @@ class Delay extends Node {
     //audio source must connect to node and bypass
   }
 
-  initGain() {
-    this.outputNode = Node.context.createGain()
-    this.outputNode.gain.value = 1
+  initGain(initialGain) {
+    this.gain = initialGain
+
+    this.level = Node.context.createGain()
+    this.level.gain.setValueAtTime(this.gain, 0)
+    this.outputNode = this.level
+
     this.bypass.connect(this.outputNode);
   }
 
-  initCustomParams() {
-    const bypassGain = this.bypassGain.gain
-    const delayGain = this.delayGain.gain
+  initInnerNodeAudioParams() {
+    this.innerNodeAudioParams = [
+      {
+        name: 'delay time',
+        minValue: 0, maxValue: maxDelayTime, value: initialDelayTime, defaultValue: initialDelayTime, step: 0.01,
+        node: this.delay, nodeAudioParam: 'delayTime'
+      },
+      {
+        name: 'feedback',
+        minValue: 0, maxValue: 0.99, value: initialFeddback, defaultValue: initialFeddback, step: 0.01,
+        node: this.feedbackGain, nodeAudioParam: 'gain'
+      },
+    ]
+  }
 
-    this.drywet = {
-      drywetValue: {
-        setValueAtTime(value) {
-          delayGain.value = value
-          bypassGain.value = this.mapRange(value, 0, 1, 1, 0)
-        },
-        mapRange(value, in_min, in_max, out_min, out_max) {
-          return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-        }
-      }
+  initCustomParams() {
+    const setDryWet = (value) => {
+      this.wetGain.gain.value = value
+      this.dryGain.gain.value = value.map(0, 1, 1, 0)
     }
 
     this.customParams = [
       {
-        name: 'delay time',
-        minValue: 0, maxValue: maxDelayTime, value: initialDelayTime, step: 0.01,
-        node: this.delay, nodeAudioParam: 'delayTime'
+        name: "dry/wet",
+        minValue: 0,
+        maxValue: 1,
+        defaultValue: 0.5,
+        value: 0.5,
+        step: 0.01,
+        set(v) { setDryWet(v) }
       },
-      { name: 'feedback', minValue: 0, maxValue: 0.99, value: initialFeddback, step: 0.01, node: this.feedback, nodeAudioParam: 'gain' },
-      { name: 'dry/wet', minValue: 0, maxValue: 1, value: 0.5, step: 0.01, node: this.drywet, nodeAudioParam: 'drywetValue' },
     ]
   }
-
-
 }
 
 module.exports = Delay

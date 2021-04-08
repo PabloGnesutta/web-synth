@@ -15,16 +15,16 @@ class ADSROscillator extends Oscillator {
     this.ADSRGain = Node.context.createGain()
 
     this.peak = 1
+    this.A = 0.9
+    this.D = 0
+    this.S = 1
+    this.R = 0.01
 
     this.status = "STOPPED"
     this.initGain(initialGain)
   }
 
-  startWithFrequency(frequency) {
-    this.start(frequency)
-  }
-
-  start(frequency) {
+  start(octave, transpose) {
     const t0 = Node.context.currentTime
     const t1 = t0 + this.A
 
@@ -34,7 +34,18 @@ class ADSROscillator extends Oscillator {
     this.node = Node.context.createOscillator()
     this.node.type = this.oscType
 
-    this.node.frequency.setValueAtTime(frequency, 0)
+    let transposeValue;
+    if (!transpose) transposeValue = 0
+    else {
+      transposeValue = this.frequency * transpose
+    }
+
+    let octaveValue = 1;
+    if (octave) octaveValue = Math.pow(2, octave)
+
+    const freqValue = this.frequency * octaveValue + transposeValue
+
+    this.node.frequency.setValueAtTime(freqValue + transposeValue, 0)
     this.node.connect(this.ADSRGain)
 
     this.node.start(t0)
@@ -42,8 +53,7 @@ class ADSROscillator extends Oscillator {
 
     this.ADSRGain.gain.setValueAtTime(0, t0)
     this.ADSRGain.gain.linearRampToValueAtTime(this.peak, t1)
-    this.ADSRGain.gain.linearRampToValueAtTime(this.S, t1 + this.D)
-    // this.ADSRGain.gain.setTargetAtTime(this.S, t1, this.D)
+    this.ADSRGain.gain.setTargetAtTime(this.S, t1, this.D)
   }
 
   stop() {
@@ -51,11 +61,10 @@ class ADSROscillator extends Oscillator {
 
     this.ADSRGain.gain.cancelScheduledValues(t);
     this.ADSRGain.gain.setValueAtTime(this.ADSRGain.gain.value, t);
-    this.ADSRGain.gain.linearRampToValueAtTime(0, t + this.R)
-    // this.ADSRGain.gain.setTargetAtTime(0, t, this.R);
+    this.ADSRGain.gain.setTargetAtTime(0, t, this.R);
 
     const stop = setInterval(() => {
-      if (this.ADSRGain.gain.value < 0.001) {
+      if (this.ADSRGain.gain.value < 0.01) {
         this.ADSRGain.disconnect()
         this.node.disconnect()
         this.node.stop(0)
@@ -64,20 +73,6 @@ class ADSROscillator extends Oscillator {
       }
     }, 10);
   }
-
-  // startWithOctaveTranspose(octave, transpose) {
-  //   let transposeValue;
-  //   if (!transpose) transposeValue = 0
-  //   else {
-  //     transposeValue = this.frequency * transpose
-  //   }
-
-  //   let octaveValue = 1;
-  //   if (octave) octaveValue = Math.pow(2, octave)
-
-  //   const frequency = this.frequency * octaveValue + transposeValue
-  //   this.start(frequency)
-  // }
 }
 
 module.exports = ADSROscillator

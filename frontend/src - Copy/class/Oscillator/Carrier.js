@@ -4,8 +4,8 @@ const initialGain = 0.5
 const detuneMax = 100
 
 const minMaxStep = [
-  { name: 'frequency', minValue: 20, maxValue: 7000, value: 220, defaultValue: 220, step: 1 },
-  { name: 'detune', minValue: -detuneMax, maxValue: detuneMax, value: 0, defaultValue: 0, step: 0.1 },
+  { name: 'frequency', minValue: 20, maxValue: 7000, value: 220, step: 1 },
+  { name: 'detune', minValue: -detuneMax, maxValue: detuneMax, value: 0, step: 0.1 },
 ]
 
 class Carrier extends Oscillator {

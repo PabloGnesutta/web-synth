@@ -15,6 +15,21 @@ class Oscillator extends Node {
     super.getAudioParams()
   }
 
+  initGain(initialGain) {
+    this.gain = initialGain
+
+    // this.outputNode = Node.context.createGain()
+    // this.outputNode.gain.setValueAtTime(this.gain, 0)
+
+    //si querés ver el gain en la interfaz, tenés que setearla como level
+
+    this.level = Node.context.createGain()
+    this.level.gain.setValueAtTime(this.gain, 0)
+    this.outputNode = this.level
+
+    this.node.connect(this.outputNode)
+  }
+
   start() {
     this.node = Node.context.createOscillator()
     this.node.type = this.oscType

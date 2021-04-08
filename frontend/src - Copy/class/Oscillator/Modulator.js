@@ -8,8 +8,8 @@ const detuneMax = 100
 const initialFrequency = 5
 
 const minMaxStep = [
-  { name: 'frequency', minValue: 0, maxValue: 60, value: initialFrequency, defaultValue: initialFrequency, step: 0.1 },
-  { name: 'detune', minValue: -detuneMax, maxValue: detuneMax, value: 0, defaultValue: initialFrequency, step: 0.1 },
+  { name: 'frequency', minValue: 0, maxValue: 60, value: initialFrequency, step: 0.1 },
+  { name: 'detune', minValue: -detuneMax, maxValue: detuneMax, value: 0, step: 0.1 },
 ]
 
 class Modulator extends Oscillator {

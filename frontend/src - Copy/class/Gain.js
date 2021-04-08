@@ -1,7 +1,5 @@
 const Node = require("./Node");
 
-const initialGain = 1;
-
 class Gain extends Node {
   static gainCount = 0
 
@@ -12,7 +10,15 @@ class Gain extends Node {
     this.nodeType = "Gain"
 
     this.node = Node.context.createGain()
-    this.initGain(initialGain)
+    this.outputNode = this.node
+
+    super.getAudioParams()
+
+    this.audioParams[0].minValue = 0
+    this.audioParams[0].maxValue = 1
+    this.audioParams[0].step = 0.01
+    this.audioParams[0].value = 0.5
   }
 }
+
 module.exports = Gain

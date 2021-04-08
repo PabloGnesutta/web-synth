@@ -4,13 +4,6 @@
   </div>
 </template>
 
-<script>
-Number.prototype.map = function (in_min, in_max, out_min, out_max) {
-  return ((this - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
-};
-</script>
-
-
 <style lang="scss">
 * {
   margin: 0;
@@ -46,14 +39,5 @@ body {
       color: #42b983;
     }
   }
-}
-
-.pointer {
-  cursor: pointer;
-}
-
-.set-default-value {
-  color: green;
-  background: rgba(0, 128, 128, 0.05);
 }
 </style>
