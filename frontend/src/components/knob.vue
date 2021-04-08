@@ -1,5 +1,5 @@
 <template>
-  <div class="knob" @mousedown="startKnobTurning">
+  <div class="knob" @mousedown="onMouseDown">
     <div class="knob-inner" :style="`transform: rotate(${deg}deg)`">
       <div class="knob-handle"></div>
     </div>
@@ -24,7 +24,9 @@ export default {
 
       emitVal: 0,
 
-      calib: 2.5, //se podría agregar tecla modificadora tipo ctrl para ajuste fino
+      calib: 2,
+      fineTunning: false,
+      fineTuneStep: 0.1,
 
       deg: 0,
       maxTurningDeg: 260,
@@ -69,7 +71,11 @@ export default {
 
       this.lastYPos = e.clientY;
 
-      let knobValue = translation > 0 ? this.knobValue + 1 : this.knobValue - 1;
+      console.log(this.fineTunning);
+      const amount = this.fineTunning ? this.fineTuneStep : 1;
+
+      let knobValue =
+        translation > 0 ? this.knobValue + amount : this.knobValue - amount;
 
       if (knobValue < this.minKnobVal) knobValue = this.minKnobVal;
       if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
@@ -77,17 +83,31 @@ export default {
       this.setKnobValueAndPosition(knobValue);
     },
 
-    startKnobTurning(e) {
+    onMouseDown(e) {
       this.turning = true;
       this.startY = e.clientY;
       this.lastYPos = e.clientY;
       window.addEventListener("mousemove", this.moveKnob);
-      window.addEventListener("mouseup", this.stopKnobTurning);
+      window.addEventListener("mouseup", this.onMouseUp);
+      window.addEventListener("keydown", this.onKeydown);
+      window.addEventListener("keyup", this.onKeyup);
     },
 
-    stopKnobTurning() {
+    onMouseUp() {
       this.turning = false;
       window.removeEventListener("mousemove", this.moveKnob);
+    },
+
+    onKeydown(e) {
+      if (e.key === "Control") {
+        this.fineTunning = true;
+      }
+    },
+
+    onKeyup(e) {
+      if (e.key === "Control") {
+        this.fineTunning = false;
+      }
     },
   },
 };
@@ -105,7 +125,7 @@ export default {
 .knob-inner {
   width: 40px;
   height: 40px;
-  border: 3px solid white;
+  border: 3px solid #111;
   border-radius: 50%;
   position: relative;
   user-select: none;
@@ -113,12 +133,15 @@ export default {
 
 .knob-handle {
   position: absolute;
-  height: 10px;
+  background: #ff7a7a;
+  // border-radius: 50%;
+  // height: 10px;
+  // width: 10px;
+  transform: rotate(-45deg);
+  height: 6px;
   width: 10px;
-  background: red;
-  border-radius: 50%;
-  left: -2px;
-  bottom: 0;
+  left: -3px;
+  bottom: -2px;
 }
 
 .value {

@@ -14,194 +14,206 @@
       </div>
     </div>
 
-    <div class="nodes" :class="{ connecting: connecting }">
-      <div
-        class="node"
-        v-for="(node, n) in nodes"
-        :key="n"
-        :ref="'node-' + n"
-        :class="[node.nodeType, getCssNodeName(node.name)]"
-      >
-        <div class="node-header">
-          <div class="node-name" @click="nodeClicked(node, n)">
-            {{ node.name }}
-          </div>
-          <!-- Types -->
-          <div class="types" v-if="node.types">
-            <select @input="setType(node, $event)">
-              <option
-                v-for="type in node.types"
-                :key="type"
-                :selected="type === node.type"
-              >
-                {{ type }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="node-output">
-          <!-- Start/Stop -->
+    <div class="tracks">
+      <div class="track">
+        <div class="nodes" :class="{ connecting: connecting }">
           <div
-            class="start-stop"
-            v-if="
-              node.nodeType === 'Carrier' || node.nodeType === 'ADSROscillator'
-            "
+            class="node"
+            v-for="(node, n) in nodes"
+            :key="n"
+            :ref="'node-' + n"
+            :class="[node.nodeType, getCssNodeName(node.name)]"
           >
-            <div
-              class="start"
-              v-if="node.status === 'STOPPED'"
-              @click="startOsc(node)"
-            >
-              START
-            </div>
-            <div class="stop" v-else @click="stopOsc(node)">STOP</div>
-          </div>
-          <!-- Connections -->
-          <div class="connections">
-            <div class="outputs" v-if="node.outputs.length > 0">
-              <h5>Outputs</h5>
-              <div
-                class="output"
-                v-for="output in node.outputs"
-                @click="disconnect(node, output)"
-                @mouseenter="onMouseEnterOutput(output)"
-                @mouseleave="onMouseLeaveOutput(output)"
-                :key="output.name"
-              >
-                <span>
-                  {{ output.name }}
-                </span>
+            <div class="node-header">
+              <div class="node-name" @click="nodeClicked(node, n)">
+                {{ node.name }}
+              </div>
+              <!-- Types -->
+              <div class="types" v-if="node.types">
+                <select @input="setType(node, $event)">
+                  <option
+                    v-for="type in node.types"
+                    :key="type"
+                    :selected="type === node.type"
+                  >
+                    {{ type }}
+                  </option>
+                </select>
               </div>
             </div>
-          </div>
 
-          <!-- Level -->
-          <div
-            class="level"
-            v-if="node.level"
-            :class="getCssNodeName(node.name + ' Level')"
-          >
-            <h4 class="param-name" @click="levelClicked(node)">Level</h4>
-            <div class="knob-wrapper">
-              <knob
-                :minVal="node.minGain"
-                :maxVal="node.maxGain"
-                :initVal="node.gain"
-                @knobTurned="setNodeGain(node, $event)"
-              />
+            <div class="node-output">
+              <!-- Start/Stop -->
+              <div
+                class="start-stop"
+                v-if="
+                  node.nodeType === 'Carrier' ||
+                  node.nodeType === 'ADSROscillator'
+                "
+              >
+                <div
+                  class="start"
+                  v-if="node.status === 'STOPPED'"
+                  @click="startOsc(node)"
+                >
+                  START
+                </div>
+                <div class="stop" v-else @click="stopOsc(node)">STOP</div>
+              </div>
+              <!-- Connections -->
+              <div class="connections">
+                <div class="outputs" v-if="node.outputs.length > 0">
+                  <h5>Outputs</h5>
+                  <div
+                    class="output"
+                    v-for="output in node.outputs"
+                    @click="disconnect(node, output)"
+                    @mouseenter="onMouseEnterOutput(output)"
+                    @mouseleave="onMouseLeaveOutput(output)"
+                    :key="output.name"
+                  >
+                    <span>
+                      {{ output.name }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Level -->
+              <div
+                class="level"
+                v-if="node.level"
+                :class="getCssNodeName(node.name + ' Level')"
+              >
+                <h4 class="param-name" @click="levelClicked(node)">Level</h4>
+                <div class="knob-wrapper">
+                  <knob
+                    :minVal="node.minGain"
+                    :maxVal="node.maxGain"
+                    :initVal="node.gain"
+                    @knobTurned="setNodeGain(node, $event)"
+                  />
+                </div>
+              </div>
             </div>
+
+            <div class="node-params">
+              <div class="params-wrapper">
+                <div
+                  class="audio-params params-container"
+                  v-if="node.audioParams.length > 0"
+                >
+                  <!-- Audio Params -->
+                  <p class="group-label">audio params</p>
+                  <div
+                    class="audio-param param"
+                    v-for="(audioParam, apIndex) in node.audioParams"
+                    :key="audioParam.name"
+                    :class="[getCssNodeName(node.name + ' ' + audioParam.name)]"
+                  >
+                    <div
+                      class="param-name"
+                      @click="audioParamClicked(node, audioParam)"
+                    >
+                      {{ audioParam.name }}
+                    </div>
+
+                    <div class="knob-wrapper">
+                      <knob
+                        :minVal="audioParam.minValue"
+                        :maxVal="audioParam.maxValue"
+                        :initVal="audioParam.defaultValue"
+                        @knobTurned="setAudioParam(node, apIndex, $event)"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Inner Node Audio Params -->
+                <div
+                  class="inner-node-audio-params params-container"
+                  v-if="node.innerNodeAudioParams"
+                >
+                  <p class="group-label">inner node audio</p>
+                  <div
+                    class="inner-node-audio-param param"
+                    v-for="(
+                      innerNodeAudioParam, inapIndex
+                    ) in node.innerNodeAudioParams"
+                    :key="innerNodeAudioParam.name"
+                    :class="[
+                      getCssNodeName(
+                        node.name + ' ' + innerNodeAudioParam.name
+                      ),
+                      getCssNodeName(innerNodeAudioParam.name),
+                    ]"
+                  >
+                    <!-- la concatenaciión acá arriba tendría que eliminarse, y que construya el nombre en base a
+                  calcular el nombre del nodo más el nombre del parámetro -->
+                    <div
+                      class="param-name"
+                      @click="
+                        innerNodeAudioParamClicked(
+                          node,
+                          innerNodeAudioParam,
+                          inapIndex
+                        )
+                      "
+                    >
+                      {{ innerNodeAudioParam.name }}
+                    </div>
+
+                    <div class="knob-wrapper">
+                      <knob
+                        :minVal="innerNodeAudioParam.minValue"
+                        :maxVal="innerNodeAudioParam.maxValue"
+                        :initVal="innerNodeAudioParam.defaultValue"
+                        @knobTurned="
+                          setInnerNodeAudioParam(node, inapIndex, $event)
+                        "
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Custom Params -->
+                <div
+                  class="custom-params params-container"
+                  v-if="node.customParams"
+                >
+                  <p class="group-label">custom</p>
+                  <div
+                    class="custom-param param"
+                    v-for="(customParam, cpIndex) in node.customParams"
+                    :key="customParam.name"
+                    :class="[
+                      getCssNodeName(node.name + ' ' + customParam.name),
+                    ]"
+                  >
+                    <div
+                      class="param-name"
+                      @click="customParamClicked(node, customParam, cpIndex)"
+                    >
+                      {{ customParam.name }}
+                    </div>
+
+                    <div class="knob-wrapper">
+                      <knob
+                        :minVal="customParam.minValue"
+                        :maxVal="customParam.maxValue"
+                        :initVal="customParam.defaultValue"
+                        @knobTurned="setCustomParam(node, cpIndex, $event)"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DELETE -->
+            <div class="delete" @click="deleteNode(n)">X</div>
           </div>
         </div>
-
-        <div class="node-params">
-          <div class="params-wrapper">
-            <div
-              class="audio-params params-container"
-              v-if="node.audioParams.length > 0"
-            >
-              <!-- Audio Params -->
-              <p class="group-label">audio params</p>
-              <div
-                class="audio-param param"
-                v-for="(audioParam, apIndex) in node.audioParams"
-                :key="audioParam.name"
-                :class="[getCssNodeName(node.name + ' ' + audioParam.name)]"
-              >
-                <div
-                  class="param-name"
-                  @click="audioParamClicked(node, audioParam)"
-                >
-                  {{ audioParam.name }}
-                </div>
-
-                <div class="knob-wrapper">
-                  <knob
-                    :minVal="audioParam.minValue"
-                    :maxVal="audioParam.maxValue"
-                    :initVal="audioParam.defaultValue"
-                    @knobTurned="setAudioParam(node, apIndex, $event)"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Inner Node Audio Params -->
-            <div
-              class="inner-node-audio-params params-container"
-              v-if="node.innerNodeAudioParams"
-            >
-              <p class="group-label">inner node audio</p>
-              <div
-                class="inner-node-audio-param param"
-                v-for="(
-                  innerNodeAudioParam, inapIndex
-                ) in node.innerNodeAudioParams"
-                :key="innerNodeAudioParam.name"
-                :class="[
-                  getCssNodeName(node.name + ' ' + innerNodeAudioParam.name),
-                ]"
-              >
-                <div
-                  class="param-name"
-                  @click="
-                    innerNodeAudioParamClicked(
-                      node,
-                      innerNodeAudioParam,
-                      inapIndex
-                    )
-                  "
-                >
-                  {{ innerNodeAudioParam.name }}
-                </div>
-
-                <div class="knob-wrapper">
-                  <knob
-                    :minVal="innerNodeAudioParam.minValue"
-                    :maxVal="innerNodeAudioParam.maxValue"
-                    :initVal="innerNodeAudioParam.defaultValue"
-                    @knobTurned="
-                      setInnerNodeAudioParam(node, inapIndex, $event)
-                    "
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Custom Params -->
-            <div
-              class="custom-params params-container"
-              v-if="node.customParams"
-            >
-              <p class="group-label">custom</p>
-              <div
-                class="custom-param param"
-                v-for="(customParam, cpIndex) in node.customParams"
-                :key="customParam.name"
-                :class="[getCssNodeName(node.name + ' ' + customParam.name)]"
-              >
-                <div
-                  class="param-name"
-                  @click="customParamClicked(node, customParam, cpIndex)"
-                >
-                  {{ customParam.name }}
-                </div>
-
-                <div class="knob-wrapper">
-                  <knob
-                    :minVal="customParam.minValue"
-                    :maxVal="customParam.maxValue"
-                    :initVal="customParam.defaultValue"
-                    @knobTurned="setCustomParam(node, cpIndex, $event)"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- DELETE -->
-        <div class="delete" @click="deleteNode(n)">X</div>
       </div>
     </div>
 
@@ -371,7 +383,6 @@ export default {
     },
 
     setCustomParam(Node, cpIndex, value) {
-      console.log("setcu", cpIndex, value);
       Node.setCustomParam(cpIndex, value);
     },
 
@@ -537,14 +548,29 @@ export default {
   }
 }
 
+.tracks {
+  margin-top: 1em;
+}
+
+.track {
+  width: 98%;
+  overflow-x: scroll;
+}
+
+.node.Track-Gain {
+  order: 1;
+  // position: absolute;
+  // right: 1em;
+  z-index: 1;
+}
+
 .nodes {
-  margin: 3em 0;
   padding: 1em;
   display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 2em;
+  // justify-content: center;
+  align-items: center;
+
+  gap: 1em;
 }
 
 .node {
@@ -556,6 +582,7 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  align-items: center;
   transition: border-color 0.2s ease-out;
   .node-name {
     font-size: 1.2rem;
@@ -577,13 +604,15 @@ export default {
   order: 2;
 }
 
-.node.ScaleInterface {
+.node.ScaleInterface,
+.node.Delay {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  max-width: 300px;
+  min-width: 213px;
+  max-width: 213px;
   gap: 1em;
   .node-header {
     // align-self: flex-end;
@@ -596,7 +625,7 @@ export default {
   }
   .node-output {
     // order: 0;
-    // display: flex;
+    display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
@@ -606,7 +635,7 @@ export default {
       // width: 50%;
     }
     .connections {
-      // width: 50%;
+      width: 50%;
     }
   }
   .node-params {
@@ -619,10 +648,25 @@ export default {
     justify-content: center;
     margin-bottom: 0;
     // margin-top: 1em;
-    gap: 0.5em;
-    .param {
-      margin-top: 0;
-    }
+    // gap: 0.5em;
+  }
+  .param {
+    margin-top: 0;
+    flex-basis: 30%;
+  }
+}
+
+// DELAY NODE
+.node.Delay {
+  min-width: 190px;
+  max-width: 190px;
+  .params-container {
+    min-width: 200px;
+    max-width: 200px;
+  }
+  .param {
+    min-width: 85px;
+    flex-basis: auto;
   }
 }
 
@@ -650,45 +694,21 @@ export default {
 
 .params-container {
   // display: flex;
+  // margin-bottom: 1em;
 }
 
-.param-name {
-  padding: 0.3em;
-  font-weight: bold;
-}
-
-.audio-params,
-.inner-node-audio-params,
-.custom-params {
-  margin-bottom: 1em;
-}
-
-.audio-param,
-.inner-node-audio-param,
-.custom-param,
-.level {
+.param {
   padding: 0.2em;
-  margin-top: 0.5em;
+  // margin-top: 0.5em;
   cursor: default;
   border: 2px solid transparent;
   transition: border-color 0.2s ease-out;
   font-size: 0.95rem;
+  background: #0000003b;
 }
 
-.audio-param {
-  background: #050505;
-}
-
-.inner-node-audio-param {
-  background: #151515;
-}
-
-.custom-param {
-  background: #181818;
-}
-
-.level {
-  // background: #111;
+.param-name {
+  padding: 0.3em 0.2em 0.5em;
 }
 
 .is-connection-destination {
@@ -767,6 +787,7 @@ $yAmount: 60px;
 $xAmount: 1000px;
 
 .scroll-pane {
+  display: none;
   // height: 217px; //200 + 17
   // width: 217px; //200 + 17
   height: $spHeight + $scrollBarThickness;
