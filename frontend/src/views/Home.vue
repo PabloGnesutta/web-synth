@@ -83,17 +83,14 @@
             :class="getCssNodeName(node.name + ' Level')"
           >
             <h4 class="param-name" @click="levelClicked(node)">Level</h4>
-            <div class="knob">
-              <input
-                type="range"
-                :min="node.minGain"
-                :max="node.maxGain"
-                :step="node.gainStep"
-                :value="node.gain"
-                @input="setNodeGain(node, $event)"
+            <div class="knob-wrapper">
+              <knob
+                :minVal="node.minGain"
+                :maxVal="node.maxGain"
+                :initVal="node.gain"
+                @knobTurned="setNodeGain(node, $event)"
               />
             </div>
-            <div class="value">{{ node.gain }}</div>
           </div>
         </div>
 
@@ -118,25 +115,13 @@
                   {{ audioParam.name }}
                 </div>
 
-                <div class="knob">
-                  <div>
-                    <input
-                      :min="audioParam.minValue"
-                      :max="audioParam.maxValue"
-                      :step="audioParam.step"
-                      :value="audioParam.value"
-                      type="range"
-                      @input="setAudioParam(node, apIndex, $event.target.value)"
-                    />
-                  </div>
-                  <div
-                    class="value pointer set-default-value"
-                    @click="
-                      setAudioParam(node, apIndex, audioParam.defaultValue)
-                    "
-                  >
-                    {{ audioParam.value }}
-                  </div>
+                <div class="knob-wrapper">
+                  <knob
+                    :minVal="audioParam.minValue"
+                    :maxVal="audioParam.maxValue"
+                    :initVal="audioParam.defaultValue"
+                    @knobTurned="setAudioParam(node, apIndex, $event)"
+                  />
                 </div>
               </div>
             </div>
@@ -170,35 +155,15 @@
                   {{ innerNodeAudioParam.name }}
                 </div>
 
-                <div class="knob">
-                  <div>
-                    <input
-                      :min="innerNodeAudioParam.minValue"
-                      :max="innerNodeAudioParam.maxValue"
-                      :step="innerNodeAudioParam.step"
-                      :value="innerNodeAudioParam.value"
-                      type="range"
-                      @input="
-                        setInnerNodeAudioParam(
-                          node,
-                          inapIndex,
-                          $event.target.value
-                        )
-                      "
-                    />
-                  </div>
-                  <div
-                    class="value pointer set-default-value"
-                    @click="
-                      setInnerNodeAudioParam(
-                        node,
-                        inapIndex,
-                        innerNodeAudioParam.defaultValue
-                      )
+                <div class="knob-wrapper">
+                  <knob
+                    :minVal="innerNodeAudioParam.minValue"
+                    :maxVal="innerNodeAudioParam.maxValue"
+                    :initVal="innerNodeAudioParam.defaultValue"
+                    @knobTurned="
+                      setInnerNodeAudioParam(node, inapIndex, $event)
                     "
-                  >
-                    {{ innerNodeAudioParam.value }}
-                  </div>
+                  />
                 </div>
               </div>
             </div>
@@ -222,27 +187,13 @@
                   {{ customParam.name }}
                 </div>
 
-                <div class="knob">
-                  <div>
-                    <input
-                      :min="customParam.minValue"
-                      :max="customParam.maxValue"
-                      :step="customParam.step"
-                      :value="customParam.value"
-                      type="range"
-                      @input="
-                        setCustomParam(node, cpIndex, $event.target.value)
-                      "
-                    />
-                  </div>
-                  <div
-                    class="value pointer set-default-value"
-                    @click="
-                      setCustomParam(node, cpIndex, customParam.defaultValue)
-                    "
-                  >
-                    {{ customParam.value }}
-                  </div>
+                <div class="knob-wrapper">
+                  <knob
+                    :minVal="customParam.minValue"
+                    :maxVal="customParam.maxValue"
+                    :initVal="customParam.defaultValue"
+                    @knobTurned="setCustomParam(node, cpIndex, $event)"
+                  />
                 </div>
               </div>
             </div>
@@ -262,25 +213,19 @@
     <div class="section">
       <div class="section-inner Main-Gain">
         <h2 @click="mainGainClicked()">Main Gain</h2>
-        <input
-          type="range"
-          v-model="mainGainKnob"
-          min="0"
-          max="1"
-          step="0.01"
-          @input="onMainGainKnobInput"
+        <knob
+          minVal="0"
+          maxVal="1"
+          :initVal="mainGainKnob"
+          @knobTurned="onMainGainKnobInput"
         />
-        <div>{{ mainGainKnob }}</div>
       </div>
-    </div>
-    <div>
-      <knob />
     </div>
   </div>
 </template>
 
 <script>
-import knob from "../components/knob"
+import knob from "../components/knob";
 const Node = require("../class/Node");
 
 const Gain = require("../class/Gain");
@@ -295,24 +240,20 @@ export default {
   name: "Home",
   data() {
     return {
+      knobValue: 0,
       inited: false,
       context: null,
 
       nodes: [],
-      originNode: null,
-      connecting: false,
 
       originNode: null,
+      connecting: false,
       originNodeIndex: null,
 
       trackGain: null,
 
       mainGain: null,
       mainGainKnob: 0.5,
-
-      piano: null,
-      keyPressed: false,
-      test_var: "",
 
       scaleNodes: [],
       scaleGain: null,
@@ -322,8 +263,6 @@ export default {
       scaleInterfaces: [],
 
       keyEnabled: [],
-
-      octave: 3,
     };
   },
 
@@ -331,12 +270,11 @@ export default {
     this.keyEnabled = Array(222).fill(true);
   },
 
-  beforeDestroy() {
-    window.removeEventListener("keyup", this.onKeyup);
-    window.removeEventListener("keydown", this.onKeydown);
-  },
-
   methods: {
+    knobTurned(val) {
+      console.log(val);
+    },
+
     init() {
       if (this.context) return;
       this.inited = true;
@@ -351,11 +289,8 @@ export default {
       this.scaleFilter = new BiquadFilter("highpass", "Scale Filter");
       this.scaleFilter.connect(this.trackGain);
 
-      this.delay = new Delay();
-      this.nodes.push(this.delay);
-
-      // this.whiteNoise = new WhiteNoise();
-      // this.nodes.push(this.whiteNoise);
+      this.nodes.push(new Delay());
+      this.nodes.push(new WhiteNoise());
       this.nodes.push(this.scaleFilter);
       this.nodes.push(this.trackGain);
 
@@ -436,6 +371,7 @@ export default {
     },
 
     setCustomParam(Node, cpIndex, value) {
+      console.log("setcu", cpIndex, value);
       Node.setCustomParam(cpIndex, value);
     },
 
@@ -476,8 +412,8 @@ export default {
       Node.setAudioParam(audioParamIndex, value);
     },
 
-    setNodeGain(Node, event) {
-      Node.setGain(event.target.value);
+    setNodeGain(Node, value) {
+      Node.setGain(value);
     },
 
     setType(Node, e) {
@@ -494,29 +430,29 @@ export default {
     },
 
     createCarrier() {
-      this.nodes.unshift(new Carrier());
+      this.nodes.push(new Carrier());
     },
     createADSROscillator() {
-      this.nodes.unshift(new ADSROscillator("sawtooth", 330));
+      this.nodes.push(new ADSROscillator("sawtooth", 330));
     },
     createModulator() {
-      this.nodes.unshift(new Modulator());
+      this.nodes.push(new Modulator());
     },
     createBiquadFilter() {
-      this.nodes.unshift(new BiquadFilter());
+      this.nodes.push(new BiquadFilter());
     },
     createGain() {
-      this.nodes.unshift(new Gain());
+      this.nodes.push(new Gain());
     },
     createWiteNoise() {
-      this.nodes.unshift(new WhiteNoise());
+      this.nodes.push(new WhiteNoise());
     },
     createDelay() {
-      this.nodes.unshift(new Delay());
+      this.nodes.push(new Delay());
     },
     createPiano() {
       const scaleInterface = new ScaleInterface("sawtooth");
-      this.nodes.unshift(scaleInterface);
+      this.nodes.push(scaleInterface);
       this.scaleInterfaces.push(scaleInterface);
     },
 
@@ -526,8 +462,8 @@ export default {
       this.mainGain.connect(this.context.destination);
     },
 
-    onMainGainKnobInput() {
-      this.mainGain.gain.setValueAtTime(this.mainGainKnob, 0);
+    onMainGainKnobInput(val) {
+      this.mainGain.gain.setValueAtTime(val, 0);
     },
 
     onKeydown(e) {
@@ -536,9 +472,6 @@ export default {
       this.scaleInterfaces.forEach((si) => {
         si.processKeydown(e);
       });
-
-      // this.keyEnabled[e.keyCode] = false;
-      // this.scaleInterface.processKeydown(e);
     },
 
     onKeyup(e) {
@@ -546,7 +479,6 @@ export default {
       this.scaleInterfaces.forEach((si) => {
         si.processKeyup(e);
       });
-      // this.scaleInterface.processKeyup(e);
     },
 
     paneScrolled(e) {
@@ -573,6 +505,11 @@ export default {
     getCssNodeName(name) {
       return name.replace(new RegExp(" ", "g"), "-");
     },
+  },
+
+  beforeDestroy() {
+    window.removeEventListener("keyup", this.onKeyup);
+    window.removeEventListener("keydown", this.onKeydown);
   },
 
   components: {
@@ -751,7 +688,7 @@ export default {
 }
 
 .level {
-  background: #111;
+  // background: #111;
 }
 
 .is-connection-destination {
