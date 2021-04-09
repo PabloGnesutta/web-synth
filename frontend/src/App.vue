@@ -16,13 +16,9 @@ export default {
       outputs: null,
     };
   },
-  mounted() {
-    
-  },
+  mounted() {},
 
-  methods: {
-    
-  },
+  methods: {},
 };
 </script>
 
@@ -42,6 +38,19 @@ export default {
 body {
   background: #222;
   color: #f3f3f3;
+}
+
+.track::-webkit-scrollbar {
+  height: 8px;
+}
+
+.track::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px grey;
+  // background: grey;
+}
+
+.track::-webkit-scrollbar-thumb {
+  background: #131313;
 }
 
 #app {

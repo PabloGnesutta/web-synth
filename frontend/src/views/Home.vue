@@ -541,9 +541,9 @@ export default {
         this.refBeignMapped = null;
       }
 
-      const ref = this.$refs[refName][0] || this.$refs[refName];
-      this.refBeignMapped = ref;
-      ref.startMapping();
+      const knob = this.$refs[refName][0] || this.$refs[refName];
+      this.refBeignMapped = knob;
+      knob.startMapping();
     },
 
     getMIDIMessage({ data }) {
@@ -553,28 +553,28 @@ export default {
 
       if (this.mapping) {
         let refName = this.refBeignMapped.$vnode.data.ref;
-        const exists = this.maps.find((m) => m.refName === refName);
-        if (!exists) {
+        const existingMap = this.maps.find((m) => m.refName === refName);
+        if (!existingMap) {
           this.maps.push({
             refName,
             cmd,
             note,
           });
         } else {
-          exists.cmd = cmd;
-          exists.note = note;
+          existingMap.cmd = cmd;
+          existingMap.note = note;
         }
-        const ref = this.$refs[refName][0] || this.$refs[refName];
-        ref.assignMap(cmd, note);
+        const knob = this.$refs[refName][0] || this.$refs[refName];
+        knob.assignMap(cmd, note);
         return;
       } else {
         const mappedItem = this.maps.find(
           (m) => m.cmd === cmd && m.note === note
         );
         if (!mappedItem) return;
-        const ref =
+        const knob =
           this.$refs[mappedItem.refName][0] || this.$refs[mappedItem.refName];
-        ref.receiveMidi(value);
+        knob.receiveMidi(value);
       }
     },
 
@@ -653,23 +653,20 @@ export default {
 }
 
 .track {
-  width: 98%;
+  width: 99%;
+  margin: auto;
   overflow-x: scroll;
 }
 
 .node.Track-Gain {
   order: 1;
-  // position: absolute;
-  // right: 1em;
   z-index: 1;
 }
 
 .nodes {
-  padding: 1em;
+  padding: 0 0 1em;
   display: flex;
-  // justify-content: center;
   align-items: center;
-
   gap: 1em;
 }
 
