@@ -241,7 +241,7 @@
     </div>
 
     <!-- Main Gain -->
-    <div class="section" v-if="inited">
+    <div class="section">
       <div class="section-inner Main-Gain">
         <h2 @click="mainGainClicked()">Main Gain</h2>
         <div class="knob-wrapper" @click="knobClicked('MainGain')">
@@ -275,10 +275,10 @@ export default {
   name: "Home",
   data() {
     return {
+      knobValue: 0,
       inited: false,
       context: null,
 
-      tracks: [],
       nodes: [],
 
       originNode: null,
@@ -286,7 +286,6 @@ export default {
       originNodeIndex: null,
 
       trackGain: null,
-      trankGainDefaultVal: 0.4,
 
       mainGain: null,
       mainGainKnob: 0.5,
@@ -296,13 +295,13 @@ export default {
       scaleFilter: null,
       scaleInterface: {},
 
-      keyEnabled: [],
-      keypressListeners: [],
+      scaleInterfaces: [],
 
-      //MIDI
-      maps: [],
+      keyEnabled: [],
+
       inputs: [],
       outputs: [],
+      maps: [],
       mapping: false,
       refBeignMapped: null,
     };
@@ -327,10 +326,29 @@ export default {
 
       this.createMainGain();
 
+      this.trackGain = new Gain("Track Gain");
+      this.trackGain.connectNativeNode(this.mainGain, "Main Gain");
+
+      this.scaleFilter = new BiquadFilter("highpass", "Scale Filter");
+      this.scaleFilter.connect(this.trackGain);
+
+      this.nodes.push(new Delay());
+      this.nodes.push(new WhiteNoise());
+      this.nodes.push(this.scaleFilter);
+      this.nodes.push(this.trackGain);
+
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.initTrack();
+      this.initScale();
+    },
+
+    initScale() {
+      const scaleInterface = new ScaleInterface("sawtooth");
+      scaleInterface.connect(this.scaleFilter);
+      this.nodes.unshift(scaleInterface);
+      this.scaleInterfaces.push(scaleInterface);
+      this.scaleInterface = scaleInterface;
     },
 
     startConnect(Node, n) {
@@ -396,7 +414,6 @@ export default {
     },
 
     setCustomParam(Node, cpIndex, value) {
-      // console.log(Node.customParams[cpIndex], value)
       Node.setCustomParam(cpIndex, value);
     },
 
@@ -426,6 +443,13 @@ export default {
       el.classList.remove("is-connection-destination");
     },
 
+    deleteNode(n) {
+      if (this.connecting) return;
+      this.nodes[n].destroy();
+      this.nodes.splice(n, 1);
+      //ver tema si es scale interface sacarlo del array
+    },
+
     setAudioParam(Node, audioParamIndex, value) {
       Node.setAudioParam(audioParamIndex, value);
     },
@@ -437,21 +461,6 @@ export default {
     setType(Node, e) {
       Node.setType(e.target.value);
       e.target.blur();
-      if (Node.audioParams.length > 0) {
-        this.setParamsConstraints(Node, Node.audioParams);
-      }
-
-      // if (Node.customParams) { //no seteo los custom params para no cambiar el ADSR
-      //   this.setParamsConstraints(Node, Node.customParams);
-      // }
-    },
-
-    setParamsConstraints(Node, params) {
-      params.forEach((p) => {
-        const refName = Node.name + "-" + p.name;
-        const ref = this.$refs[refName][0];
-        ref.setParamContraints(p.minValue, p.maxValue, p.defaultValue);
-      });
     },
 
     startOsc(Node) {
@@ -462,71 +471,31 @@ export default {
       if (!this.connecting) Node.stop(0);
     },
 
-    // CREATE NODES
-
-    initTrack() {
-      //track gain
-      this.trackGain = new Gain("Track Gain");
-      this.trackGain.setGain(0.4);
-      this.trackGain.connectNativeNode(this.mainGain, "Main Gain");
-      this.nodes.push(this.trackGain);
-
-      //instrument
-      const scaleInterface = new ScaleInterface("sawtooth");
-      scaleInterface.connect(this.trackGain);
-      this.nodes.push(scaleInterface);
-      this.keypressListeners.push(scaleInterface); //esto compensa midichannel
-
-      this.lastNodePushed = scaleInterface;
-      this.lastOutputConnected = this.trackGain;
-    },
-
-    pushNode(Node) {
-      const prev = this.nodes[this.nodes.length - 1];
-      const next = this.trackGain;
-      prev.disconnect();
-      prev.connect(Node);
-      Node.connect(next);
-      this.nodes.push(Node);
-    },
-
-    deleteNode(n) {
-      if (this.connecting) return;
-      const prev = this.nodes[n - 1];
-      const next = this.nodes[n + 1] || this.nodes[0]; //ultimo nodo, o si no track gain
-
-      prev.disconnect();
-      prev.connect(next);
-
-      this.nodes[n].destroy();
-      this.nodes.splice(n, 1);
-    },
-
     createCarrier() {
-      this.pushNode(new Carrier());
+      this.nodes.push(new Carrier());
     },
     createADSROscillator() {
-      this.pushNode(new ADSROscillator("sawtooth", 330));
+      this.nodes.push(new ADSROscillator("sawtooth", 330));
     },
     createModulator() {
-      this.pushNode(new Modulator());
+      this.nodes.push(new Modulator());
     },
     createBiquadFilter() {
-      this.pushNode(new BiquadFilter());
+      this.nodes.push(new BiquadFilter());
     },
     createGain() {
-      this.pushNode(new Gain());
+      this.nodes.push(new Gain());
     },
     createWiteNoise() {
-      this.pushNode(new WhiteNoise());
+      this.nodes.push(new WhiteNoise());
     },
     createDelay() {
-      this.pushNode(new Delay());
+      this.nodes.push(new Delay());
     },
     createPiano() {
       const scaleInterface = new ScaleInterface("sawtooth");
-      this.pushNode(scaleInterface);
-      this.keypressListeners.push(scaleInterface);
+      this.nodes.push(scaleInterface);
+      this.scaleInterfaces.push(scaleInterface);
     },
 
     createMainGain() {
@@ -542,14 +511,14 @@ export default {
     onKeydown(e) {
       if (!this.keyEnabled[e.keyCode]) return;
       this.keyEnabled[e.keyCode] = false;
-      this.keypressListeners.forEach((si) => {
+      this.scaleInterfaces.forEach((si) => {
         si.processKeydown(e);
       });
     },
 
     onKeyup(e) {
       this.keyEnabled[e.keyCode] = true;
-      this.keypressListeners.forEach((si) => {
+      this.scaleInterfaces.forEach((si) => {
         si.processKeyup(e);
       });
     },

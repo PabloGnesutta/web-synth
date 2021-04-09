@@ -2,6 +2,7 @@ const Node = require("../Node")
 
 const initialGain = 1
 
+const minDelayTime = 0.01
 const maxDelayTime = 3
 const initialDelayTime = 0.3
 const initialFeddback = 0.6
@@ -73,7 +74,7 @@ class Delay extends Node {
     this.innerNodeAudioParams = [
       {
         name: 'delay time',
-        minValue: 0, maxValue: maxDelayTime, value: initialDelayTime, defaultValue: initialDelayTime, step: 0.01,
+        minValue: minDelayTime, maxValue: maxDelayTime, value: initialDelayTime, defaultValue: initialDelayTime, step: 0.01,
         node: this.delay, nodeAudioParam: 'delayTime'
       },
       {

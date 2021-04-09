@@ -8,13 +8,14 @@ const initialA = 0
 const initialD = 0
 const initialS = 1
 const initialR = 0.1
+const initialDetune = 0;
 
-class Delay extends Node {
+class ScaleInterface extends Node {
   static SICOunt = 0
 
   constructor(tpye, name) {
     super(name)
-    this.name = name || "Justinton " + ++Delay.SICOunt
+    this.name = name || "Justinton " + ++ScaleInterface.SICOunt
     this.nodeType = "ScaleInterface"
     this.types = ["sine", "triangle", "sawtooth", "square"]
     this.type = tpye || this.types[0]
@@ -108,6 +109,7 @@ class Delay extends Node {
   initCustomParams() {
     //set destination node audio param
     const setDetune = (value) => {
+      console.log('set detune val', value)
       this.scaleNodes.forEach(sn => {
         sn.node.detune.setValueAtTime(value, 0)
       })
@@ -162,8 +164,8 @@ class Delay extends Node {
         name: "detune",
         minValue: -100,
         maxValue: 100,
-        value: 0,
-        defaultValue: 0,
+        value: initialDetune,
+        defaultValue: initialDetune,
         step: 0.1,
         set(v) { setDetune(v) }
       },
@@ -172,4 +174,4 @@ class Delay extends Node {
   }
 }
 
-module.exports = Delay
+module.exports = ScaleInterface

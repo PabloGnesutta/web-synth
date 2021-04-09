@@ -31,16 +31,6 @@ class Node {
     this.outputNode = null
   }
 
-  initGain(initialGain) {
-    this.gain = initialGain
-
-    this.level = Node.context.createGain()
-    this.level.gain.setValueAtTime(this.gain, 0)
-    this.outputNode = this.level
-
-    this.node.connect(this.outputNode)
-  }
-
   connect(Node) {
     this.outputNode.connect(Node.node)
     this.outputs.push({ name: Node.name, node: Node.node })
@@ -49,6 +39,32 @@ class Node {
   connectNativeNode(node, name) {
     this.outputNode.connect(node)
     this.outputs.push({ node, name: name || "Some Native Node" })
+  }
+
+  disconnect() {
+    this.disconnectOutput(this.outputs[0].node)
+  }
+
+  disconnectOutput(output) {
+    this.outputNode.disconnect(output.node)
+    const index = this.outputs.findIndex(o => o.name === output.name)
+    this.outputs.splice(index, 1)
+  }
+
+  disconnectNativeOutput(node) {
+    this.outputNode.disconnect(node)
+    const index = this.outputs.findIndex(o => o.name === output.name)
+    this.outputs.splice(index, 1)
+  }
+
+  initGain(initialGain) {
+    this.gain = initialGain
+
+    this.level = Node.context.createGain()
+    this.level.gain.setValueAtTime(this.gain, 0)
+    this.outputNode = this.level
+
+    this.node.connect(this.outputNode)
   }
 
   connectAudioParam(Node, audioParam) {
@@ -80,38 +96,16 @@ class Node {
     this.outputs.push({ name: Node.name + ' Level', node: Node.outputNode })
   }
 
-  // al conectar el delay, el delay se conecta automáticamente al primer output...
-  // puede haber casos en que el primer output de este nodo no sea  una gananci.
-  // es para evitar tener que conectar manualmente el delay a una ganancia luego de conectarlo a este nodo
-  // no se puede conectar a this.outputNode porque genera feedback infinito
   connectDelay(Delay) {
     Delay.connectNativeNode(this.outputs[0].node, this.outputs[0].name)
     this.disconnectOutput(this.outputs[0].node)
   }
 
-  disconnectOutput(output) {
-    this.outputNode.disconnect(output.node)
-    const index = this.outputs.findIndex(o => o.name === output.name)
-    this.outputs.splice(index, 1)
-  }
 
-  disconnectNativeOutput(node) {
-    this.outputNode.disconnect(node)
-    const index = this.outputs.findIndex(o => o.name === output.name)
-    this.outputs.splice(index, 1)
-  }
 
   setGain(value, time) {
     this.outputNode.gain.setValueAtTime(value, time || 0)
     this.gain = value
-  }
-
-  rampGain(value, time) {
-    this.outputNode.gain.linearRampToValueAtTime(value, time);
-  }
-
-  setTargetGain(value, startTime, endTime) {
-    this.outputNode.gain.setTargetAtTime(value, startTime, endTime);
   }
 
   //debería entender tanto indice como nombre del parámetro

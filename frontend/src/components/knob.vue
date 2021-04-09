@@ -14,7 +14,7 @@
       {{ mappedCmd }}
     </div>
     <div class="value set-default-value pointer" @click="valueClicked">
-      <div>{{ emitVal }}</div>
+      <div>{{ emitValue }}</div>
     </div>
   </div>
 </template>
@@ -24,7 +24,6 @@ import { mapGetters } from "vuex";
 export default {
   data() {
     return {
-      turning: false,
       startY: 0,
       lastYPos: 0,
 
@@ -33,7 +32,7 @@ export default {
       maxKnobVal: 127,
       initknobValue: 0,
 
-      emitVal: 0,
+      emitValue: 0,
 
       calib: 2,
       fineTunning: false,
@@ -41,7 +40,7 @@ export default {
 
       deg: 0,
       trackColor: "#111",
-      maxTurningDeg: 260,
+      maxTurningDeg: 278,
       min_v: 0,
       max_v: 127,
 
@@ -57,17 +56,7 @@ export default {
   },
 
   mounted() {
-    this.min_v = parseFloat(this.minVal);
-    this.max_v = parseFloat(this.maxVal);
-    const initVal = parseFloat(this.initVal);
-    this.knobValue = Math.round(
-      initVal.map(this.min_v, this.max_v, this.minKnobVal, this.maxKnobVal)
-    );
-    this.initknobValue = this.knobValue;
-    this.deg = this.knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
-    const r = this.knobValue.map(0, this.maxKnobVal, 10, 150);
-    this.trackColor = `rgb(0, ${r}, ${r});`;
-    this.emitVal = initVal.toFixed(2);
+    this.setParamContraints(this.minVal, this.maxVal, parseFloat(this.initVal));
   },
 
   methods: {
@@ -81,11 +70,11 @@ export default {
       const r = value.map(0, this.maxKnobVal, 10, 150);
       this.trackColor = `rgb(0, ${r}, ${r});`;
 
-      this.emitVal = value
+      this.emitValue = value
         .map(0, this.maxKnobVal, this.min_v, this.max_v)
         .toFixed(2);
 
-      this.$emit("knobTurned", this.emitVal);
+      this.$emit("knobTurned", this.emitValue);
     },
 
     moveKnob(e) {
@@ -125,7 +114,6 @@ export default {
     },
 
     onMouseDown(e) {
-      this.turning = true;
       this.startY = e.clientY;
       this.lastYPos = e.clientY;
       window.addEventListener("mousemove", this.moveKnob);
@@ -135,20 +123,28 @@ export default {
     },
 
     onMouseUp() {
-      this.turning = false;
       window.removeEventListener("mousemove", this.moveKnob);
     },
 
     onKeydown(e) {
-      if (e.key === "Control") {
-        this.fineTunning = true;
-      }
+      if (e.key === "Control") this.fineTunning = true;
     },
 
     onKeyup(e) {
-      if (e.key === "Control") {
-        this.fineTunning = false;
-      }
+      if (e.key === "Control") this.fineTunning = false;
+    },
+
+    setParamContraints(minVal, maxVal, initValue) {
+      this.min_v = parseFloat(minVal);
+      this.max_v = parseFloat(maxVal);
+
+      this.knobValue = Math.round(
+        initValue.map(this.min_v, this.max_v, this.minKnobVal, this.maxKnobVal)
+      );
+      this.initknobValue = this.knobValue;
+      this.emitValue = initValue.toFixed(2);
+      this.setKnobValueAndPosition(this.knobValue);
+      // console.log("knob val", this.knobValue);
     },
   },
 };
@@ -156,8 +152,7 @@ export default {
 
 <style lang="scss" scoped>
 .knob {
-  // height: 60px;
-  width: 40px;
+  width: 30px;
   margin: 0 auto;
   background: transparent;
   user-select: none;
@@ -170,8 +165,8 @@ export default {
 }
 
 .knob-inner {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border: 3px solid #111;
   border-radius: 50%;
   position: relative;
@@ -180,19 +175,19 @@ export default {
 
 .knob-handle {
   position: absolute;
-  background: #ff7a7a;
-  // border-radius: 50%;
-  // height: 10px;
-  // width: 10px;
-  transform: rotate(-45deg);
+  background: #445863;
+  border-bottom-left-radius: 3px;
+  border-top-left-radius: 3px;
+  transform: rotate(-50deg);
   height: 6px;
-  width: 10px;
+  width: 9px;
   left: -3px;
-  bottom: -2px;
+  bottom: -4px;
 }
 
 .value {
   margin-top: 0.3em;
+  font-size: 0.8rem;
 }
 
 .mapped-cmd {
@@ -202,6 +197,5 @@ export default {
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.7);
   font-size: 0.8rem;
-  // padding: .2em;
 }
 </style>

@@ -1,6 +1,6 @@
 const Node = require("./Node");
 
-const initialGain = 0.5
+const initialGain = 1
 const QMax = 30
 const frequencyMax = 7000
 // const detuneMax = 100

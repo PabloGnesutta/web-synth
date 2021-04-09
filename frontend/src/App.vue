@@ -45,8 +45,7 @@ body {
 }
 
 .track::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 5px grey;
-  // background: grey;
+  box-shadow: inset 0 0 3px grey;
 }
 
 .track::-webkit-scrollbar-thumb {
