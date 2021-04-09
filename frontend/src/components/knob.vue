@@ -1,7 +1,17 @@
 <template>
-  <div class="knob" @mousedown="onMouseDown">
-    <div class="knob-inner" :style="`transform: rotate(${deg}deg)`">
+  <div
+    class="knob"
+    :class="{ mapping: thisIsMapping }"
+    @mousedown="onMouseDown"
+  >
+    <div
+      class="knob-inner"
+      :style="`transform: rotate(${deg}deg); border-color: ${trackColor};`"
+    >
       <div class="knob-handle"></div>
+    </div>
+    <div class="mapped-cmd" v-if="appIsMapping">
+      {{ mappedCmd }}
     </div>
     <div class="value set-default-value pointer" @click="valueClicked">
       <div>{{ emitVal }}</div>
@@ -10,6 +20,7 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 export default {
   data() {
     return {
@@ -29,13 +40,21 @@ export default {
       fineTuneStep: 0.1,
 
       deg: 0,
+      trackColor: "#111",
       maxTurningDeg: 260,
       min_v: 0,
       max_v: 127,
+
+      thisIsMapping: false,
+      mappedCmd: null,
     };
   },
 
   props: ["minVal", "maxVal", "initVal"],
+
+  computed: {
+    ...mapGetters(["appIsMapping"]),
+  },
 
   mounted() {
     this.min_v = parseFloat(this.minVal);
@@ -46,6 +65,8 @@ export default {
     );
     this.initknobValue = this.knobValue;
     this.deg = this.knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
+    const r = this.knobValue.map(0, this.maxKnobVal, 10, 150);
+    this.trackColor = `rgb(0, ${r}, ${r});`;
     this.emitVal = initVal.toFixed(2);
   },
 
@@ -57,6 +78,8 @@ export default {
     setKnobValueAndPosition(value) {
       this.knobValue = value;
       this.deg = value.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
+      const r = value.map(0, this.maxKnobVal, 10, 150);
+      this.trackColor = `rgb(0, ${r}, ${r});`;
 
       this.emitVal = value
         .map(0, this.maxKnobVal, this.min_v, this.max_v)
@@ -71,11 +94,29 @@ export default {
 
       this.lastYPos = e.clientY;
 
-      console.log(this.fineTunning);
       const amount = this.fineTunning ? this.fineTuneStep : 1;
 
       let knobValue =
         translation > 0 ? this.knobValue + amount : this.knobValue - amount;
+
+      if (knobValue < this.minKnobVal) knobValue = this.minKnobVal;
+      if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
+
+      this.setKnobValueAndPosition(knobValue);
+    },
+
+    startMapping() {
+      this.thisIsMapping = true;
+    },
+    stopMapping() {
+      this.thisIsMapping = false;
+    },
+    assignMap(cmd, note) {
+      this.mappedCmd = cmd + "/" + note;
+    },
+
+    receiveMidi(value) {
+      let knobValue = value;
 
       if (knobValue < this.minKnobVal) knobValue = this.minKnobVal;
       if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
@@ -120,6 +161,12 @@ export default {
   margin: 0 auto;
   background: transparent;
   user-select: none;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.knob.mapping {
+  border: 1px solid yellow;
 }
 
 .knob-inner {
@@ -146,5 +193,15 @@ export default {
 
 .value {
   margin-top: 0.3em;
+}
+
+.mapped-cmd {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  font-size: 0.8rem;
+  // padding: .2em;
 }
 </style>

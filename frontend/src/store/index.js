@@ -5,8 +5,19 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
+    appIsMapping: false
   },
+
+  getters: {
+    appIsMapping: (state) => {
+      return state.appIsMapping
+    }
+  },
+
   mutations: {
+    setAppIsMapping: (state, payload) => {
+      state.appIsMapping = payload
+    }
   },
   actions: {
   },

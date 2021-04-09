@@ -11,6 +11,7 @@
         <div class="btn" @click="createDelay">Delay</div>
         <div class="btn" @click="createGain">Gain</div>
         <div class="btn" @click="save">GUARDAR</div>
+        <div class="btn btn-2" @click="toggleMapping">MAP</div>
       </div>
     </div>
 
@@ -86,8 +87,12 @@
                 :class="getCssNodeName(node.name + ' Level')"
               >
                 <h4 class="param-name" @click="levelClicked(node)">Level</h4>
-                <div class="knob-wrapper">
+                <div
+                  class="knob-wrapper"
+                  @click="knobClicked(node.name + '-level')"
+                >
                   <knob
+                    :ref="node.name + '-level'"
                     :minVal="node.minGain"
                     :maxVal="node.maxGain"
                     :initVal="node.gain"
@@ -118,8 +123,12 @@
                       {{ audioParam.name }}
                     </div>
 
-                    <div class="knob-wrapper">
+                    <div
+                      class="knob-wrapper"
+                      @click="knobClicked(node.name + '-' + audioParam.name)"
+                    >
                       <knob
+                        :ref="node.name + '-' + audioParam.name"
                         :minVal="audioParam.minValue"
                         :maxVal="audioParam.maxValue"
                         :initVal="audioParam.defaultValue"
@@ -163,8 +172,14 @@
                       {{ innerNodeAudioParam.name }}
                     </div>
 
-                    <div class="knob-wrapper">
+                    <div
+                      class="knob-wrapper"
+                      @click="
+                        knobClicked(node.name + '-' + innerNodeAudioParam.name)
+                      "
+                    >
                       <knob
+                        :ref="node.name + '-' + innerNodeAudioParam.name"
                         :minVal="innerNodeAudioParam.minValue"
                         :maxVal="innerNodeAudioParam.maxValue"
                         :initVal="innerNodeAudioParam.defaultValue"
@@ -197,8 +212,12 @@
                       {{ customParam.name }}
                     </div>
 
-                    <div class="knob-wrapper">
+                    <div
+                      class="knob-wrapper"
+                      @click="knobClicked(node.name + '-' + customParam.name)"
+                    >
                       <knob
+                        :ref="node.name + '-' + customParam.name"
                         :minVal="customParam.minValue"
                         :maxVal="customParam.maxValue"
                         :initVal="customParam.defaultValue"
@@ -225,18 +244,22 @@
     <div class="section">
       <div class="section-inner Main-Gain">
         <h2 @click="mainGainClicked()">Main Gain</h2>
-        <knob
-          minVal="0"
-          maxVal="1"
-          :initVal="mainGainKnob"
-          @knobTurned="onMainGainKnobInput"
-        />
+        <div class="knob-wrapper" @click="knobClicked('MainGain')">
+          <knob
+            :ref="'MainGain'"
+            minVal="0"
+            maxVal="1"
+            :initVal="mainGainKnob"
+            @knobTurned="onMainGainKnobInput"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { mapMutations, mapGetters } from "vuex";
 import knob from "../components/knob";
 const Node = require("../class/Node");
 
@@ -275,18 +298,26 @@ export default {
       scaleInterfaces: [],
 
       keyEnabled: [],
+
+      inputs: [],
+      outputs: [],
+      maps: [],
+      mapping: true,
+      refBeignMapped: null,
     };
+  },
+
+  computed: {
+    ...mapGetters(["appIsMapping"]),
   },
 
   mounted() {
     this.keyEnabled = Array(222).fill(true);
+    navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
   },
 
   methods: {
-    knobTurned(val) {
-      console.log(val);
-    },
-
+    ...mapMutations(["setAppIsMapping"]),
     init() {
       if (this.context) return;
       this.inited = true;
@@ -490,6 +521,75 @@ export default {
       this.scaleInterfaces.forEach((si) => {
         si.processKeyup(e);
       });
+    },
+
+    // MIDI
+    toggleMapping() {
+      if (this.refBeignMapped) {
+        this.refBeignMapped.stopMapping();
+        this.refBeignMapped = null;
+      }
+      this.mapping = !this.mapping;
+      this.setAppIsMapping(this.mapping);
+      console.log(this.appIsMapping);
+    },
+
+    knobClicked(refName) {
+      if (!this.mapping) return;
+      if (this.refBeignMapped) {
+        this.refBeignMapped.stopMapping();
+        this.refBeignMapped = null;
+      }
+
+      const ref = this.$refs[refName][0] || this.$refs[refName];
+      this.refBeignMapped = ref;
+      ref.startMapping();
+    },
+
+    getMIDIMessage({ data }) {
+      const cmd = data[0];
+      const note = data[1];
+      const value = data[2];
+
+      if (this.mapping) {
+        let refName = this.refBeignMapped.$vnode.data.ref;
+        const exists = this.maps.find((m) => m.refName === refName);
+        if (!exists) {
+          this.maps.push({
+            refName,
+            cmd,
+            note,
+          });
+        } else {
+          exists.cmd = cmd;
+          exists.note = note;
+        }
+        const ref = this.$refs[refName][0] || this.$refs[refName];
+        ref.assignMap(cmd, note);
+        return;
+      } else {
+        const mappedItem = this.maps.find(
+          (m) => m.cmd === cmd && m.note === note
+        );
+        if (!mappedItem) return;
+        const ref =
+          this.$refs[mappedItem.refName][0] || this.$refs[mappedItem.refName];
+        ref.receiveMidi(value);
+      }
+    },
+
+    onMIDISuccess(midiAccess) {
+      // console.log("MIDI Access:", midiAccess);
+      this.inputs = midiAccess.inputs;
+      this.outputs = midiAccess.outputs;
+
+      for (var input of this.inputs.values()) {
+        input.onmidimessage = this.getMIDIMessage;
+      }
+    },
+
+    onMIDIFailure() {
+      console.log("Could not access your MIDI devices.");
     },
 
     paneScrolled(e) {

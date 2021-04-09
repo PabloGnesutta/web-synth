@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>MIDI</h1>
+    <h1>M I D I </h1>
   </div>
 </template>
 
@@ -19,10 +19,10 @@ export default {
   methods: {
     onMIDISuccess(midiAccess) {
       console.log("MIDI Access:", midiAccess);
-      this.inputs = midiAccess.inputs;
+      const inputs = midiAccess.inputs;
       this.outputs = midiAccess.outputs;
 
-      for (var input of this.inputs.values()) {
+      for (var input of inputs.values()) {
         input.onmidimessage = this.getMIDIMessage;
       }
     },
