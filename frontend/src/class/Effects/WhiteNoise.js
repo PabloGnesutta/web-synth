@@ -1,6 +1,6 @@
 const Node = require("../Node")
 
-const initialGain = 0.5
+const initialGain = 0
 const minMaxStep = [
   { name: 'playbackRate', minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.001 },
 ]

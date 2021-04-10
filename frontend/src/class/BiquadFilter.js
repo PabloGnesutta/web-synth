@@ -3,13 +3,10 @@ const Node = require("./Node");
 const initialGain = 1
 const QMax = 30
 const frequencyMax = 7000
-// const detuneMax = 100
 
 const audioParamContraints = [
   { name: 'frequency', minValue: 20, maxValue: frequencyMax, value: 0, defaultValue: 0, step: 1 },
   { name: 'Q', minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01 },
-  // { name: 'detune', minValue: -detuneMax, maxValue: detuneMax, value: 0, step: 1 },
-  // { name: 'gain', minValue: 0, maxValue: 1, value: 0.5, step: 0.01 },
 ]
 
 class BiquadFilter extends Node {

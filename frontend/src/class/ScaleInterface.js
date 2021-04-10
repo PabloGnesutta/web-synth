@@ -109,9 +109,9 @@ class ScaleInterface extends Node {
   initCustomParams() {
     //set destination node audio param
     const setDetune = (value) => {
-      console.log('set detune val', value)
       this.scaleNodes.forEach(sn => {
         sn.node.detune.setValueAtTime(value, 0)
+        sn.detuneValue = value
       })
     }
 

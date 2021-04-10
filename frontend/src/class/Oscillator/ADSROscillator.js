@@ -12,6 +12,8 @@ class ADSROscillator extends Oscillator {
     this.name = "ADSR " + ++ADSROscillator.ADSRCount
     this.nodeType = "ADSROscillator"
 
+    this.detuneValue = 0;
+
     this.ADSRGain = Node.context.createGain()
 
     this.peak = 1
@@ -35,6 +37,7 @@ class ADSROscillator extends Oscillator {
     this.node.type = this.oscType
 
     this.node.frequency.setValueAtTime(frequency, 0)
+    this.node.detune.value = this.detuneValue
     this.node.connect(this.ADSRGain)
 
     this.node.start(t0)

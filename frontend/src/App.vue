@@ -49,7 +49,7 @@ body {
 }
 
 .track::-webkit-scrollbar-thumb {
-  background: #131313;
+  background: #444;
 }
 
 #app {

@@ -16,7 +16,7 @@
     </div>
 
     <div class="tracks" :class="{ mapping: mapping }">
-      <div class="track">
+      <div class="track" v-for="track in tracks">
         <div class="nodes" :class="{ connecting: connecting }">
           <div
             class="node"
@@ -31,7 +31,7 @@
               </div>
               <!-- Types -->
               <div class="types" v-if="node.types">
-                <select @input="setType(node, $event)">
+                <select @input="setType(node, $event.target.value)">
                   <option
                     v-for="type in node.types"
                     :key="type"
@@ -91,7 +91,7 @@
                   class="knob-wrapper"
                   @click="knobClicked(node.name + '-level')"
                 >
-                  <knob
+                  <Knob
                     :ref="node.name + '-level'"
                     :minVal="node.minGain"
                     :maxVal="node.maxGain"
@@ -127,7 +127,7 @@
                       class="knob-wrapper"
                       @click="knobClicked(node.name + '-' + audioParam.name)"
                     >
-                      <knob
+                      <Knob
                         :ref="node.name + '-' + audioParam.name"
                         :minVal="audioParam.minValue"
                         :maxVal="audioParam.maxValue"
@@ -178,7 +178,7 @@
                         knobClicked(node.name + '-' + innerNodeAudioParam.name)
                       "
                     >
-                      <knob
+                      <Knob
                         :ref="node.name + '-' + innerNodeAudioParam.name"
                         :minVal="innerNodeAudioParam.minValue"
                         :maxVal="innerNodeAudioParam.maxValue"
@@ -216,7 +216,7 @@
                       class="knob-wrapper"
                       @click="knobClicked(node.name + '-' + customParam.name)"
                     >
-                      <knob
+                      <Knob
                         :ref="node.name + '-' + customParam.name"
                         :minVal="customParam.minValue"
                         :maxVal="customParam.maxValue"
@@ -233,19 +233,23 @@
             <div class="delete" @click="deleteNode(n)">X</div>
           </div>
         </div>
+        <!-- Node -->
+        <div class="track-gain"></div>
       </div>
+      <!-- /track -->
     </div>
+    <!-- /tracks -->
 
     <div class="scroll-pane" @scroll="paneScrolled">
       <div class="scroll-pane-inner"></div>
     </div>
 
     <!-- Main Gain -->
-    <div class="section">
+    <div class="section" v-if="inited">
       <div class="section-inner Main-Gain">
         <h2 @click="mainGainClicked()">Main Gain</h2>
         <div class="knob-wrapper" @click="knobClicked('MainGain')">
-          <knob
+          <Knob
             :ref="'MainGain'"
             minVal="0"
             maxVal="1"
@@ -259,10 +263,7 @@
 </template>
 
 <script>
-import { mapMutations, mapGetters } from "vuex";
-import Knob from "../components/Knob";
 const Node = require("../class/Node");
-
 const Gain = require("../class/Gain");
 const ScaleInterface = require("../class/ScaleInterface");
 const Modulator = require("../class/Oscillator/Modulator");
@@ -271,14 +272,19 @@ const ADSROscillator = require("../class/Oscillator/ADSROscillator");
 const WhiteNoise = require("../class/Effects/WhiteNoise");
 const BiquadFilter = require("../class/BiquadFilter");
 const Delay = require("../class/Effects/Delay");
+
+import { mapMutations, mapGetters } from "vuex";
+import NodeRender from "../components/NodeRender";
+import Knob from "../components/Knob";
+
 export default {
   name: "Home",
   data() {
     return {
-      knobValue: 0,
       inited: false,
       context: null,
 
+      tracks: [],
       nodes: [],
 
       originNode: null,
@@ -286,6 +292,7 @@ export default {
       originNodeIndex: null,
 
       trackGain: null,
+      trankGainDefaultVal: 0.4,
 
       mainGain: null,
       mainGainKnob: 0.5,
@@ -295,13 +302,13 @@ export default {
       scaleFilter: null,
       scaleInterface: {},
 
-      scaleInterfaces: [],
-
       keyEnabled: [],
+      keypressListeners: [],
 
+      //MIDI
+      maps: [],
       inputs: [],
       outputs: [],
-      maps: [],
       mapping: false,
       refBeignMapped: null,
     };
@@ -326,29 +333,10 @@ export default {
 
       this.createMainGain();
 
-      this.trackGain = new Gain("Track Gain");
-      this.trackGain.connectNativeNode(this.mainGain, "Main Gain");
-
-      this.scaleFilter = new BiquadFilter("highpass", "Scale Filter");
-      this.scaleFilter.connect(this.trackGain);
-
-      this.nodes.push(new Delay());
-      this.nodes.push(new WhiteNoise());
-      this.nodes.push(this.scaleFilter);
-      this.nodes.push(this.trackGain);
-
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.initScale();
-    },
-
-    initScale() {
-      const scaleInterface = new ScaleInterface("sawtooth");
-      scaleInterface.connect(this.scaleFilter);
-      this.nodes.unshift(scaleInterface);
-      this.scaleInterfaces.push(scaleInterface);
-      this.scaleInterface = scaleInterface;
+      this.initTrack();
     },
 
     startConnect(Node, n) {
@@ -443,13 +431,6 @@ export default {
       el.classList.remove("is-connection-destination");
     },
 
-    deleteNode(n) {
-      if (this.connecting) return;
-      this.nodes[n].destroy();
-      this.nodes.splice(n, 1);
-      //ver tema si es scale interface sacarlo del array
-    },
-
     setAudioParam(Node, audioParamIndex, value) {
       Node.setAudioParam(audioParamIndex, value);
     },
@@ -461,6 +442,21 @@ export default {
     setType(Node, e) {
       Node.setType(e.target.value);
       e.target.blur();
+      if (Node.audioParams.length > 0) {
+        this.setParamsConstraints(Node, Node.audioParams);
+      }
+
+      // if (Node.customParams) { //no seteo los custom params para no cambiar el ADSR
+      //   this.setParamsConstraints(Node, Node.customParams);
+      // }
+    },
+
+    setParamsConstraints(Node, params) {
+      params.forEach((p) => {
+        const refName = Node.name + "-" + p.name;
+        const ref = this.$refs[refName][0];
+        ref.setParamContraints(p.minValue, p.maxValue, p.defaultValue);
+      });
     },
 
     startOsc(Node) {
@@ -471,31 +467,76 @@ export default {
       if (!this.connecting) Node.stop(0);
     },
 
+    // CREATE NODES
+
+    initTrack() {
+      //track gain
+      this.trackGain = new Gain("Track Gain");
+      this.trackGain.setGain(0.4);
+      this.trackGain.connectNativeNode(this.mainGain, "Main Gain");
+      this.nodes.push(this.trackGain);
+
+      //instrument
+      const scaleInterface = new ScaleInterface("sawtooth");
+      scaleInterface.connect(this.trackGain);
+      this.nodes.push(scaleInterface);
+      this.keypressListeners.push(scaleInterface); //esto compensa midichannel
+
+      this.lastNodePushed = scaleInterface;
+      this.lastOutputConnected = this.trackGain;
+
+      this.tracks.push({
+        instrument: scaleInterface,
+        trackGain: this.trackGain,
+      });
+    },
+
+    pushNode(Node) {
+      const prev = this.nodes[this.nodes.length - 1];
+      const next = this.trackGain;
+      prev.disconnect();
+      prev.connect(Node);
+      Node.connect(next);
+      this.nodes.push(Node);
+    },
+
+    deleteNode(n) {
+      if (this.connecting) return;
+      const prev = this.nodes[n - 1];
+      const next = this.nodes[n + 1] || this.nodes[0]; //ultimo nodo, o si no track gain
+
+      prev.disconnect();
+      prev.connect(next);
+
+      this.nodes[n].destroy();
+      this.nodes.splice(n, 1);
+    },
+
     createCarrier() {
-      this.nodes.push(new Carrier());
+      this.pushNode(new Carrier());
     },
     createADSROscillator() {
-      this.nodes.push(new ADSROscillator("sawtooth", 330));
+      this.pushNode(new ADSROscillator("sawtooth", 330));
     },
     createModulator() {
-      this.nodes.push(new Modulator());
+      this.pushNode(new Modulator());
     },
     createBiquadFilter() {
-      this.nodes.push(new BiquadFilter());
+      this.pushNode(new BiquadFilter());
     },
     createGain() {
-      this.nodes.push(new Gain());
+      this.pushNode(new Gain());
     },
     createWiteNoise() {
-      this.nodes.push(new WhiteNoise());
+      this.pushNode(new WhiteNoise());
     },
     createDelay() {
-      this.nodes.push(new Delay());
+      this.pushNode(new Delay());
     },
     createPiano() {
       const scaleInterface = new ScaleInterface("sawtooth");
-      this.nodes.push(scaleInterface);
-      this.scaleInterfaces.push(scaleInterface);
+      this.pushNode(scaleInterface);
+      this.keypressListeners.push(scaleInterface);
     },
 
     createMainGain() {
@@ -511,14 +552,14 @@ export default {
     onKeydown(e) {
       if (!this.keyEnabled[e.keyCode]) return;
       this.keyEnabled[e.keyCode] = false;
-      this.scaleInterfaces.forEach((si) => {
+      this.keypressListeners.forEach((si) => {
         si.processKeydown(e);
       });
     },
 
     onKeyup(e) {
       this.keyEnabled[e.keyCode] = true;
-      this.scaleInterfaces.forEach((si) => {
+      this.keypressListeners.forEach((si) => {
         si.processKeyup(e);
       });
     },
@@ -625,11 +666,12 @@ export default {
 
   components: {
     Knob,
+    NodeRender,
   },
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .Home {
   min-height: 100vh;
 }
@@ -650,7 +692,7 @@ export default {
 
 .tracks {
   margin: 1em 0;
-  padding: 0.5em 0;
+  // padding: 0.5em 0.3em;
   border: 3px solid transparent;
 }
 
@@ -659,9 +701,11 @@ export default {
 }
 
 .track {
-  width: 99%;
-  margin: auto;
+  // width: 99%;
+  margin: 0 auto 0.5em;
   overflow-x: auto;
+  background: #222222;
+  padding: 0 0.5em;
 }
 
 .node.Track-Gain {
@@ -670,7 +714,7 @@ export default {
 }
 
 .nodes {
-  padding: 0 0 1em;
+  padding: 0.5em 0.2em;
   display: flex;
   align-items: center;
   gap: 1em;

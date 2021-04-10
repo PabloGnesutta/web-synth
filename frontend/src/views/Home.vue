@@ -2,267 +2,70 @@
   <div class="Home" @click="init">
     <div class="header" v-if="inited">
       <div class="buttons">
-        <div class="btn" @click="createPiano">Piano</div>
+        <div class="btn" @click="createInstrument('ScaleInterface')">Piano</div>
+        <div class="btn" @click="createInstrument('Carrier')">Oscillator</div>
+        <div class="btn" @click="createInstrument('WhiteNoise')">
+          White Noise
+        </div>
+        <br />
         <div class="btn" @click="createModulator">Modulator</div>
+        <br />
         <!-- <div class="btn" @click="createADSROscillator">ADSR Oscillator</div> -->
-        <div class="btn" @click="createCarrier">Oscillator</div>
-        <div class="btn" @click="createWiteNoise">White Noise</div>
-        <div class="btn" @click="createBiquadFilter">Filter</div>
-        <div class="btn" @click="createDelay">Delay</div>
-        <div class="btn" @click="createGain">Gain</div>
+        <div class="btn" @click="createEffect('BiquadFilter')">Filter</div>
+        <div class="btn" @click="createEffect('Delay')">Delay</div>
+        <div class="btn" @click="createEffect('Gain')">Gain</div>
+        <br />
+
         <div class="btn" @click="save">GUARDAR</div>
         <div class="btn btn-2" @click="toggleMapping">MAP</div>
       </div>
     </div>
 
-    <div class="tracks" :class="{ mapping: mapping }">
-      <div class="track">
-        <div class="nodes" :class="{ connecting: connecting }">
-          <div
-            class="node"
-            v-for="(node, n) in nodes"
-            :key="n"
-            :ref="'node-' + n"
-            :class="[node.nodeType, getCssNodeName(node.name)]"
-          >
-            <div class="node-header">
-              <div class="node-name" @click="nodeClicked(node, n)">
-                {{ node.name }}
-              </div>
-              <!-- Types -->
-              <div class="types" v-if="node.types">
-                <select @input="setType(node, $event)">
-                  <option
-                    v-for="type in node.types"
-                    :key="type"
-                    :selected="type === node.type"
-                  >
-                    {{ type }}
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div class="node-output">
-              <!-- Start/Stop -->
-              <div
-                class="start-stop"
-                v-if="
-                  node.nodeType === 'Carrier' ||
-                  node.nodeType === 'ADSROscillator'
-                "
-              >
-                <div
-                  class="start"
-                  v-if="node.status === 'STOPPED'"
-                  @click="startOsc(node)"
-                >
-                  START
-                </div>
-                <div class="stop" v-else @click="stopOsc(node)">STOP</div>
-              </div>
-              <!-- Connections -->
-              <div class="connections">
-                <div class="outputs" v-if="node.outputs.length > 0">
-                  <h5>Outputs</h5>
-                  <div
-                    class="output"
-                    v-for="output in node.outputs"
-                    @click="disconnect(node, output)"
-                    @mouseenter="onMouseEnterOutput(output)"
-                    @mouseleave="onMouseLeaveOutput(output)"
-                    :key="output.name"
-                  >
-                    <span>
-                      {{ output.name }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Level -->
-              <div
-                class="level"
-                v-if="node.level"
-                :class="getCssNodeName(node.name + ' Level')"
-              >
-                <div class="param-name" @click="levelClicked(node)">Level</div>
-                <div
-                  class="knob-wrapper"
-                  @click="knobClicked(node.name + '-level')"
-                >
-                  <knob
-                    :ref="node.name + '-level'"
-                    :minVal="node.minGain"
-                    :maxVal="node.maxGain"
-                    :initVal="node.gain"
-                    @knobTurned="setNodeGain(node, $event)"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="node-params">
-              <div class="params-wrapper">
-                <div
-                  class="audio-params params-container"
-                  v-if="node.audioParams.length > 0"
-                >
-                  <!-- Audio Params -->
-                  <p class="group-label">audio params</p>
-                  <div
-                    class="audio-param param"
-                    v-for="(audioParam, apIndex) in node.audioParams"
-                    :key="audioParam.name"
-                    :class="[getCssNodeName(node.name + ' ' + audioParam.name)]"
-                  >
-                    <div
-                      class="param-name"
-                      @click="audioParamClicked(node, audioParam)"
-                    >
-                      {{ audioParam.name }}
-                    </div>
-
-                    <div
-                      class="knob-wrapper"
-                      @click="knobClicked(node.name + '-' + audioParam.name)"
-                    >
-                      <knob
-                        :ref="node.name + '-' + audioParam.name"
-                        :minVal="audioParam.minValue"
-                        :maxVal="audioParam.maxValue"
-                        :initVal="audioParam.defaultValue"
-                        @knobTurned="setAudioParam(node, apIndex, $event)"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Inner Node Audio Params -->
-                <div
-                  class="inner-node-audio-params params-container"
-                  v-if="node.innerNodeAudioParams"
-                >
-                  <p class="group-label">inner node audio</p>
-                  <div
-                    class="inner-node-audio-param param"
-                    v-for="(
-                      innerNodeAudioParam, inapIndex
-                    ) in node.innerNodeAudioParams"
-                    :key="innerNodeAudioParam.name"
-                    :class="[
-                      getCssNodeName(
-                        node.name + ' ' + innerNodeAudioParam.name
-                      ),
-                      getCssNodeName(innerNodeAudioParam.name),
-                    ]"
-                  >
-                    <!-- la concatenaciión acá arriba tendría que eliminarse, y que construya el nombre en base a
-                  calcular el nombre del nodo más el nombre del parámetro -->
-                    <div
-                      class="param-name"
-                      @click="
-                        innerNodeAudioParamClicked(
-                          node,
-                          innerNodeAudioParam,
-                          inapIndex
-                        )
-                      "
-                    >
-                      {{ innerNodeAudioParam.name }}
-                    </div>
-
-                    <div
-                      class="knob-wrapper"
-                      @click="
-                        knobClicked(node.name + '-' + innerNodeAudioParam.name)
-                      "
-                    >
-                      <knob
-                        :ref="node.name + '-' + innerNodeAudioParam.name"
-                        :minVal="innerNodeAudioParam.minValue"
-                        :maxVal="innerNodeAudioParam.maxValue"
-                        :initVal="innerNodeAudioParam.defaultValue"
-                        @knobTurned="
-                          setInnerNodeAudioParam(node, inapIndex, $event)
-                        "
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Custom Params -->
-                <div
-                  class="custom-params params-container"
-                  v-if="node.customParams"
-                >
-                  <p class="group-label">custom</p>
-                  <div
-                    class="custom-param param"
-                    v-for="(customParam, cpIndex) in node.customParams"
-                    :key="customParam.name"
-                    :class="[
-                      getCssNodeName(node.name + ' ' + customParam.name),
-                    ]"
-                  >
-                    <div
-                      class="param-name"
-                      @click="customParamClicked(node, customParam, cpIndex)"
-                    >
-                      {{ customParam.name }}
-                    </div>
-
-                    <div
-                      class="knob-wrapper"
-                      @click="knobClicked(node.name + '-' + customParam.name)"
-                    >
-                      <knob
-                        :ref="node.name + '-' + customParam.name"
-                        :minVal="customParam.minValue"
-                        :maxVal="customParam.maxValue"
-                        :initVal="customParam.defaultValue"
-                        @knobTurned="setCustomParam(node, cpIndex, $event)"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- DELETE -->
-            <div class="delete" @click="deleteNode(n)">X</div>
-          </div>
+    <!-- TRACKS -->
+    <div class="tracks" :class="{ mapping: mapping }" v-if="inited">
+      <div class="track" v-for="(track, t) in tracks" :key="track.name">
+        <!-- Instrument -->
+        <div class="track-instrument">
+          <NodeRender :Node="track.instrument" />
         </div>
+        <!-- Effects -->
+        <div class="nodes">
+          <NodeRender
+            v-for="(Node, n) in track.effects"
+            :Node="Node"
+            :key="n"
+            :ref="'Node-' + n"
+            @deleteNode="deleteNode(t, n)"
+            @levelClicked="levelClicked(Node)"
+          />
+        </div>
+        <!-- Track Gain -->
+        <NodeRender :Node="track.trackGain" />
       </div>
-    </div>
-
-    <div class="scroll-pane" @scroll="paneScrolled">
-      <div class="scroll-pane-inner"></div>
     </div>
 
     <!-- Main Gain -->
-    <div class="section" v-if="inited">
-      <div class="section-inner Main-Gain">
-        <h2 @click="mainGainClicked()">Main Gain</h2>
-        <div class="knob-wrapper" @click="knobClicked('MainGain')">
-          <knob
-            :ref="'MainGain'"
-            minVal="0"
-            maxVal="1"
-            :initVal="mainGainKnob"
-            @knobTurned="onMainGainKnobInput"
-          />
-        </div>
+    <div class="section-inner Main-Gain" v-if="inited">
+      <h2 @click="mainGainClicked()">Main Gain</h2>
+      <div class="knob-wrapper" @click="knobClicked('MainGain')">
+        <Knob
+          :ref="'MainGain'"
+          minVal="0"
+          maxVal="1"
+          :initVal="mainGainKnob"
+          @knobTurned="onMainGainKnobInput"
+        />
       </div>
     </div>
+
+    <!-- <div class="scroll-pane" @scroll="paneScrolled">
+      <div class="scroll-pane-inner"></div>
+    </div> -->
   </div>
 </template>
 
 <script>
-import { mapMutations, mapGetters } from "vuex";
-import knob from "../components/knob";
 const Node = require("../class/Node");
-
 const Gain = require("../class/Gain");
 const ScaleInterface = require("../class/ScaleInterface");
 const Modulator = require("../class/Oscillator/Modulator");
@@ -271,6 +74,23 @@ const ADSROscillator = require("../class/Oscillator/ADSROscillator");
 const WhiteNoise = require("../class/Effects/WhiteNoise");
 const BiquadFilter = require("../class/BiquadFilter");
 const Delay = require("../class/Effects/Delay");
+
+const instrumentsDict = new Map([
+  ["ScaleInterface", ScaleInterface],
+  ["WhiteNoise", WhiteNoise],
+  ["Carrier", Carrier],
+]);
+
+const effectsDict = new Map([
+  ["BiquadFilter", BiquadFilter],
+  ["Delay", Delay],
+  ["Gain", Gain],
+]);
+
+import { mapMutations, mapGetters } from "vuex";
+import NodeRender from "../components/NodeRender";
+import Knob from "../components/Knob";
+
 export default {
   name: "Home",
   data() {
@@ -291,11 +111,6 @@ export default {
       mainGain: null,
       mainGainKnob: 0.5,
 
-      scaleNodes: [],
-      scaleGain: null,
-      scaleFilter: null,
-      scaleInterface: {},
-
       keyEnabled: [],
       keypressListeners: [],
 
@@ -305,6 +120,11 @@ export default {
       outputs: [],
       mapping: false,
       refBeignMapped: null,
+
+      trackCount: 0,
+      currentTrack: 0,
+
+      globalEnvironment: window,
     };
   },
 
@@ -330,8 +150,85 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.initTrack();
+      const scaleInterface = new ScaleInterface("sawtooth");
+
+      this.createNewTrack(scaleInterface);
     },
+
+    createNewTrack(instrumentNode) {
+      //track gain
+      this.trackGain = new Gain("Track Gain");
+      this.trackGain.setGain(0.4);
+      this.trackGain.connectNativeNode(this.mainGain, "Main Gain");
+
+      //instrument
+      instrumentNode.connect(this.trackGain);
+      if (instrumentNode.nodeType === "ScaleInterface")
+        this.keypressListeners.push(instrumentNode); //esto compensa midichannel
+
+      this.tracks.push({
+        name: ++this.trackCount,
+        instrument: instrumentNode,
+        effects: [],
+        trackGain: this.trackGain,
+      });
+
+      this.currentTrack = 0;
+    },
+
+    insertEffect(Node) {
+      const effects = this.tracks[this.currentTrack].effects;
+      const prev =
+        effects[effects.length - 1] ||
+        this.tracks[this.currentTrack].instrument;
+
+      const next = this.tracks[this.currentTrack].trackGain;
+
+      prev.disconnect();
+      prev.connect(Node);
+      Node.connect(next);
+      effects.push(Node);
+    },
+
+    deleteNode(t, n) {
+      if (this.connecting) return;
+      const effects = this.tracks[t].effects;
+
+      const prev = effects[n - 1] || this.tracks[t].instrument;
+
+      console.log("prev", prev);
+      const next = effects[n + 1] || this.tracks[t].trackGain; //ultimo nodo, o si no track gain
+
+      prev.disconnect();
+      prev.connect(next);
+
+      effects[n].destroy();
+      effects.splice(n, 1);
+    },
+
+    // CREATE NODES
+
+    createEffect(className) {
+      const Node = new (effectsDict.get(className))();
+      this.insertEffect(Node);
+    },
+
+    createInstrument(className) {
+      const Node = new (instrumentsDict.get(className))();
+      this.createNewTrack(Node);
+    },
+
+    createModulator() {
+      this.insertEffect(new Modulator());
+    },
+
+    createPiano() {
+      const scaleInterface = new ScaleInterface("sawtooth");
+      this.insertEffect(scaleInterface);
+      this.keypressListeners.push(scaleInterface);
+    },
+
+    // Connect
 
     startConnect(Node, n) {
       this.connecting = true;
@@ -363,6 +260,12 @@ export default {
       this.stopConnect("Connected");
     },
 
+    mainGainClicked() {
+      // if (!this.connecting) return;
+      // this.originNode.connectNativeNode(this.mainGain, "Main Gain");
+      // this.stopConnect("Connected");
+    },
+
     levelClicked(Node) {
       if (!this.connecting) return;
       if (Node.name === this.originNode.name)
@@ -372,32 +275,15 @@ export default {
       this.stopConnect("Connected");
     },
 
-    mainGainClicked() {
-      if (!this.connecting) return;
-      this.originNode.connectNativeNode(this.mainGain, "Main Gain");
-      this.stopConnect("Connected");
-    },
-
-    // Inner Node Audio & Custom Params
-
     innerNodeAudioParamClicked(Node, customParam, inapIndex) {
       if (!this.connecting) return;
       this.originNode.connectInnerNodeAudioParam(Node, customParam, inapIndex);
       this.stopConnect("Connected");
     },
 
-    setInnerNodeAudioParam(Node, inapIndex, value) {
-      Node.setInnerNodeAudioParam(inapIndex, value);
-    },
-
     customParamClicked() {
       if (!this.connecting) return;
       console.log("connect custom param not available yet");
-    },
-
-    setCustomParam(Node, cpIndex, value) {
-      // console.log(Node.customParams[cpIndex], value)
-      Node.setCustomParam(cpIndex, value);
     },
 
     stopConnect(msg) {
@@ -424,109 +310,6 @@ export default {
     onMouseLeaveOutput(output) {
       const el = document.querySelector("." + this.getCssNodeName(output.name));
       el.classList.remove("is-connection-destination");
-    },
-
-    setAudioParam(Node, audioParamIndex, value) {
-      Node.setAudioParam(audioParamIndex, value);
-    },
-
-    setNodeGain(Node, value) {
-      Node.setGain(value);
-    },
-
-    setType(Node, e) {
-      Node.setType(e.target.value);
-      e.target.blur();
-      if (Node.audioParams.length > 0) {
-        this.setParamsConstraints(Node, Node.audioParams);
-      }
-
-      // if (Node.customParams) { //no seteo los custom params para no cambiar el ADSR
-      //   this.setParamsConstraints(Node, Node.customParams);
-      // }
-    },
-
-    setParamsConstraints(Node, params) {
-      params.forEach((p) => {
-        const refName = Node.name + "-" + p.name;
-        const ref = this.$refs[refName][0];
-        ref.setParamContraints(p.minValue, p.maxValue, p.defaultValue);
-      });
-    },
-
-    startOsc(Node) {
-      if (!this.connecting) Node.start(0);
-    },
-
-    stopOsc(Node) {
-      if (!this.connecting) Node.stop(0);
-    },
-
-    // CREATE NODES
-
-    initTrack() {
-      //track gain
-      this.trackGain = new Gain("Track Gain");
-      this.trackGain.setGain(0.4);
-      this.trackGain.connectNativeNode(this.mainGain, "Main Gain");
-      this.nodes.push(this.trackGain);
-
-      //instrument
-      const scaleInterface = new ScaleInterface("sawtooth");
-      scaleInterface.connect(this.trackGain);
-      this.nodes.push(scaleInterface);
-      this.keypressListeners.push(scaleInterface); //esto compensa midichannel
-
-      this.lastNodePushed = scaleInterface;
-      this.lastOutputConnected = this.trackGain;
-    },
-
-    pushNode(Node) {
-      const prev = this.nodes[this.nodes.length - 1];
-      const next = this.trackGain;
-      prev.disconnect();
-      prev.connect(Node);
-      Node.connect(next);
-      this.nodes.push(Node);
-    },
-
-    deleteNode(n) {
-      if (this.connecting) return;
-      const prev = this.nodes[n - 1];
-      const next = this.nodes[n + 1] || this.nodes[0]; //ultimo nodo, o si no track gain
-
-      prev.disconnect();
-      prev.connect(next);
-
-      this.nodes[n].destroy();
-      this.nodes.splice(n, 1);
-    },
-
-    createCarrier() {
-      this.pushNode(new Carrier());
-    },
-    createADSROscillator() {
-      this.pushNode(new ADSROscillator("sawtooth", 330));
-    },
-    createModulator() {
-      this.pushNode(new Modulator());
-    },
-    createBiquadFilter() {
-      this.pushNode(new BiquadFilter());
-    },
-    createGain() {
-      this.pushNode(new Gain());
-    },
-    createWiteNoise() {
-      this.pushNode(new WhiteNoise());
-    },
-    createDelay() {
-      this.pushNode(new Delay());
-    },
-    createPiano() {
-      const scaleInterface = new ScaleInterface("sawtooth");
-      this.pushNode(scaleInterface);
-      this.keypressListeners.push(scaleInterface);
     },
 
     createMainGain() {
@@ -623,15 +406,15 @@ export default {
       console.log("Could not access your MIDI devices.");
     },
 
-    paneScrolled(e) {
-      if (!this.inited) return;
+    // paneScrolled(e) {
+    //   if (!this.inited) return;
 
-      let x = e.srcElement.scrollLeft;
-      let y = e.srcElement.scrollTop;
+    //   let x = e.srcElement.scrollLeft;
+    //   let y = e.srcElement.scrollTop;
 
-      this.scaleFilter.setAudioParam(0, x * 10);
-      this.scaleFilter.setAudioParam(2, y - 30);
-    },
+    //   this.scaleFilter.setAudioParam(0, x * 10);
+    //   this.scaleFilter.setAudioParam(2, y - 30);
+    // },
 
     save() {
       let count = localStorage.getItem("websynth-count");
@@ -640,7 +423,7 @@ export default {
 
       localStorage.setItem(
         "websynth_save_" + count,
-        JSON.stringify(this.nodes)
+        JSON.stringify(this.tracks)
       );
     },
 
@@ -655,12 +438,13 @@ export default {
   },
 
   components: {
-    knob,
+    Knob,
+    NodeRender,
   },
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .Home {
   min-height: 100vh;
 }
@@ -681,7 +465,7 @@ export default {
 
 .tracks {
   margin: 1em 0;
-  padding: 0.5em 0;
+  // padding: 0.5em 0.3em;
   border: 3px solid transparent;
 }
 
@@ -690,18 +474,21 @@ export default {
 }
 
 .track {
-  width: 99%;
-  margin: auto;
+  // width: 99%;
+  margin: 0 auto 1em;
   overflow-x: auto;
+  background: #111;
+  padding: 0.5em;
+
+  display: flex;
+  gap: 1em;
 }
 
-.node.Track-Gain {
-  order: 1;
-  z-index: 1;
+.track-gain {
 }
 
 .nodes {
-  padding: 0 0 1em;
+  // padding: 0.5em 0.2em;
   display: flex;
   align-items: center;
   gap: 1em;

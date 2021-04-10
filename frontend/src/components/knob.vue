@@ -43,6 +43,7 @@ export default {
       maxTurningDeg: 278,
       min_v: 0,
       max_v: 127,
+      defaultValue: null,
 
       thisIsMapping: false,
       mappedCmd: null,
@@ -62,18 +63,26 @@ export default {
   methods: {
     valueClicked() {
       this.setKnobValueAndPosition(parseFloat(this.initknobValue));
+      this.emitAndSetEmitValueWithRawValue(this.defaultValue);
     },
 
-    setKnobValueAndPosition(value) {
-      this.knobValue = value;
-      this.deg = value.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
-      const r = value.map(0, this.maxKnobVal, 10, 150);
+    setKnobValueAndPosition(knobValue) {
+      this.knobValue = knobValue;
+      this.deg = knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
+      const r = knobValue.map(0, this.maxKnobVal, 10, 150);
       this.trackColor = `rgb(0, ${r}, ${r});`;
+    },
 
-      this.emitValue = value
+    emitAndSetEmitValueWithKnobValue(knobValue) {
+      this.emitValue = knobValue
         .map(0, this.maxKnobVal, this.min_v, this.max_v)
         .toFixed(2);
 
+      this.$emit("knobTurned", this.emitValue);
+    },
+
+    emitAndSetEmitValueWithRawValue(value) {
+      this.emitValue = value.toFixed(2);
       this.$emit("knobTurned", this.emitValue);
     },
 
@@ -92,6 +101,7 @@ export default {
       if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
 
       this.setKnobValueAndPosition(knobValue);
+      this.emitAndSetEmitValueWithKnobValue(knobValue);
     },
 
     startMapping() {
@@ -141,10 +151,13 @@ export default {
       this.knobValue = Math.round(
         initValue.map(this.min_v, this.max_v, this.minKnobVal, this.maxKnobVal)
       );
+
+      this.defaultValue = initValue;
       this.initknobValue = this.knobValue;
       this.emitValue = initValue.toFixed(2);
+
       this.setKnobValueAndPosition(this.knobValue);
-      // console.log("knob val", this.knobValue);
+      this.$emit("knobTurned", this.emitValue);
     },
   },
 };
