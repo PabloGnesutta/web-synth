@@ -18,7 +18,7 @@ class ScaleInterface extends Node {
     this.name = name || "Justinton " + ++ScaleInterface.SICOunt
     this.nodeType = "ScaleInterface"
     this.types = ["sine", "triangle", "sawtooth", "square"]
-    this.type = tpye || this.types[0]
+    this.type = tpye || "sawtooth"
 
     this.octave = 3
     this.transpose = 0

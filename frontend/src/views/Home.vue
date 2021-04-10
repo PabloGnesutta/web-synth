@@ -23,7 +23,13 @@
 
     <!-- TRACKS -->
     <div class="tracks" :class="{ mapping: mapping }" v-if="inited">
-      <div class="track" v-for="(track, t) in tracks" :key="track.name">
+      <div
+        class="track"
+        :key="track.name"
+        v-for="(track, t) in tracks"
+        :class="{ 'is-current-track': currentTrack === t }"
+        @click.self="trackClicked(t)"
+      >
         <!-- Instrument -->
         <div class="track-instrument">
           <NodeRender :Node="track.instrument" />
@@ -35,7 +41,7 @@
             :Node="Node"
             :key="n"
             :ref="'Node-' + n"
-            @deleteNode="deleteNode(t, n)"
+            @deleteNode="deleteEffect(t, n)"
             @levelClicked="levelClicked(Node)"
           />
         </div>
@@ -190,7 +196,7 @@ export default {
       effects.push(Node);
     },
 
-    deleteNode(t, n) {
+    deleteEffect(t, n) {
       if (this.connecting) return;
       const effects = this.tracks[t].effects;
 
@@ -228,6 +234,10 @@ export default {
       this.keypressListeners.push(scaleInterface);
     },
 
+    trackClicked(t) {
+      console.log("track clicked");
+      this.currentTrack = t;
+    },
     // Connect
 
     startConnect(Node, n) {
@@ -482,6 +492,12 @@ export default {
 
   display: flex;
   gap: 1em;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease-out;
+}
+
+.track.is-current-track {
+  border: 1px solid teal;
 }
 
 .track-gain {
