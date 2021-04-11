@@ -6,7 +6,9 @@ class Oscillator extends Node {
 
     this.nodeType = "Oscillator"
     this.types = ['sine', 'triangle', 'sawtooth', 'square']
-    this.oscType = type || this.types[0]
+    this.oscType = type || 'triangle'
+
+    //falta setear el type inicial en el dropdown
 
     this.frequency = frequency || '440'
 

@@ -14,6 +14,7 @@
       {{ mappedCmd }}
     </div>
     <div class="value set-default-value pointer" @click="valueClicked">
+      <!-- <div>{{ knobValue }}</div> -->
       <div>{{ emitValue }}</div>
     </div>
   </div>
@@ -35,8 +36,9 @@ export default {
       emitValue: 0,
 
       calib: 2,
-      fineTunning: false,
+      ctrlPressed: false,
       fineTuneStep: 0.1,
+      finerTuneStep: 0.01,
 
       deg: 0,
       trackColor: "#111",
@@ -89,10 +91,17 @@ export default {
     moveKnob(e) {
       let translation = this.lastYPos - e.clientY;
       if (translation < this.calib && translation > -this.calib) return;
-
       this.lastYPos = e.clientY;
 
-      const amount = this.fineTunning ? this.fineTuneStep : 1;
+      let amount = 1;
+      if (this.ctrlPressed || this.shiftPressed) {
+        amount = this.fineTuneStep;
+        if (this.ctrlPressed && this.shiftPressed) {
+          amount = 0.05;
+        }
+      }
+
+      // const amount = this.ctrlPressed ? this.fineTuneStep : 1;fa
 
       let knobValue =
         translation > 0 ? this.knobValue + amount : this.knobValue - amount;
@@ -102,6 +111,7 @@ export default {
 
       this.setKnobValueAndPosition(knobValue);
       this.emitAndSetEmitValueWithKnobValue(knobValue);
+      // this.emitAndSetEmitValueWithRawValue(knobValue);
     },
 
     startMapping() {
@@ -137,11 +147,13 @@ export default {
     },
 
     onKeydown(e) {
-      if (e.key === "Control") this.fineTunning = true;
+      if (e.key === "Control") this.ctrlPressed = true;
+      if (e.key === "Shift") this.shiftPressed = true;
     },
 
     onKeyup(e) {
-      if (e.key === "Control") this.fineTunning = false;
+      if (e.key === "Control") this.ctrlPressed = false;
+      if (e.key === "Shift") this.shiftPressed = false;
     },
 
     setParamContraints(minVal, maxVal, initValue) {

@@ -2,9 +2,11 @@ const Oscillator = require("./Oscillator")
 
 const initialGain = 0.5
 const detuneMax = 100
+const initFreq = 220
+
 
 const minMaxStep = [
-  { name: 'frequency', minValue: 20, maxValue: 7000, value: 220, defaultValue: 220, step: 1 },
+  { name: 'frequency', minValue: 20, maxValue: 7000, value: initFreq, defaultValue: initFreq, step: 1 },
   { name: 'detune', minValue: -detuneMax, maxValue: detuneMax, value: 0, defaultValue: 0, step: 0.1 },
 ]
 
@@ -12,7 +14,7 @@ class Carrier extends Oscillator {
   static carrierCount = 0
 
   constructor(type, frequency) {
-    super(type, frequency)
+    super(type, frequency || initFreq)
 
     this.name = "Carr " + ++Carrier.carrierCount
     this.nodeType = "Carrier"

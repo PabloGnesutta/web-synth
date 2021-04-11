@@ -34,6 +34,7 @@ class Node {
   connect(Node) {
     this.outputNode.connect(Node.node)
     this.outputs.push({ name: Node.name, node: Node.node })
+    return Node
   }
 
   connectNativeNode(node, name) {
@@ -43,6 +44,7 @@ class Node {
 
   disconnect() {
     this.disconnectOutput(this.outputs[0].node)
+    return this
   }
 
   disconnectOutput(output) {

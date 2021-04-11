@@ -18,7 +18,7 @@ class BiquadFilter extends Node {
     this.name = name || "Filter " + ++BiquadFilter.bqCount
     this.nodeType = "BiquadFilter"
 
-    this.types = ['lowpass', 'highpass', 'bandpass', 'notch']
+    this.types = ['lowpass', 'highpass', 'bandpass', 'notch', 'lowshelf', 'highshelf', 'peaking']
     this.type = type || this.types[0]
 
     this.node = Node.context.createBiquadFilter()
@@ -79,6 +79,10 @@ class BiquadFilter extends Node {
         break;
       default:
         freq = 0
+        q.minValue = -100
+        q.maxValue = 100
+        q.value = 0
+        q.step = 0.01
     }
     //freq
     audioParamContraints[0].value = freq
