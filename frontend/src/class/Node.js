@@ -98,10 +98,10 @@ class Node {
     this.outputs.push({ name: Node.name + ' Level', node: Node.outputNode })
   }
 
-  connectDelay(Delay) {
-    Delay.connectNativeNode(this.outputs[0].node, this.outputs[0].name)
-    this.disconnectOutput(this.outputs[0].node)
-  }
+  // connectDelay(Delay) {
+  //   Delay.connectNativeNode(this.outputs[0].node, this.outputs[0].name)
+  //   this.disconnectOutput(this.outputs[0].node)
+  // }
 
   setGain(value, time) {
     this.outputNode.gain.setValueAtTime(value, time || 0)

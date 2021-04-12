@@ -140,6 +140,10 @@
       <div class="recordings">
         <!-- <div class="recording" v-for="recording in recordings"></div> -->
       </div>
+
+      <div>
+        <canvas id="displaycanvas" width="1200px" height="300px"></canvas>
+      </div>
     </div>
   </div>
 </template>
@@ -172,6 +176,7 @@ const effectsDict = new Map([
 import { mapMutations, mapGetters } from "vuex";
 import NodeRender from "../components/NodeRender";
 import Knob from "../components/Knob";
+import { context } from "../class/Node";
 
 export default {
   name: "Home",
@@ -300,11 +305,44 @@ export default {
           source,
           gain,
         });
+
+        this.displayBuffer(audioBuffer);
       });
 
       this.blobs.forEach((blob) => {
         console.log(URL.createObjectURL(blob)); //set as audio src
       });
+    },
+
+    displayBuffer(buff) {
+      console.log(buff);
+      const canvas = document.getElementById("displaycanvas");
+      canvas.width = buff.duration * 100;
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const context = canvas.getContext("2d");
+      var leftChannel = buff.getChannelData(0); // Float32Array describing left channel
+
+      var lineOpacity = canvasWidth / leftChannel.length;
+      context.save();
+      context.fillStyle = "#222";
+      context.fillRect(0, 0, canvasWidth, canvasHeight);
+      context.strokeStyle = "#122";
+      context.globalCompositeOperation = "lighter";
+      context.translate(0, canvasHeight / 2);
+      context.globalAlpha = 0.06; // lineOpacity ;
+      for (var i = 0; i < leftChannel.length; i++) {
+        // on which line do we get ?
+        var x = Math.floor((canvasWidth * i) / leftChannel.length);
+        var y = (leftChannel[i] * canvasHeight) / 2 - 2;
+        // console.log(leftChannel[i])
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x + 1, y);
+        context.stroke();
+      }
+      context.restore();
+      console.log("done");
     },
 
     stopPlaying() {

@@ -29,13 +29,11 @@ class Delay extends Node {
     this.feedbackGain.gain.value = initialFeddback;
 
     this.bypass = Node.context.createGain();
-    this.bypass.gain.value = 1;
+    this.wetGain = Node.context.createGain();
+    this.dryGain = Node.context.createGain();
 
     this.delay.connect(this.feedbackGain);
     this.feedbackGain.connect(this.delay);
-
-    this.wetGain = Node.context.createGain();
-    this.wetGain.gain.value = 1;
 
     this.delay.connect(this.wetGain);
     this.wetGain.connect(this.bypass);
@@ -43,14 +41,10 @@ class Delay extends Node {
     this.node = Node.context.createGain();
     this.node.connect(this.feedbackGain)
 
-    this.dryGain = Node.context.createGain();
-    this.dryGain.gain.value = 1;
     this.dryGain.connect(this.bypass)
 
     this.node.connect(this.dryGain)
 
-
-    // super.getAudioParams()
     this.initGain(initialGain)
     this.initInnerNodeAudioParams()
     this.initCustomParams()

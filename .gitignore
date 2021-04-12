@@ -1,6 +1,7 @@
 .DS_Store
 node_modules
 /dist
+backend/public
 locals.js
 locals.json
 package-lock.json
