@@ -40,6 +40,16 @@ body {
   color: #f3f3f3;
 }
 
+select {
+  background: gray;
+  color: #f3f3f3;
+}
+
+select:focus {
+  outline: none;
+  border: none;
+}
+
 .track-inner::-webkit-scrollbar {
   height: 8px;
 }
@@ -49,7 +59,7 @@ body {
 }
 
 .track-inner::-webkit-scrollbar-thumb {
-  background: #444;
+  background: #113e3e;
 }
 
 #app {

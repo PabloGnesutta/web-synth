@@ -15,7 +15,7 @@ class Carrier extends Oscillator {
   constructor(type, frequency) {
     super(type, frequency || initFreq)
 
-    this.name = "Carr " + ++Carrier.carrierCount
+    this.name = "Osc " + ++Carrier.carrierCount
     this.nodeType = "Carrier"
 
     this.status = "STOPPED"

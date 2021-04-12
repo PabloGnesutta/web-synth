@@ -192,7 +192,13 @@
         </div>
       </div>
       <!-- /node-footer -->
-      <div class="node-controls" v-if="Node.name === 'Track Gain'">asd</div>
+      <!-- Track Gain controls -->
+      <div class="node-controls" v-if="recEnabled !== undefined">
+        <div class="rec-enabled-disabled" @click="toggleRecEnabled">
+          <div v-if="recEnabled" class="rec-enabled">Rec enabled</div>
+          <div v-if="!recEnabled" class="rec-disabled">Rec disabled</div>
+        </div>
+      </div>
     </div>
     <!-- /node -->
     <div class="analyser-wrapper" v-if="analyser">
@@ -207,18 +213,22 @@ import { mapGetters, mapMutations } from "vuex";
 import Knob from "./Knob";
 import AnalyserRender from "./AnalyserRender";
 export default {
-  props: ["Node", "analyser"],
+  props: ["Node", "analyser", "recEnabled"],
 
   computed: {
     ...mapGetters(["appConnecting", "originNode"]),
   },
 
   mounted() {
-    console.log(this.Node);
+    // console.log(this.recEnabled);
   },
 
   methods: {
     ...mapMutations(["setAppConnecting", "setOriginNode"]),
+
+    toggleRecEnabled() {
+      this.$emit("toggleRecEnabled");
+    },
 
     setType(e) {
       this.Node.setType(e.target.value);
@@ -383,6 +393,7 @@ export default {
 
 .ScaleInterface,
 .Modulator,
+.Carrier,
 .Delay {
   .node-header {
     display: flex;
@@ -421,19 +432,24 @@ export default {
   width: 205px;
 }
 
-.Carrier {
-  min-width: 150px;
-}
-
+.Carrier,
 .Modulator {
-  min-width: 170px;
+  min-width: 160px;
 }
 
 .Delay {
-  width: 165px;
+  width: 160px;
   .param {
     min-width: 78px;
   }
+}
+
+.BufferSource {
+  width: 100px;
+}
+
+.Gain {
+  width: 80px;
 }
 
 .BiquadFilter {
@@ -454,9 +470,7 @@ export default {
   align-items: center;
   justify-content: center;
   width: 100%;
-  .connections {
-    width: 50%;
-  }
+  gap: 0.5em;
 }
 
 .connections {
@@ -466,7 +480,7 @@ export default {
 .start,
 .stop {
   cursor: pointer;
-  border: 1px solid teal;
+  border: 1px solid var(--color-1);
   padding: 0.2em 0 0.1em;
   font-weight: bold;
 }
@@ -483,18 +497,27 @@ export default {
 .output {
   cursor: pointer;
   padding: 0.2em;
-  padding-left: 0.5em;
   font-size: 0.9rem;
-  color: teal;
+  color: var(--color-1);
   margin-bottom: 0.4em;
 }
 
 .output:hover {
-  color: coral;
+  color: var(--color-2);
 }
 
 .param.is-connection-destination {
   border: 2px solid white;
-  background: coral;
+  background: var(--color-2);
+}
+
+.rec-enabled-disabled {
+  cursor: pointer;
+}
+.rec-enabled {
+  color: red;
+}
+.rec-disabled {
+  color: gray;
 }
 </style>
