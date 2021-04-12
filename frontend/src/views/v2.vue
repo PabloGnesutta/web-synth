@@ -264,13 +264,13 @@
 
 <script>
 const Node = require("../class/Node");
-const Gain = require("../class/Gain");
+const Gain = require("../class/Effects/Gain");
 const ScaleInterface = require("../class/ScaleInterface");
 const Modulator = require("../class/Oscillator/Modulator");
 const Carrier = require("../class/Oscillator/Carrier");
 const ADSROscillator = require("../class/Oscillator/ADSROscillator");
 const WhiteNoise = require("../class/Effects/WhiteNoise");
-const BiquadFilter = require("../class/BiquadFilter");
+const BiquadFilter = require("../class/Effects/BiquadFilter");
 const Delay = require("../class/Effects/Delay");
 
 import { mapMutations, mapGetters } from "vuex";

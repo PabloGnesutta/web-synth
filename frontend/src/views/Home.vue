@@ -7,6 +7,7 @@
     <div class="inited" v-if="inited">
       <div class="header">
         <div class="buttons">
+          <!-- Instruments -->
           <div
             class="btn btn-instrument"
             @click="createPiano('ScaleInterface')"
@@ -22,16 +23,22 @@
           >
             White Noise
           </div>
+          <!-- Modulator -->
           <br />
           <div class="btn btn-modulator" @click="createModulator">
             Modulator
           </div>
+          <!-- Effects -->
           <br />
           <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
             Filter
           </div>
+          <div class="btn btn-effect" @click="createEffect('Compressor')">
+            Compressor
+          </div>
           <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
           <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
+          <!-- REC -->
           <br />
           <div class="btn btn-2 rec" v-if="!recording" @click="rec">REC</div>
           <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
@@ -139,24 +146,27 @@
 
 <script>
 const Node = require("../class/Node");
-const Gain = require("../class/Gain");
-const ScaleInterface = require("../class/ScaleInterface");
-const Modulator = require("../class/Oscillator/Modulator");
-const Carrier = require("../class/Oscillator/Carrier");
-const WhiteNoise = require("../class/Effects/WhiteNoise");
-const BiquadFilter = require("../class/BiquadFilter");
+const Gain = require("../class/Effects/Gain");
 const Delay = require("../class/Effects/Delay");
+const Compressor = require("../class/Effects/Compressor");
+const BiquadFilter = require("../class/Effects/BiquadFilter");
+
+const Carrier = require("../class/Oscillator/Carrier");
+const ScaleInterface = require("../class/ScaleInterface");
+const WhiteNoise = require("../class/Effects/WhiteNoise");
+const Modulator = require("../class/Oscillator/Modulator");
 
 const instrumentsDict = new Map([
-  ["ScaleInterface", ScaleInterface],
-  ["WhiteNoise", WhiteNoise],
   ["Carrier", Carrier],
+  ["WhiteNoise", WhiteNoise],
+  ["ScaleInterface", ScaleInterface],
 ]);
 
 const effectsDict = new Map([
-  ["BiquadFilter", BiquadFilter],
-  ["Delay", Delay],
   ["Gain", Gain],
+  ["Delay", Delay],
+  ["Compressor", Compressor],
+  ["BiquadFilter", BiquadFilter],
 ]);
 
 import { mapMutations, mapGetters } from "vuex";

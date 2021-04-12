@@ -60,7 +60,7 @@ class Node {
   }
 
   initGain(initialGain) {
-    this.gain = initialGain
+    this.gain = initialGain || 1
 
     this.level = Node.context.createGain()
     this.level.gain.setValueAtTime(this.gain, 0)
@@ -103,8 +103,6 @@ class Node {
     this.disconnectOutput(this.outputs[0].node)
   }
 
-
-
   setGain(value, time) {
     this.outputNode.gain.setValueAtTime(value, time || 0)
     this.gain = value
@@ -126,8 +124,6 @@ class Node {
     this.audioParams[index].value = parseFloat(value);
   }
 
-
-
   setType(type) {
     this.node.type = type
     this.type = type //test
@@ -141,10 +137,10 @@ class Node {
           this.audioParams.push({
             name: key,
             step: 0.1,
-            minValue: 0,
-            maxValue: 3000,
+            minValue: this.node[key].minValue,
+            maxValue: this.node[key].maxValue,
             value: this.node[key].value,
-            defaultValue: this.node[key].value,
+            defaultValue: this.node[key].defaultValue,
           })
         }
       }

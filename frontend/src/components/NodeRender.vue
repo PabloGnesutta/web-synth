@@ -437,6 +437,10 @@ export default {
   min-width: 160px;
 }
 
+.BufferSource {
+  width: 100px;
+}
+
 .Delay {
   width: 160px;
   .param {
@@ -444,8 +448,8 @@ export default {
   }
 }
 
-.BufferSource {
-  width: 100px;
+.Compressor {
+  width: 200px;
 }
 
 .Gain {

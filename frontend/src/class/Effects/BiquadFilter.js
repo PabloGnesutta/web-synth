@@ -1,4 +1,4 @@
-const Node = require("./Node");
+const Node = require("../Node");
 
 const initialGain = 1
 const QMax = 30
@@ -29,7 +29,7 @@ class BiquadFilter extends Node {
     this.initGain(initialGain)
   }
 
-  initParams() { //setMinMaxStep
+  initParams() {
     this.setFrequencyInitialValue()
     this.audioParams.forEach(ap => {
       const index = audioParamsConfig.findIndex(mms => mms.name === ap.name)
