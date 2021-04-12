@@ -1,5 +1,9 @@
 <template>
-  <div class="Home" @click="init">
+  <div class="Home">
+    <div class="welcome-msg" v-if="!inited">
+      <p>Welcome to web-synth</p>
+      <p>Click anywhere to Start!</p>
+    </div>
     <div class="header" v-if="inited">
       <div class="buttons">
         <div class="btn btn-instrument" @click="createPiano('ScaleInterface')">
@@ -20,8 +24,10 @@
         <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
         <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
         <br />
-        <div class="btn btn-2" v-if="!recording" @click="rec">REC</div>
-        <div class="btn btn-2" v-if="recording" @click="stopRec">STOP</div>
+        <div class="btn btn-2 rec" v-if="!recording" @click="rec">REC</div>
+        <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
+          STOP
+        </div>
         <!-- <div class="btn" @click="save">GUARDAR</div> -->
         <!-- <div class="btn btn-2" @click="toggleMapping">MAP</div> -->
       </div>
@@ -39,39 +45,40 @@
         }"
         @click="trackClicked(t)"
       >
-        <!-- <h3>{{ track.displayName }}</h3> -->
         <!-- Modulators -->
-        <div class="track-modulators">
-          <NodeRender
-            v-for="(Mod, m) in track.modulators"
-            :Node="Mod"
-            :key="m"
-            @deleteNode="deleteModulator(t, m)"
-          />
-        </div>
+        <div class="track-inner">
+          <div class="track-modulators">
+            <NodeRender
+              v-for="(Mod, m) in track.modulators"
+              :Node="Mod"
+              :key="m"
+              @deleteNode="deleteModulator(t, m)"
+            />
+          </div>
 
-        <!-- Instrument -->
-        <div class="track-instrument">
-          <NodeRender
-            :Node="track.instrument"
-            :analyser="track.instrumentAnalyser"
-            @deleteNode="deleteTrack(t)"
-          />
-        </div>
+          <!-- Instrument -->
+          <div class="track-instrument">
+            <NodeRender
+              :Node="track.instrument"
+              :analyser="track.instrumentAnalyser"
+              @deleteNode="deleteTrack(t)"
+            />
+          </div>
 
-        <!-- Effects -->
-        <div class="track-effects">
-          <NodeRender
-            v-for="(Node, n) in track.effects"
-            :Node="Node"
-            :analyser="Node.analyser"
-            :key="n"
-            :ref="'Node-' + n"
-            @deleteNode="deleteEffect(t, n)"
-            @levelClicked="levelClicked(Node)"
-          />
+          <!-- Effects -->
+          <div class="track-effects">
+            <NodeRender
+              v-for="(Node, n) in track.effects"
+              :Node="Node"
+              :analyser="Node.analyser"
+              :key="n"
+              :ref="'Node-' + n"
+              @deleteNode="deleteEffect(t, n)"
+              @levelClicked="levelClicked(Node)"
+            />
+            <div class="track-right-placeholder"></div>
+          </div>
         </div>
-
         <!-- Track Gain -->
         <div class="track-gain">
           <NodeRender
@@ -178,6 +185,7 @@ export default {
   mounted() {
     this.keyEnabled = Array(222).fill(true);
     navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
+    document.querySelector(".Home").addEventListener("click", this.init);
   },
 
   methods: {
@@ -239,6 +247,7 @@ export default {
     init() {
       if (this.context) return;
       this.inited = true;
+      document.querySelector(".Home").removeEventListener("click", this.init);
       this.context = new (window.AudioContext || window.webkitAudioContext)();
       Node.context = this.context;
 
@@ -247,10 +256,10 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.createNewTrack(new ScaleInterface("sawtooth"));
+      this.createTrack(new ScaleInterface("sawtooth"));
     },
 
-    createNewTrack(instrument) {
+    createTrack(instrument) {
       //track gain
       const trackGain = new Gain("Track Gain");
       trackGain.setGain(0.4);
@@ -335,7 +344,7 @@ export default {
 
     createInstrument(className) {
       const Node = new (instrumentsDict.get(className))();
-      this.createNewTrack(Node);
+      this.createTrack(Node);
     },
 
     createModulator() {
@@ -345,25 +354,13 @@ export default {
 
     createPiano() {
       const scaleInterface = new ScaleInterface("sawtooth");
-      this.createNewTrack(scaleInterface);
+      this.createTrack(scaleInterface);
     },
 
     trackClicked(t) {
       this.currentTrackIndex = t;
       this.currentTrack = this.tracks[this.currentTrackIndex];
     },
-
-    //output hover
-
-    // onMouseEnterOutput(output) {
-    //   const el = document.querySelector("." + this.getCssNodeName(output.name));
-    //   el.classList.add("is-connection-destination");
-    // },
-
-    // onMouseLeaveOutput(output) {
-    //   const el = document.querySelector("." + this.getCssNodeName(output.name));
-    //   el.classList.remove("is-connection-destination");
-    // },
 
     createMainGain() {
       this.mainGain = this.context.createGain();
@@ -523,6 +520,13 @@ export default {
   .btn-effect {
     background: green;
   }
+  .btn.rec {
+    background: red;
+  }
+  .btn.stop-rec {
+    background: cyan;
+    color: black;
+  }
 }
 
 .tracks {
@@ -536,30 +540,37 @@ export default {
 
 .track {
   margin: 0 auto 1em;
-  overflow-x: auto;
+  // overflow-x: auto;
   background: #111;
   padding: 0.5em;
 
   display: flex;
   align-items: center;
-  gap: 1em;
-  border: 1px solid transparent;
+  gap: 0.5em;
+  border: 2px solid transparent;
   transition: border-color 0.2s ease-out;
 }
 
-.track-instrument .node-name {
+.track-inner {
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  overflow-x: auto;
+  padding-bottom: 0.3em;
+}
+
+.track-right-placeholder {
+  // width: 10px;
+}
+
+.track-instrument .node .node-name {
   color: coral;
+  font-size: 1.1rem;
 }
 
 .track.selected {
-  border: 1px solid teal;
-}
-
-.track-gain {
-}
-
-.is-connection-destination {
-  border: 2px solid white;
+  border: 2px solid teal;
 }
 
 .track-modulators {
@@ -601,12 +612,10 @@ export default {
 }
 
 .Main-Gain {
+  margin: 1em auto 0;
   color: #f3f3f3;
   max-width: 300px;
   transition: border-color 0.2s ease-out;
-  // position: fixed;
-  bottom: 5px;
-  right: 10px;
 }
 
 .level {
@@ -617,6 +626,14 @@ export default {
 .Main-Gain:not(.is-connection-destination),
 .level:not(.is-connection-destination) {
   border: 2px solid transparent;
+}
+
+.welcome-msg {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
 }
 
 // Scoll Pane

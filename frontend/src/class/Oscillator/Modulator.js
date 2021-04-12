@@ -7,9 +7,9 @@ const gainStep = 0.01
 const detuneMax = 100
 const initialFrequency = 5
 
-const minMaxStep = [
-  { name: 'frequency', minValue: 0, maxValue: 60, value: initialFrequency, defaultValue: initialFrequency, step: 0.1 },
-  { name: 'detune', minValue: -detuneMax, maxValue: detuneMax, value: 0, defaultValue: initialFrequency, step: 0.1 },
+const audioParamsConfig = [
+  { name: 'frequency', displayName: 'freq', unit: 'hz', minValue: 0, maxValue: 120, value: initialFrequency, defaultValue: initialFrequency, step: 0.1 },
+  { name: 'detune', displayName: 'fine', unit: 'hz', minValue: -detuneMax, maxValue: detuneMax, value: 0, defaultValue: initialFrequency, step: 0.1 },
 ]
 
 class Modulator extends Oscillator {
@@ -27,16 +27,18 @@ class Modulator extends Oscillator {
     this.status = "STARTED"
 
     this.initGain(initialGain)
-    this.setMinMaxStep()
+    this.initParams()
     this.start()
   }
 
-  setMinMaxStep() {
+  initParams() {
     this.audioParams.forEach(ap => {
-      const index = minMaxStep.findIndex(mms => mms.name === ap.name)
+      const index = audioParamsConfig.findIndex(mms => mms.name === ap.name)
       for (let key in ap) {
-        ap[key] = minMaxStep[index][key]
+        ap[key] = audioParamsConfig[index][key]
       }
+      ap.unit = audioParamsConfig[index].unit
+      ap.displayName = audioParamsConfig[index].displayName
     })
   }
 }

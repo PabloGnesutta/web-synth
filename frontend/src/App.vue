@@ -40,15 +40,15 @@ body {
   color: #f3f3f3;
 }
 
-.track::-webkit-scrollbar {
+.track-inner::-webkit-scrollbar {
   height: 8px;
 }
 
-.track::-webkit-scrollbar-track {
+.track-inner::-webkit-scrollbar-track {
   box-shadow: inset 0 0 3px grey;
 }
 
-.track::-webkit-scrollbar-thumb {
+.track-inner::-webkit-scrollbar-thumb {
   background: #444;
 }
 

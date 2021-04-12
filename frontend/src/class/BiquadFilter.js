@@ -38,7 +38,6 @@ class BiquadFilter extends Node {
       }
       ap.unit = audioParamsConfig[index].unit
       ap.displayName = audioParamsConfig[index].displayName
-      console.log(ap)
     })
     this.node.frequency.setValueAtTime(audioParamsConfig[0].value, 0)
   }

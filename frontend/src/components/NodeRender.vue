@@ -154,7 +154,7 @@
           <div class="stop" v-else @click="stopOsc()">STOP</div>
         </div>
         <!-- Connections -->
-        <!-- <div class="connections">
+        <div class="connections" v-if="Node.nodeType === 'Modulator'">
           <div class="outputs" v-if="Node.outputs.length > 0">
             <h5>Outputs</h5>
             <div
@@ -170,7 +170,7 @@
               </span>
             </div>
           </div>
-        </div> -->
+        </div>
 
         <!-- Level -->
         <div
@@ -306,8 +306,21 @@ export default {
 
     //outputs
     disconnect(output) {},
-    onMouseEnterOutput(output) {},
-    onMouseLeaveOutput(output) {},
+    // onMouseEnterOutput(output) {},
+    // onMouseLeaveOutput(output) {},
+
+    //output hover
+
+    onMouseEnterOutput(output) {
+      const el = document.querySelector("." + this.getCssNodeName(output.name));
+      console.log(el);
+      el.classList.add("is-connection-destination");
+    },
+
+    onMouseLeaveOutput(output) {
+      const el = document.querySelector("." + this.getCssNodeName(output.name));
+      el.classList.remove("is-connection-destination");
+    },
 
     getCssNodeName(name) {
       return name.replace(new RegExp(" ", "g"), "-");
@@ -339,10 +352,15 @@ export default {
   transition: border-color 0.2s ease-out;
   gap: 0.5em;
   .node-name {
-    font-size: 1.1rem;
+    font-size: 1rem;
     text-align: left;
     padding: 0.5em;
+    cursor: default;
   }
+}
+
+.Modulator .node-name {
+  cursor: pointer;
 }
 
 .node.Track-Gain {
@@ -359,19 +377,12 @@ export default {
   background: #444;
 }
 
-.node-name {
-  cursor: default;
-}
-
-.Modulator .node-name {
-  cursor: pointer;
-}
-
 .types {
   margin-bottom: 0.2em;
 }
 
 .ScaleInterface,
+.Modulator,
 .Delay {
   .node-header {
     display: flex;
@@ -384,7 +395,7 @@ export default {
 }
 
 .params-container {
-  padding-bottom: .2em ;
+  padding-bottom: 0.2em;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -396,13 +407,15 @@ export default {
   padding: 0.2em;
   cursor: default;
   border: 2px solid transparent;
-  transition: border-color 0.2s ease-out;
+  transition: border-color 0.2s ease-out, background-color 0.2s ease-out;
   font-size: 0.95rem;
 }
 
 .param-name {
   padding: 0.3em 0.2em 0.5em;
 }
+
+// Specific Node Styles:
 
 .ScaleInterface {
   width: 205px;
@@ -413,9 +426,7 @@ export default {
 }
 
 .Modulator {
-  .params-container {
-    display: block;
-  }
+  min-width: 170px;
 }
 
 .Delay {
@@ -425,12 +436,24 @@ export default {
   }
 }
 
+.BiquadFilter {
+  width: 90px;
+}
+
+.Track-Gain {
+  width: 135px;
+  .node-name {
+    font-size: 1.1rem;
+    padding: 0;
+    text-align: center;
+  }
+}
+
 .node-footer {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  gap: 0.5em;
   .connections {
     width: 50%;
   }
@@ -455,17 +478,23 @@ export default {
 .outputs {
   text-align: left;
   margin-top: 0.5em;
-  h5 {
-    margin-bottom: 0.2em;
-  }
 }
 
 .output {
   cursor: pointer;
   padding: 0.2em;
   padding-left: 0.5em;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: teal;
   margin-bottom: 0.4em;
+}
+
+.output:hover {
+  color: coral;
+}
+
+.param.is-connection-destination {
+  border: 2px solid white;
+  background: coral;
 }
 </style>
