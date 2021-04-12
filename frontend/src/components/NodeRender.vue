@@ -5,6 +5,14 @@
       :class="[Node.nodeType, getCssNodeName(Node.name)]"
       :ref="Node.name"
     >
+      <div
+        class="delete"
+        @click="deleteNode()"
+        v-if="Node.name !== 'Track Gain'"
+      >
+        X
+      </div>
+      <!-- Node Name -->
       <div class="node-header">
         <div class="node-name" @click="nodeClicked()">
           {{ Node.name }}
@@ -22,61 +30,7 @@
           </select>
         </div>
       </div>
-
-      <div class="node-output">
-        <!-- Start/Stop -->
-        <div
-          class="start-stop"
-          v-if="
-            Node.nodeType === 'Carrier' || Node.nodeType === 'ADSROscillator'
-          "
-        >
-          <div
-            class="start"
-            v-if="Node.status === 'STOPPED'"
-            @click="startOsc()"
-          >
-            START
-          </div>
-          <div class="stop" v-else @click="stopOsc()">STOP</div>
-        </div>
-        <!-- Connections -->
-        <div class="connections">
-          <div class="outputs" v-if="Node.outputs.length > 0">
-            <h5>Outputs</h5>
-            <div
-              class="output"
-              v-for="output in Node.outputs"
-              @click="disconnect(output)"
-              @mouseenter="onMouseEnterOutput(output)"
-              @mouseleave="onMouseLeaveOutput(output)"
-              :key="output.name"
-            >
-              <span>
-                {{ output.name }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Level -->
-        <div
-          class="level"
-          v-if="Node.level"
-          :class="getCssNodeName(Node.name + ' Level')"
-        >
-          <div class="param-name">Level</div>
-          <div class="knob-wrapper" @click="knobClicked(Node.name + '-level')">
-            <Knob
-              :ref="Node.name + '-level'"
-              :minVal="Node.minGain"
-              :maxVal="Node.maxGain"
-              :initVal="Node.gain"
-              @knobTurned="setNodeGain($event)"
-            />
-          </div>
-        </div>
-      </div>
+      <!-- /node-header -->
 
       <div class="node-params">
         <div class="params-wrapper">
@@ -95,7 +49,7 @@
                 class="param-name connectable"
                 @click="audioParamClicked(audioParam)"
               >
-                {{ audioParam.name }}
+                {{ audioParam.displayName }}
               </div>
 
               <div
@@ -107,6 +61,7 @@
                   :minVal="audioParam.minValue"
                   :maxVal="audioParam.maxValue"
                   :initVal="audioParam.defaultValue"
+                  :unit="audioParam.unit"
                   @knobTurned="setAudioParam(apIndex, $event)"
                 />
               </div>
@@ -130,7 +85,7 @@
               ]"
             >
               <div class="param-name connectable">
-                {{ innerNodeAudioParam.name }}
+                {{ innerNodeAudioParam.displayName }}
               </div>
 
               <div
@@ -142,6 +97,7 @@
                   :minVal="innerNodeAudioParam.minValue"
                   :maxVal="innerNodeAudioParam.maxValue"
                   :initVal="innerNodeAudioParam.defaultValue"
+                  :unit="innerNodeAudioParam.unit"
                   @knobTurned="setInnerNodeAudioParam(inapIndex, $event)"
                 />
               </div>
@@ -157,7 +113,7 @@
               :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
             >
               <div class="param-name">
-                {{ customParam.name }}
+                {{ customParam.displayName }}
               </div>
 
               <div
@@ -170,6 +126,7 @@
                     :minVal="customParam.minValue"
                     :maxVal="customParam.maxValue"
                     :initVal="customParam.defaultValue"
+                    :unit="customParam.unit"
                     @knobTurned="setCustomParam(cpIndex, $event)"
                   />
                 </div>
@@ -178,15 +135,66 @@
           </div>
         </div>
       </div>
+      <!-- /node-params -->
+      <div class="node-footer">
+        <!-- Start/Stop -->
+        <div
+          class="start-stop"
+          v-if="
+            Node.nodeType === 'Carrier' || Node.nodeType === 'ADSROscillator'
+          "
+        >
+          <div
+            class="start"
+            v-if="Node.status === 'STOPPED'"
+            @click="startOsc()"
+          >
+            START
+          </div>
+          <div class="stop" v-else @click="stopOsc()">STOP</div>
+        </div>
+        <!-- Connections -->
+        <!-- <div class="connections">
+          <div class="outputs" v-if="Node.outputs.length > 0">
+            <h5>Outputs</h5>
+            <div
+              class="output"
+              v-for="output in Node.outputs"
+              @click="disconnect(output)"
+              @mouseenter="onMouseEnterOutput(output)"
+              @mouseleave="onMouseLeaveOutput(output)"
+              :key="output.name"
+            >
+              <span>
+                {{ output.name }}
+              </span>
+            </div>
+          </div>
+        </div> -->
 
-      <div
-        class="delete"
-        @click="deleteNode()"
-        v-if="Node.name !== 'Track Gain'"
-      >
-        X
+        <!-- Level -->
+        <div
+          class="level"
+          v-if="Node.level"
+          :class="getCssNodeName(Node.name + ' Level')"
+        >
+          <div class="param-name">Level</div>
+          <div class="knob-wrapper" @click="knobClicked(Node.name + '-level')">
+            <Knob
+              :ref="Node.name + '-level'"
+              :minVal="Node.minGain"
+              :maxVal="Node.maxGain"
+              :initVal="Node.gain"
+              @knobTurned="setNodeGain($event)"
+              @click="levelClicked"
+            />
+          </div>
+        </div>
       </div>
+      <!-- /node-footer -->
+      <div class="node-controls" v-if="Node.name === 'Track Gain'">asd</div>
     </div>
+    <!-- /node -->
     <div class="analyser-wrapper" v-if="analyser">
       <AnalyserRender :analyser="analyser" :parent="Node.name" />
     </div>
@@ -203,6 +211,10 @@ export default {
 
   computed: {
     ...mapGetters(["appConnecting", "originNode"]),
+  },
+
+  mounted() {
+    console.log(this.Node);
   },
 
   methods: {
@@ -268,6 +280,8 @@ export default {
       this.stopConnect("Connected");
     },
 
+    levelClicked() {},
+
     stopConnect(msg) {
       this.setAppConnecting(false);
       this.$refs[this.Node.name].classList.remove("current-node");
@@ -312,20 +326,20 @@ export default {
   display: flex;
   align-items: flex-end;
 }
+
 .node {
   border: 2px solid transparent;
-  // padding-top: 0.5em;
+  padding-bottom: 0.5em;
   background: #333;
   color: #f3f3f3;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  // align-items: center;
   transition: border-color 0.2s ease-out;
+  gap: 0.5em;
   .node-name {
     font-size: 1.1rem;
-    // margin-top: 0.5em;
     text-align: left;
     padding: 0.5em;
   }
@@ -337,55 +351,31 @@ export default {
   min-height: 257px;
 }
 
-.node-header {
-  order: 0;
-}
-
-.node-params {
-  order: 1;
-}
-
-.node-output {
-  order: 2;
-}
-
-.analyser-wrapper {
-}
-
 .delete {
   cursor: pointer;
   position: absolute;
   top: 0;
   right: 0;
-  padding: 0.2em 0.4em;
   background: #444;
 }
 
 .node-name {
+  cursor: default;
+}
+
+.Modulator .node-name {
   cursor: pointer;
 }
 
 .types {
-  // margin-bottom: 0.2em;
+  margin-bottom: 0.2em;
 }
 
 .ScaleInterface,
 .Delay {
-  display: flex;
-  // flex-direction: row;
-  flex-wrap: wrap;
-  // align-items: center;
-  // justify-content: center;
-  min-width: 205px;
-  max-width: 205px;
-  gap: 1em;
   .node-header {
-    // margin-top: 0.5em;
     display: flex;
     align-items: center;
-    .node-name {
-      margin: 0;
-    }
   }
 }
 
@@ -394,14 +384,32 @@ export default {
 }
 
 .params-container {
+  padding-bottom: .2em ;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  margin-bottom: 0;
-  .param {
-    min-width: 50px;
-    flex-basis: auto;
-  }
+  background: #0000003b;
+}
+
+.param {
+  min-width: 65px;
+  padding: 0.2em;
+  cursor: default;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease-out;
+  font-size: 0.95rem;
+}
+
+.param-name {
+  padding: 0.3em 0.2em 0.5em;
+}
+
+.ScaleInterface {
+  width: 205px;
+}
+
+.Carrier {
+  min-width: 150px;
 }
 
 .Modulator {
@@ -410,42 +418,22 @@ export default {
   }
 }
 
-.node-output {
+.Delay {
+  width: 165px;
+  .param {
+    min-width: 78px;
+  }
+}
+
+.node-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
   gap: 0.5em;
   .connections {
     width: 50%;
   }
-}
-
-.Delay {
-  min-width: 185px;
-  max-width: 185px;
-  .params-container {
-    text-align: center;
-    // min-width: 200px;
-    // max-width: 200px;
-  }
-  .param {
-    min-width: 85px;
-    flex-basis: auto;
-  }
-}
-
-.param {
-  padding: 0.2em;
-  cursor: default;
-  border: 2px solid transparent;
-  transition: border-color 0.2s ease-out;
-  font-size: 0.95rem;
-  background: #0000003b;
-}
-
-.param-name {
-  padding: 0.3em 0.2em 0.5em;
 }
 
 .connections {

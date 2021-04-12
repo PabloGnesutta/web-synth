@@ -125,6 +125,8 @@ class ScaleInterface extends Node {
 
       {
         name: "attack",
+        displayName: "attack",
+        unit: 's',
         minValue: 0,
         maxValue: 1,
         value: initialA,
@@ -134,6 +136,8 @@ class ScaleInterface extends Node {
       },
       {
         name: "decay",
+        displayName: "decay",
+        unit: 's',
         minValue: 0.01,
         maxValue: 1,
         value: initialD,
@@ -143,6 +147,8 @@ class ScaleInterface extends Node {
       },
       {
         name: "sustain",
+        displayName: "sustain",
+        unit: '',
         minValue: 0,
         maxValue: 1,
         value: initialS,
@@ -152,6 +158,8 @@ class ScaleInterface extends Node {
       },
       {
         name: "release",
+        displayName: "release",
+        unit: 's',
         minValue: 0.001,
         maxValue: 3,
         value: initialR,
@@ -161,6 +169,8 @@ class ScaleInterface extends Node {
       },
       {
         name: "detune",
+        displayName: "fine",
+        unit: 'hz',
         minValue: -100,
         maxValue: 100,
         value: initialDetune,

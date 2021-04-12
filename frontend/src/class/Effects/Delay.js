@@ -73,12 +73,12 @@ class Delay extends Node {
   initInnerNodeAudioParams() {
     this.innerNodeAudioParams = [
       {
-        name: 'delay time',
+        name: 'delay time', displayName: 'time', unit: 's',
         minValue: minDelayTime, maxValue: maxDelayTime, value: initialDelayTime, defaultValue: initialDelayTime, step: 0.01,
         node: this.delay, nodeAudioParam: 'delayTime'
       },
       {
-        name: 'feedback',
+        name: 'feedback', displayName: 'feedback', unit: '', //%
         minValue: 0, maxValue: 0.99, value: initialFeddback, defaultValue: initialFeddback, step: 0.01,
         node: this.feedbackGain, nodeAudioParam: 'gain'
       },
@@ -89,12 +89,13 @@ class Delay extends Node {
     const setDryWet = (value) => {
       this.wetGain.gain.value = value
       this.dryGain.gain.value = value.map(0, 1, 1, 0)
-      console.log('outputnode', this.outputNode.gain.value)
     }
 
     this.customParams = [
       {
         name: "dry/wet",
+        displayName: "dry/wet",
+        unit: '', //%
         minValue: 0,
         maxValue: 1,
         defaultValue: 0,

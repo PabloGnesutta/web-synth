@@ -15,7 +15,7 @@
     </div>
     <div class="value set-default-value pointer" @click="valueClicked">
       <!-- <div>{{ knobValue }}</div> -->
-      <div>{{ emitValue }}</div>
+      <div>{{ displayValue }}</div>
     </div>
   </div>
 </template>
@@ -34,6 +34,7 @@ export default {
       initknobValue: 0,
 
       emitValue: 0,
+      displayValue: 0,
 
       calib: 2,
       ctrlPressed: false,
@@ -52,7 +53,7 @@ export default {
     };
   },
 
-  props: ["minVal", "maxVal", "initVal"],
+  props: ["minVal", "maxVal", "initVal", "unit"],
 
   computed: {
     ...mapGetters(["appIsMapping", "appConnecting"]),
@@ -60,6 +61,7 @@ export default {
 
   mounted() {
     this.setParamContraints(this.minVal, this.maxVal, parseFloat(this.initVal));
+    // console.log(this.unit)
   },
 
   methods: {
@@ -80,12 +82,13 @@ export default {
       this.emitValue = knobValue
         .map(0, this.maxKnobVal, this.min_v, this.max_v)
         .toFixed(2);
-
+      this.processDisplayValue();
       this.$emit("knobTurned", this.emitValue);
     },
 
     emitAndSetEmitValueWithRawValue(value) {
       this.emitValue = value.toFixed(2);
+      this.processDisplayValue();
       this.$emit("knobTurned", this.emitValue);
     },
 
@@ -101,8 +104,6 @@ export default {
           amount = 0.05;
         }
       }
-
-      // const amount = this.ctrlPressed ? this.fineTuneStep : 1;fa
 
       let knobValue =
         translation > 0 ? this.knobValue + amount : this.knobValue - amount;
@@ -168,9 +169,18 @@ export default {
       this.defaultValue = initValue;
       this.initknobValue = this.knobValue;
       this.emitValue = initValue.toFixed(2);
+      this.processDisplayValue();
 
       this.setKnobValueAndPosition(this.knobValue);
       this.$emit("knobTurned", this.emitValue);
+    },
+
+    processDisplayValue() {
+      this.displayValue =
+        this.emitValue >= 1000
+          ? (this.emitValue / 100).toFixed(1) + "k"
+          : parseFloat(this.emitValue).toFixed(1);
+      this.displayValue = this.displayValue + (this.unit || '');
     },
   },
 };

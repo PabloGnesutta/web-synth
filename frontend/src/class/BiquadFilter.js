@@ -4,9 +4,9 @@ const initialGain = 1
 const QMax = 30
 const frequencyMax = 7000
 
-const audioParamContraints = [
-  { name: 'frequency', minValue: 20, maxValue: frequencyMax, value: 0, defaultValue: 0, step: 1 },
-  { name: 'Q', minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01 },
+const audioParamsConfig = [
+  { name: 'frequency', displayName: 'freq', unit: 'hz', minValue: 20, maxValue: frequencyMax, value: 0, defaultValue: 0, step: 1 },
+  { name: 'Q', displayName: 'res', unit: '', minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01 },
 ]
 
 class BiquadFilter extends Node {
@@ -32,12 +32,15 @@ class BiquadFilter extends Node {
   initParams() { //setMinMaxStep
     this.setFrequencyInitialValue()
     this.audioParams.forEach(ap => {
-      const index = audioParamContraints.findIndex(mms => mms.name === ap.name)
+      const index = audioParamsConfig.findIndex(mms => mms.name === ap.name)
       for (let key in ap) {
-        ap[key] = audioParamContraints[index][key]
+        ap[key] = audioParamsConfig[index][key]
       }
+      ap.unit = audioParamsConfig[index].unit
+      ap.displayName = audioParamsConfig[index].displayName
+      console.log(ap)
     })
-    this.node.frequency.setValueAtTime(audioParamContraints[0].value, 0)
+    this.node.frequency.setValueAtTime(audioParamsConfig[0].value, 0)
   }
 
   setType(type) {
@@ -85,14 +88,14 @@ class BiquadFilter extends Node {
         q.step = 0.01
     }
     //freq
-    audioParamContraints[0].value = freq
-    audioParamContraints[0].defaultValue = freq
+    audioParamsConfig[0].value = freq
+    audioParamsConfig[0].defaultValue = freq
     //Q
-    audioParamContraints[1].minValue = q.minValue
-    audioParamContraints[1].maxValue = q.maxValue
-    audioParamContraints[1].value = q.value
-    audioParamContraints[1].defaultValue = q.value
-    audioParamContraints[1].step = q.step
+    audioParamsConfig[1].minValue = q.minValue
+    audioParamsConfig[1].maxValue = q.maxValue
+    audioParamsConfig[1].value = q.value
+    audioParamsConfig[1].defaultValue = q.value
+    audioParamsConfig[1].step = q.step
   }
 
 }
