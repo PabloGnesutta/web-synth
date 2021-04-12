@@ -1,6 +1,10 @@
 <template>
   <div class="container">
-    <div class="node" :class="[Node.nodeType, getCssNodeName(Node.name)]">
+    <div
+      class="node"
+      :class="[Node.nodeType, getCssNodeName(Node.name)]"
+      :ref="Node.name"
+    >
       <div class="node-header">
         <div class="node-name" @click="nodeClicked()">
           {{ Node.name }}
@@ -61,7 +65,7 @@
           v-if="Node.level"
           :class="getCssNodeName(Node.name + ' Level')"
         >
-          <div class="param-name" @click="levelClicked()">Level</div>
+          <div class="param-name">Level</div>
           <div class="knob-wrapper" @click="knobClicked(Node.name + '-level')">
             <Knob
               :ref="Node.name + '-level'"
@@ -87,7 +91,10 @@
               :key="audioParam.name"
               :class="[getCssNodeName(Node.name + ' ' + audioParam.name)]"
             >
-              <div class="param-name" @click="audioParamClicked(audioParam)">
+              <div
+                class="param-name connectable"
+                @click="audioParamClicked(audioParam)"
+              >
                 {{ audioParam.name }}
               </div>
 
@@ -122,12 +129,7 @@
                 getCssNodeName(innerNodeAudioParam.name),
               ]"
             >
-              <div
-                class="param-name"
-                @click="
-                  innerNodeAudioParamClicked(innerNodeAudioParam, inapIndex)
-                "
-              >
+              <div class="param-name connectable">
                 {{ innerNodeAudioParam.name }}
               </div>
 
@@ -154,10 +156,7 @@
               :key="customParam.name"
               :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
             >
-              <div
-                class="param-name"
-                @click="customParamClicked(customParam, cpIndex)"
-              >
+              <div class="param-name">
                 {{ customParam.name }}
               </div>
 
@@ -195,18 +194,25 @@
 </template>
 
 <script>
+import { mapGetters, mapMutations } from "vuex";
+
 import Knob from "./Knob";
 import AnalyserRender from "./AnalyserRender";
 export default {
   props: ["Node", "analyser"],
+
+  computed: {
+    ...mapGetters(["appConnecting", "originNode"]),
+  },
+
   methods: {
-    nodeClicked() {},
+    ...mapMutations(["setAppConnecting", "setOriginNode"]),
+
     setType(e) {
       this.Node.setType(e.target.value);
       e.target.blur();
       if (this.Node.audioParams.length > 0)
         this.setParamsConstraints(this.Node.audioParams);
-
       // if (this.Node.customParams) //no seteo los custom params para no cambiar el ADSR
       //   this.setParamsConstraints(this.Node.customParams);
     },
@@ -226,22 +232,50 @@ export default {
     setAudioParam(apIndex, value) {
       this.Node.setAudioParam(apIndex, value);
     },
-    audioParamClicked(audioParam) {},
 
     setInnerNodeAudioParam(inapIndex, value) {
       this.Node.setInnerNodeAudioParam(inapIndex, value);
     },
-    innerNodeAudioParamClicked(innerNodeAudioParam, inapIndex) {},
 
     setCustomParam(cpIndex, value) {
       this.Node.setCustomParam(cpIndex, value);
     },
-    customParamClicked(customParam, cpIndex) {},
+
+    // CONNECTIONS
+
+    startConnect() {
+      this.setAppConnecting(true);
+      this.setOriginNode(this.Node);
+      this.$refs[this.Node.name].classList.add("current-node");
+      console.log("Connecting...");
+    },
+
+    nodeClicked() {
+      if (this.Node.nodeType !== "Modulator") return;
+      if (!this.appConnecting) return this.startConnect();
+
+      if (this.Node.name === this.originNode.name)
+        return this.stopConnect("Cancel connect");
+    },
+
+    audioParamClicked(audioParam) {
+      if (!this.appConnecting) return;
+
+      if (this.Node.name === this.originNode.name)
+        return this.stopConnect("Cannot connect to itself");
+
+      this.originNode.connectAudioParam(this.Node, audioParam);
+      this.stopConnect("Connected");
+    },
+
+    stopConnect(msg) {
+      this.setAppConnecting(false);
+      this.$refs[this.Node.name].classList.remove("current-node");
+      console.log(msg);
+    },
 
     //level
-    levelClicked() {
-      this.$emit("levelClicked");
-    },
+
     setNodeGain(value) {
       this.Node.setGain(value);
     },
@@ -367,6 +401,12 @@ export default {
   .param {
     min-width: 50px;
     flex-basis: auto;
+  }
+}
+
+.Modulator {
+  .params-container {
+    display: block;
   }
 }
 

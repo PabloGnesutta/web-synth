@@ -2,22 +2,28 @@
   <div class="Home" @click="init">
     <div class="header" v-if="inited">
       <div class="buttons">
-        <div class="btn" @click="createInstrument('ScaleInterface')">Piano</div>
-        <div class="btn" @click="createInstrument('Carrier')">Oscillator</div>
-        <div class="btn" @click="createInstrument('WhiteNoise')">
+        <div class="btn btn-instrument" @click="createPiano('ScaleInterface')">
+          Piano
+        </div>
+        <div class="btn btn-instrument" @click="createInstrument('Carrier')">
+          Oscillator
+        </div>
+        <div class="btn btn-instrument" @click="createInstrument('WhiteNoise')">
           White Noise
         </div>
         <br />
-        <div class="btn" @click="createModulator">Modulator</div>
+        <div class="btn btn-modulator" @click="createModulator">Modulator</div>
         <br />
-        <!-- <div class="btn" @click="createADSROscillator">ADSR Oscillator</div> -->
-        <div class="btn" @click="createEffect('BiquadFilter')">Filter</div>
-        <div class="btn" @click="createEffect('Delay')">Delay</div>
-        <div class="btn" @click="createEffect('Gain')">Gain</div>
+        <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
+          Filter
+        </div>
+        <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
+        <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
         <br />
-
-        <div class="btn" @click="save">GUARDAR</div>
-        <div class="btn btn-2" @click="toggleMapping">MAP</div>
+        <div class="btn btn-2" v-if="!recording" @click="rec">REC</div>
+        <div class="btn btn-2" v-if="recording" @click="stopRec">STOP</div>
+        <!-- <div class="btn" @click="save">GUARDAR</div> -->
+        <!-- <div class="btn btn-2" @click="toggleMapping">MAP</div> -->
       </div>
     </div>
 
@@ -27,10 +33,23 @@
         class="track"
         :key="track.name"
         v-for="(track, t) in tracks"
-        :class="{ selected: currentTrack === t }"
-        @click.self="trackClicked(t)"
+        :class="{
+          selected: currentTrackIndex === t,
+          connecting: appConnecting,
+        }"
+        @click="trackClicked(t)"
       >
         <!-- <h3>{{ track.displayName }}</h3> -->
+        <!-- Modulators -->
+        <div class="track-modulators">
+          <NodeRender
+            v-for="(Mod, m) in track.modulators"
+            :Node="Mod"
+            :key="m"
+            @deleteNode="deleteModulator(t, m)"
+          />
+        </div>
+
         <!-- Instrument -->
         <div class="track-instrument">
           <NodeRender
@@ -39,8 +58,9 @@
             @deleteNode="deleteTrack(t)"
           />
         </div>
+
         <!-- Effects -->
-        <div class="effects-container">
+        <div class="track-effects">
           <NodeRender
             v-for="(Node, n) in track.effects"
             :Node="Node"
@@ -51,11 +71,14 @@
             @levelClicked="levelClicked(Node)"
           />
         </div>
+
         <!-- Track Gain -->
-        <NodeRender
-          :Node="track.trackGain"
-          :analyser="track.trackGainAnalyser"
-        />
+        <div class="track-gain">
+          <NodeRender
+            :Node="track.trackGain"
+            :analyser="track.trackGainAnalyser"
+          />
+        </div>
       </div>
     </div>
 
@@ -73,6 +96,11 @@
       </div>
     </div>
 
+    <br />
+    <div v-show="recordFinished">
+      <h3>audio</h3>
+      <audio controls></audio>
+    </div>
     <!-- <div class="scroll-pane" @scroll="paneScrolled">
       <div class="scroll-pane-inner"></div>
     </div> -->
@@ -104,7 +132,6 @@ const effectsDict = new Map([
 import { mapMutations, mapGetters } from "vuex";
 import NodeRender from "../components/NodeRender";
 import Knob from "../components/Knob";
-import { context } from "../class/Node";
 
 export default {
   name: "Home",
@@ -114,13 +141,13 @@ export default {
       context: null,
 
       tracks: [],
-      nodes: [],
+      trackCount: 0,
+      currentTrackIndex: 0,
+      trankGainDefaultVal: 0.4,
 
       originNode: null,
       connecting: false,
       originNodeIndex: null,
-
-      trankGainDefaultVal: 0.4,
 
       mainGain: null,
       mainGainKnob: 0.5,
@@ -135,19 +162,17 @@ export default {
       mapping: false,
       refBeignMapped: null,
 
-      trackCount: 0,
-      currentTrack: 0,
-
-      globalEnvironment: window,
-
-      analyser: null,
-      dataArray: null,
-      bufferLength: null,
+      //rec
+      dest: null,
+      mediaRecorder: null,
+      chunks: [],
+      recording: false,
+      recordFinished: false,
     };
   },
 
   computed: {
-    ...mapGetters(["appIsMapping"]),
+    ...mapGetters(["appIsMapping", "appConnecting"]),
   },
 
   mounted() {
@@ -157,6 +182,59 @@ export default {
 
   methods: {
     ...mapMutations(["setAppIsMapping"]),
+    rec() {
+      if (this.recording) return;
+      console.log("rec start");
+      this.chunks = [];
+      this.dest = this.context.createMediaStreamDestination();
+      this.mainGain.connect(this.dest);
+
+      this.mediaRecorder = new MediaRecorder(this.dest.stream);
+      this.mediaRecorder.ondataavailable = this.ondataavailable;
+      this.mediaRecorder.onstop = this.onstop;
+
+      this.mediaRecorder.start();
+      this.recording = true;
+      this.recordFinished = false;
+    },
+
+    stopRec() {
+      console.log("stop rec");
+      this.mediaRecorder.stop();
+      this.recording = false;
+      this.recordFinished = true;
+    },
+
+    ondataavailable(evt) {
+      this.chunks.push(evt.data);
+    },
+
+    onstop(evt) {
+      console.log("onstop");
+      var blob = new Blob(this.chunks, { type: "audio/ogg; codecs=opus" });
+      document.querySelector("audio").src = URL.createObjectURL(blob);
+
+      const fileReader = new FileReader();
+
+      fileReader.onloadend = () => {
+        let myArrayBuffer = fileReader.result;
+
+        this.context.decodeAudioData(myArrayBuffer, (audioBuffer) => {
+          this.source = this.context.createBufferSource();
+          this.source.buffer = audioBuffer;
+          this.source.start();
+          this.source.loop = true;
+
+          const buffGain = this.context.createGain();
+          buffGain.gain.value = 2;
+          this.source.connect(buffGain);
+          buffGain.connect(this.mainGain);
+          console.log("thissource", this.source);
+        });
+      };
+
+      fileReader.readAsArrayBuffer(blob);
+    },
 
     init() {
       if (this.context) return;
@@ -169,9 +247,7 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      const scaleInterface = new ScaleInterface("sawtooth");
-
-      this.createNewTrack(scaleInterface);
+      this.createNewTrack(new ScaleInterface("sawtooth"));
     },
 
     createNewTrack(instrument) {
@@ -200,9 +276,11 @@ export default {
         effects: [],
         trackGain,
         trackGainAnalyser,
+        recorder: null,
       });
 
-      this.currentTrack = this.tracks.length - 1;
+      this.currentTrackIndex = this.tracks.length - 1;
+      this.currentTrack = this.tracks[this.currentTrackIndex];
     },
 
     deleteTrack(t) {
@@ -212,12 +290,15 @@ export default {
       track.effects.forEach((e) => {
         e.destroy();
       });
+      track.modulators.forEach((m) => {
+        m.destroy();
+      });
       track = null;
       this.tracks.splice(t, 1);
     },
 
     insertEffect(Node) {
-      const track = this.tracks[this.currentTrack];
+      const track = this.tracks[this.currentTrackIndex];
       const effects = track.effects;
       const prev = effects[effects.length - 1] || track.instrument;
       const next = track.trackGain;
@@ -239,6 +320,12 @@ export default {
       effects.splice(n, 1);
     },
 
+    deleteModulator(t, m) {
+      const trackModulators = this.tracks[t].modulators;
+      trackModulators[m].destroy();
+      trackModulators.splice(m, 1);
+    },
+
     // CREATE NODES
 
     createEffect(className) {
@@ -252,96 +339,31 @@ export default {
     },
 
     createModulator() {
-      this.insertEffect(new Modulator());
+      const track = this.tracks[this.currentTrackIndex];
+      track.modulators.push(new Modulator("sawtooth"));
     },
 
     createPiano() {
       const scaleInterface = new ScaleInterface("sawtooth");
-      this.insertEffect(scaleInterface);
-      this.keypressListeners.push(scaleInterface);
+      this.createNewTrack(scaleInterface);
     },
 
     trackClicked(t) {
-      this.currentTrack = t;
-    },
-
-    // Connect
-
-    startConnect(Node, n) {
-      this.connecting = true;
-      this.originNode = Node;
-      this.originNodeIndex = n;
-      this.$refs["node-" + n][0].classList.add("current-node");
-      console.log("Connecting");
-    },
-
-    nodeClicked(Node, n) {
-      if (!this.connecting) return this.startConnect(Node, n);
-      if (Node.name === this.originNode.name)
-        return this.stopConnect("Cancel connect");
-      if (Node.nodeType === "BufferSource")
-        return this.stopConnect("Cannot connect to BufferSource node");
-
-      if (Node.nodeType === "Delay") this.originNode.connectDelay(Node);
-      this.originNode.connect(Node);
-
-      this.stopConnect("Connected");
-    },
-
-    audioParamClicked(Node, audioParam) {
-      if (!this.connecting) return;
-      if (Node.name === this.originNode.name)
-        return this.stopConnect("Cannot connect to itself");
-
-      this.originNode.connectAudioParam(Node, audioParam);
-      this.stopConnect("Connected");
-    },
-
-    levelClicked(Node) {
-      if (!this.connecting) return;
-      if (Node.name === this.originNode.name)
-        return this.stopConnect("Cannot connect to itself");
-
-      this.originNode.connectOutputNode(Node);
-      this.stopConnect("Connected");
-    },
-
-    innerNodeAudioParamClicked(Node, customParam, inapIndex) {
-      if (!this.connecting) return;
-      this.originNode.connectInnerNodeAudioParam(Node, customParam, inapIndex);
-      this.stopConnect("Connected");
-    },
-
-    customParamClicked() {
-      if (!this.connecting) return;
-      console.log("connect custom param not available yet");
-    },
-
-    stopConnect(msg) {
-      this.connecting = false;
-      this.$refs["node-" + this.originNodeIndex][0].classList.remove(
-        "current-node"
-      );
-      console.log(msg);
-    },
-
-    disconnect(Node, output) {
-      if (this.connecting) return;
-      Node.disconnectOutput(output);
-      this.onMouseLeaveOutput(output);
+      this.currentTrackIndex = t;
+      this.currentTrack = this.tracks[this.currentTrackIndex];
     },
 
     //output hover
 
-    onMouseEnterOutput(output) {
-      const el = document.querySelector("." + this.getCssNodeName(output.name));
-      el.classList.add("is-connection-destination");
-    },
+    // onMouseEnterOutput(output) {
+    //   const el = document.querySelector("." + this.getCssNodeName(output.name));
+    //   el.classList.add("is-connection-destination");
+    // },
 
-    onMouseLeaveOutput(output) {
-      const el = document.querySelector("." + this.getCssNodeName(output.name));
-      el.classList.remove("is-connection-destination");
-    },
+    // onMouseLeaveOutput(output) {
+    //   const el = document.querySelector("." + this.getCssNodeName(output.name));
+    //   el.classList.remove("is-connection-destination");
+    // },
 
     createMainGain() {
       this.mainGain = this.context.createGain();
@@ -477,7 +499,7 @@ export default {
   position: fixed;
   top: 0;
   z-index: 1;
-  background: rgba(0, 0, 0, 0.089);
+  background: black;
   padding: 0.2em;
   width: 100%;
 
@@ -488,9 +510,18 @@ export default {
   }
 
   .btn {
-    padding: 0.5em;
+    padding: 0.5em 1em;
     background: gray;
     cursor: pointer;
+  }
+  .btn-instrument {
+    background: teal;
+  }
+  .btn-modulator {
+    background: coral;
+  }
+  .btn-effect {
+    background: green;
   }
 }
 
@@ -531,35 +562,36 @@ export default {
   border: 2px solid white;
 }
 
-// Nodes
+.track-modulators {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
 
-.effects-container {
+.track-effects {
   display: flex;
   align-items: center;
   gap: 1em;
 }
 
 // IF CONNECTING
-.effects-container.connecting {
+.connecting {
   .node.current-node {
     border: 2px solid yellow;
   }
 
-  .node:not(.current-node) {
+  .node:not(.current-node):not(.Track-Gain) {
     border-color: green;
     .node-name {
       color: var(--color-2);
     }
-  }
-
-  .param-name {
-    color: var(--color-1);
-    cursor: pointer;
-  }
-
-  .level h4 {
-    color: lime;
-    cursor: pointer;
+    .param-name.connectable {
+      color: var(--color-1);
+      cursor: pointer;
+    }
+    .param-name:not(.connectable) {
+      color: gray;
+    }
   }
 
   .output {
@@ -585,11 +617,6 @@ export default {
 .Main-Gain:not(.is-connection-destination),
 .level:not(.is-connection-destination) {
   border: 2px solid transparent;
-}
-
-.btn {
-  width: 120px;
-  border-radius: 10px;
 }
 
 // Scoll Pane

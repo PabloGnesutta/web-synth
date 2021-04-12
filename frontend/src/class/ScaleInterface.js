@@ -80,7 +80,6 @@ class ScaleInterface extends Node {
     if (noteIndex < 0) noteIndex = 0
     if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
     this.scaleNodes[i].startWithFrequency(notes[noteIndex].freq); //.waveLength probar
-    this.scaleNodes[i].node.detune.setValueAtTime(this.customParams[0].value, 0)
   }
 
   stopNote(i) {

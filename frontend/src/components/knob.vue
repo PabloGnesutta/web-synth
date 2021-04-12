@@ -42,7 +42,7 @@ export default {
 
       deg: 0,
       trackColor: "#111",
-      maxTurningDeg: 278,
+      maxTurningDeg: 235,
       min_v: 0,
       max_v: 127,
       defaultValue: null,
@@ -55,7 +55,7 @@ export default {
   props: ["minVal", "maxVal", "initVal"],
 
   computed: {
-    ...mapGetters(["appIsMapping"]),
+    ...mapGetters(["appIsMapping", "appConnecting"]),
   },
 
   mounted() {
@@ -64,6 +64,7 @@ export default {
 
   methods: {
     valueClicked() {
+      if (this.appConnecting) return;
       this.setKnobValueAndPosition(parseFloat(this.initknobValue));
       this.emitAndSetEmitValueWithRawValue(this.defaultValue);
     },
@@ -212,7 +213,14 @@ export default {
 
 .value {
   margin-top: 0.3em;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
+  padding: 0.1em 0.2em;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #272727;
+  transform: translate(50%, 40%);
+  border-radius: 5px;
 }
 
 .mapped-cmd {

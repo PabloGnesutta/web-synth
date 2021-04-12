@@ -27,18 +27,41 @@ class ADSROscillator extends Oscillator {
   }
 
   start(frequency) {
-    const t0 = Node.context.currentTime
-    const t1 = t0 + this.A
-
     this.ADSRGain = Node.context.createGain()
     this.ADSRGain.connect(this.outputNode)
 
     this.node = Node.context.createOscillator()
     this.node.type = this.oscType
+    this.node.connect(this.ADSRGain)
+
+    //test fm
+    // const ga = Node.context.createGain()
+    // const mod = Node.context.createOscillator()
+    // const mod2 = Node.context.createOscillator()
+    // mod.frequency.value = 2000 //fixed freq
+    // mod.frequency.value = frequency //sync with note freq
+    // mod.detune.value = this.detuneValue
+    // mod.type = "square"
+    // mod2.frequency.value = frequency
+    // mod2.detune.value = this.detuneValue
+    // mod2.type = "square"
+    // ga.gain.setValueAtTime(2000, 0)
+    // mod.connect(ga)
+    // mod2.connect(ga)
+    // ga.connect(this.node.frequency)
+    // mod.start()
+    // mod2.start()
+    //---
 
     this.node.frequency.setValueAtTime(frequency, 0)
     this.node.detune.value = this.detuneValue
-    this.node.connect(this.ADSRGain)
+
+    this.playNote()
+  }
+
+  playNote() {
+    const t0 = Node.context.currentTime
+    const t1 = t0 + this.A
 
     this.node.start(t0)
     this.status = "STARTED"
