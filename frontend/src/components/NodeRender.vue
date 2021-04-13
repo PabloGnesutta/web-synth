@@ -120,7 +120,7 @@
                 class="knob-wrapper"
                 @click="knobClicked(Node.name + '-' + customParam.name)"
               >
-                <div class="track-gain">
+                <div class="knob-wrapper">
                   <Knob
                     :ref="Node.name + '-' + customParam.name"
                     :minVal="customParam.minValue"
@@ -129,6 +129,53 @@
                     :unit="customParam.unit"
                     @knobTurned="setCustomParam(cpIndex, $event)"
                   />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modulation Params -->
+          <div
+            class="modulation-params params-container"
+            v-if="Node.modulationParams"
+          >
+            <div
+              class="modulation-param param"
+              v-for="(motulationParam, mpIndex) in Node.modulationParams"
+              :key="motulationParam.name"
+              :class="[getCssNodeName(Node.name + ' ' + motulationParam.name)]"
+            >
+              <div class="param-name">
+                {{ motulationParam.displayName }}
+              </div>
+
+              <div
+                class="knob-wrapper"
+                @click="knobClicked(Node.name + '-' + motulationParam.name)"
+              >
+                <div
+                  class="knob-wrapper"
+                  v-if="motulationParam.name !== 'type'"
+                >
+                  <Knob
+                    :ref="Node.name + '-' + motulationParam.name"
+                    :minVal="motulationParam.minValue"
+                    :maxVal="motulationParam.maxValue"
+                    :initVal="motulationParam.defaultValue"
+                    :unit="motulationParam.unit"
+                    @knobTurned="setModulationParam(mpIndex, $event)"
+                  />
+                </div>
+                <div class="select-wrapper" v-else>
+                  <select @input="setModType(mpIndex, $event)">
+                    <option
+                      v-for="type in motulationParam.types"
+                      :key="type"
+                      :selected="type === motulationParam.type"
+                    >
+                      {{ type }}
+                    </option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -261,6 +308,15 @@ export default {
 
     setCustomParam(cpIndex, value) {
       this.Node.setCustomParam(cpIndex, value);
+    },
+
+    setModulationParam(mpIndex, value) {
+      this.Node.setModulationParam(mpIndex, value);
+    },
+
+    setModType(mpIndex, e) {
+      e.target.blur();
+      this.Node.setModulationParam(mpIndex, e.target.value);
     },
 
     // CONNECTIONS
@@ -398,9 +454,10 @@ export default {
   margin-bottom: 0.2em;
 }
 
-.ScaleInterface,
+.Justinton,
 .Modulator,
 .Carrier,
+.Femod,
 .Delay {
   .node-header {
     display: flex;
@@ -441,7 +498,8 @@ export default {
 
 // Specific Node Styles:
 
-.ScaleInterface {
+.Justinton,
+.Femod {
   width: 205px;
 }
 

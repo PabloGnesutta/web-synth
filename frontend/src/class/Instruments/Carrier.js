@@ -1,4 +1,4 @@
-const Oscillator = require("./Oscillator")
+const Oscillator = require("../Oscillator/Oscillator")
 
 const initialGain = 0.5
 const detuneMax = 100
@@ -17,6 +17,7 @@ class Carrier extends Oscillator {
 
     this.name = "Osc " + ++Carrier.carrierCount
     this.nodeType = "Carrier"
+    this.nodeRol = "Instrument"
 
     this.status = "STOPPED"
 

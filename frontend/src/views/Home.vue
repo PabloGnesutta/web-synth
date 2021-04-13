@@ -10,9 +10,12 @@
           <!-- Instruments -->
           <div
             class="btn btn-instrument"
-            @click="createPiano('ScaleInterface')"
+            @click="createInstrument('Justinton')"
           >
-            Piano
+            Justinton
+          </div>
+          <div class="btn btn-instrument" @click="createInstrument('Femod')">
+            Femod
           </div>
           <div class="btn btn-instrument" @click="createInstrument('Carrier')">
             Oscillator
@@ -44,24 +47,21 @@
           <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
             STOP
           </div>
-          <div class="play-stop">
-            <div
-              class="btn play-recs"
-              @click="startPlaying"
-              v-if="recordings.length > 0 && !playing"
-            >
+          <div class="play-stop" v-if="recordingsAvailable">
+            <div class="btn play-recs" @click="startPlaying" v-if="!playing">
               PLAY
             </div>
-            <div
-              @click="stopPlaying"
-              class="btn stop-playing"
-              v-if="recordings.length > 0 && playing"
-            >
+            <div @click="stopPlaying" class="btn stop-playing" v-if="playing">
               STOP
             </div>
           </div>
-          <!-- <div class="btn" @click="save">GUARDAR</div> -->
-          <!-- <div class="btn btn-2" @click="toggleMapping">MAP</div> -->
+          <div
+            v-if="renderFinished"
+            class="btn"
+            @click="showRecordWaveforms = !showRecordWaveforms"
+          >
+            wav
+          </div>
         </div>
       </div>
 
@@ -141,9 +141,7 @@
         <!-- <div class="recording" v-for="recording in recordings"></div> -->
       </div>
 
-      <div>
-        <canvas id="displaycanvas" width="1200px" height="300px"></canvas>
-      </div>
+      <div class="canvases" v-show="showRecordWaveforms"></div>
     </div>
   </div>
 </template>
@@ -155,15 +153,18 @@ const Delay = require("../class/Effects/Delay");
 const Compressor = require("../class/Effects/Compressor");
 const BiquadFilter = require("../class/Effects/BiquadFilter");
 
-const Carrier = require("../class/Oscillator/Carrier");
-const ScaleInterface = require("../class/ScaleInterface");
-const WhiteNoise = require("../class/Effects/WhiteNoise");
+const Femod = require("../class/Instruments/Femod");
+const Carrier = require("../class/Instruments/Carrier");
+const WhiteNoise = require("../class/Instruments/WhiteNoise");
+const Justinton = require("../class/Instruments/Justinton");
+
 const Modulator = require("../class/Oscillator/Modulator");
 
 const instrumentsDict = new Map([
+  ["Femod", Femod],
   ["Carrier", Carrier],
+  ["Justinton", Justinton],
   ["WhiteNoise", WhiteNoise],
-  ["ScaleInterface", ScaleInterface],
 ]);
 
 const effectsDict = new Map([
@@ -176,7 +177,6 @@ const effectsDict = new Map([
 import { mapMutations, mapGetters } from "vuex";
 import NodeRender from "../components/NodeRender";
 import Knob from "../components/Knob";
-import { context } from "../class/Node";
 
 export default {
   name: "Home",
@@ -189,10 +189,6 @@ export default {
       trackCount: 0,
       currentTrackIndex: 0,
       trankGainDefaultVal: 0.4,
-
-      originNode: null,
-      connecting: false,
-      originNodeIndex: null,
 
       mainGain: null,
       mainGainKnob: 0.5,
@@ -208,19 +204,19 @@ export default {
       refBeignMapped: null,
 
       //rec
-      dest: null,
-      mediaRecorder: null,
-      chunks: [],
       recording: false,
-      recordFinished: false,
-
       mediaRecorders: [],
       recordings: [],
       blobs: [],
 
+      //canvas
+      showRecordWaveforms: false,
+      renderFinished: false,
+
       //play
       playing: false,
       playingBuffers: [],
+      recordingsAvailable: false,
     };
   },
 
@@ -243,10 +239,14 @@ export default {
     rec() {
       if (this.recording) return;
       const recordingTracks = this.tracks.filter((t) => t.recEnabled);
-      console.log("rec start");
-      this.recording = true;
-      this.recordFinished = false;
+      const total = recordingTracks.length;
+      let c = 0;
 
+      this.recording = true;
+      this.renderFinished = false;
+      this.showRecordWaveforms = false;
+
+      console.log("rec start");
       recordingTracks.forEach((t, i) => {
         let chunks = [];
         let dest = this.context.createMediaStreamDestination();
@@ -269,7 +269,8 @@ export default {
             const arrayBuffer = fileReader.result;
 
             this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-              this.recordings.push(audioBuffer);
+              this.recordings.push({ audioBuffer, track: t });
+              if (++c === total) this.recordingsReady();
             });
           };
 
@@ -281,22 +282,26 @@ export default {
     },
 
     stopRec() {
-      console.log("rec stop");
       this.mediaRecorders.forEach((mr) => {
         mr.stop();
       });
-      (this.mediaRecorders = []), (this.recording = false);
-      this.recordFinished = true;
+      this.mediaRecorders = [];
+      this.recording = false;
+    },
+
+    recordingsReady() {
+      console.log("recordings ready");
+      this.recordingsAvailable = true;
+      this.renderWaveforms()
     },
 
     startPlaying() {
       this.playing = true;
-      this.recordings.forEach((audioBuffer) => {
-        const source = this.context.createBufferSource();
-        source.buffer = audioBuffer;
-        // source.loop = true;
-
+      this.recordings.forEach((recording) => {
         const gain = this.context.createGain();
+        const source = this.context.createBufferSource();
+        source.buffer = recording.audioBuffer;
+        // source.loop = true;
 
         source.connect(gain);
         gain.connect(this.mainGain);
@@ -305,23 +310,34 @@ export default {
           source,
           gain,
         });
-
-        this.displayBuffer(audioBuffer);
       });
-
-      this.blobs.forEach((blob) => {
-        console.log(URL.createObjectURL(blob)); //set as audio src
-      });
+      console.log(this.getRecordingsURL());
     },
 
-    displayBuffer(buff) {
-      console.log(buff);
-      const canvas = document.getElementById("displaycanvas");
-      canvas.width = buff.duration * 100;
+    getRecordingsURL() {
+      let URLs = [];
+      this.blobs.forEach((blob) => {
+        URLs.push(URL.createObjectURL(blob));
+      });
+      return URLs;
+    },
+
+    renderWaveforms() {
+      for (let i = 0; i < this.recordings.length; i++)
+        this.renderWaveform(this.recordings[i]);
+      this.renderFinished = true;
+      console.log("finished rendering");
+    },
+
+    renderWaveform({ audioBuffer, track }) {
+      console.log("rendering waveform", track);
+      let canvas = document.createElement("canvas");
+      canvas.width = audioBuffer.duration * 100;
+
       const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
+      const canvasHeight = 150;
       const context = canvas.getContext("2d");
-      var leftChannel = buff.getChannelData(0); // Float32Array describing left channel
+      var leftChannel = audioBuffer.getChannelData(0); // Float32Array describing left channel
 
       context.save();
       context.fillStyle = "#222";
@@ -340,6 +356,7 @@ export default {
       }
       context.restore();
       console.log("done");
+      document.querySelector(".canvases").appendChild(canvas);
     },
 
     stopPlaying() {
@@ -363,7 +380,7 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.createTrack(new ScaleInterface("sawtooth"));
+      this.createTrack(new Femod("sine"));
     },
 
     createTrack(instrument) {
@@ -377,7 +394,10 @@ export default {
 
       //instrument
       instrument.connect(trackGain);
-      if (instrument.nodeType === "ScaleInterface")
+      if (
+        instrument.nodeType === "Justinton" ||
+        instrument.nodeType === "Femod"
+      )
         this.keypressListeners.push(instrument); //esto compensa midichannel
 
       // const instrumentAnalyser = this.context.createAnalyser();
@@ -764,5 +784,9 @@ $yMaxVal: 60px; //e.srcElement.scrollTop;
 .scroll-pane-inner {
   height: $spHeight + $yMaxVal;
   width: $spWidth + $xMaxVal;
+}
+
+canvas {
+  display: block;
 }
 </style>

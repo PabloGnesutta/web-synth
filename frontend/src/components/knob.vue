@@ -61,7 +61,6 @@ export default {
 
   mounted() {
     this.setParamContraints(this.minVal, this.maxVal, parseFloat(this.initVal));
-    // console.log(this.unit)
   },
 
   methods: {
@@ -168,11 +167,12 @@ export default {
 
       this.defaultValue = initValue;
       this.initknobValue = this.knobValue;
-      this.emitValue = initValue.toFixed(2);
-      // this.processDisplayValue();
 
-      // this.setKnobValueAndPosition(this.knobValue);
-      // this.$emit("knobTurned", this.emitValue);
+      //acá (o en node render) chequear que no haya sido creado este nodo previamente antes de forzar reset de parámetros
+      this.emitValue = initValue.toFixed(2);
+      this.processDisplayValue();
+      this.setKnobValueAndPosition(this.knobValue);
+      this.$emit("knobTurned", this.emitValue);
     },
 
     processDisplayValue() {
@@ -180,7 +180,7 @@ export default {
         this.emitValue >= 1000
           ? (this.emitValue / 100).toFixed(1) + "k"
           : parseFloat(this.emitValue).toFixed(1);
-      this.displayValue = this.displayValue + (this.unit || '');
+      this.displayValue = this.displayValue + (this.unit || "");
     },
   },
 };

@@ -1,16 +1,16 @@
 const Node = require("../Node")
 const Oscillator = require("./Oscillator")
 
-const initialGain = 0.5
+const initialGain = 1
 
-class ADSROscillator extends Oscillator {
+class ADSROsc extends Oscillator {
   static ADSRCount = 0
 
   constructor(type, frequency) {
     super(type, frequency)
 
-    this.name = "ADSR " + ++ADSROscillator.ADSRCount
-    this.nodeType = "ADSROscillator"
+    this.name = "ADSR " + ++ADSROsc.ADSRCount
+    this.nodeType = "ADSROsc"
 
     this.detuneValue = 0;
 
@@ -106,4 +106,4 @@ class ADSROscillator extends Oscillator {
   // }
 }
 
-module.exports = ADSROscillator
+module.exports = ADSROsc

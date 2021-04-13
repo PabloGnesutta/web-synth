@@ -72,8 +72,6 @@ class Node {
     this.node.connect(this.outputNode)
   }
 
-
-
   setInnerNodeAudioParam(index, value) {
     const innerNodeAudioParam = this.innerNodeAudioParams[index];
     innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
@@ -81,12 +79,10 @@ class Node {
   }
 
   setCustomParam(index, value) {
-    const innerNodeAudioParam = this.customParams[index];
-    innerNodeAudioParam.value = value
-    innerNodeAudioParam.set(parseFloat(value))
+    const customParams = this.customParams[index];
+    customParams.value = value
+    customParams.set(parseFloat(value))
   }
-
-
 
   // connectDelay(Delay) {
   //   Delay.connectNativeNode(this.outputs[0].node, this.outputs[0].name)

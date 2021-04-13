@@ -13,6 +13,7 @@ class Delay extends Node {
 
     this.name = name || "Noise " + ++Delay.noiseCount
     this.nodeType = "BufferSource"
+    this.nodeRol = "Instrument"
 
     const bufferSize = 2 * Node.context.sampleRate;
     const noiseBuffer = Node.context.createBuffer(

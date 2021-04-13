@@ -265,11 +265,11 @@
 <script>
 const Node = require("../class/Node");
 const Gain = require("../class/Effects/Gain");
-const ScaleInterface = require("../class/ScaleInterface");
+const Justinton = require("../class/Instruments/Justinton");
 const Modulator = require("../class/Oscillator/Modulator");
-const Carrier = require("../class/Oscillator/Carrier");
-const ADSROscillator = require("../class/Oscillator/ADSROscillator");
-const WhiteNoise = require("../class/Effects/WhiteNoise");
+const Carrier = require("../class/Instruments/Carrier");
+const ADSROscillator = require("../class/Oscillator/ADSROsc");
+const WhiteNoise = require("../class/Instruments/WhiteNoise");
 const BiquadFilter = require("../class/Effects/BiquadFilter");
 const Delay = require("../class/Effects/Delay");
 
@@ -671,7 +671,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .Home {
   min-height: 100vh;
 }
