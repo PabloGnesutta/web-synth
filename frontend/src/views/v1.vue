@@ -386,7 +386,7 @@ export default {
       if (Node.name === this.originNode.name)
         return this.stopConnect("Cannot connect to itself");
 
-      this.originNode.connectOutputNode(Node);
+      this.originNode.connectLevel(Node);
       this.stopConnect("Connected");
     },
 

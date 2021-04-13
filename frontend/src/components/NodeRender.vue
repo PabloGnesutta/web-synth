@@ -175,6 +175,7 @@
         <!-- Level -->
         <div
           class="level"
+          @click="levelClicked"
           v-if="Node.level"
           :class="getCssNodeName(Node.name + ' Level')"
         >
@@ -186,7 +187,6 @@
               :maxVal="Node.maxGain"
               :initVal="Node.gain"
               @knobTurned="setNodeGain($event)"
-              @click="levelClicked"
             />
           </div>
         </div>
@@ -290,7 +290,14 @@ export default {
       this.stopConnect("Connected");
     },
 
-    levelClicked() {},
+    levelClicked() {
+      if (!this.appConnecting) return;
+      if (this.Node.name === this.originNode.name)
+        return this.stopConnect("Cannot connect to itself");
+
+      this.originNode.connectLevel(this.Node);
+      this.stopConnect("Connected");
+    },
 
     stopConnect(msg) {
       this.setAppConnecting(false);
@@ -315,15 +322,15 @@ export default {
     },
 
     //outputs
-    disconnect(output) {},
-    // onMouseEnterOutput(output) {},
-    // onMouseLeaveOutput(output) {},
 
-    //output hover
+    disconnect(output) {
+      if (this.appConnecting) return;
+      this.Node.disconnectOutput(output);
+      this.onMouseLeaveOutput(output);
+    },
 
     onMouseEnterOutput(output) {
       const el = document.querySelector("." + this.getCssNodeName(output.name));
-      console.log(el);
       el.classList.add("is-connection-destination");
     },
 
@@ -401,6 +408,8 @@ export default {
   }
 }
 
+// PARAMS
+
 .params-wrapper {
   width: 100%;
 }
@@ -420,6 +429,10 @@ export default {
   border: 2px solid transparent;
   transition: border-color 0.2s ease-out, background-color 0.2s ease-out;
   font-size: 0.95rem;
+}
+
+.level {
+  transition: border-color 0.2s ease-out, background-color 0.2s ease-out;
 }
 
 .param-name {
@@ -510,7 +523,8 @@ export default {
   color: var(--color-2);
 }
 
-.param.is-connection-destination {
+.param.is-connection-destination,
+.level.is-connection-destination {
   border: 2px solid white;
   background: var(--color-2);
 }

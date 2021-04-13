@@ -125,7 +125,7 @@
 
       <!-- Main Gain -->
       <div class="section-inner Main-Gain">
-        <h3 @click="mainGainClicked()">Main Gain</h3>
+        <h3>Main Gain</h3>
         <div class="knob-wrapper" @click="knobClicked('MainGain')">
           <Knob
             :ref="'MainGain'"
@@ -323,7 +323,6 @@ export default {
       const context = canvas.getContext("2d");
       var leftChannel = buff.getChannelData(0); // Float32Array describing left channel
 
-      var lineOpacity = canvasWidth / leftChannel.length;
       context.save();
       context.fillStyle = "#222";
       context.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -332,10 +331,8 @@ export default {
       context.translate(0, canvasHeight / 2);
       context.globalAlpha = 0.06; // lineOpacity ;
       for (var i = 0; i < leftChannel.length; i++) {
-        // on which line do we get ?
         var x = Math.floor((canvasWidth * i) / leftChannel.length);
         var y = (leftChannel[i] * canvasHeight) / 2 - 2;
-        // console.log(leftChannel[i])
         context.beginPath();
         context.moveTo(x, 0);
         context.lineTo(x + 1, y);

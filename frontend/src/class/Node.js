@@ -43,7 +43,10 @@ class Node {
   }
 
   disconnect() {
-    this.disconnectOutput(this.outputs[0].node)
+    this.outputs.forEach(o => {
+      this.disconnectOutput(o.node)
+    })
+    // this.disconnectOutput(this.outputs[0].node)
     return this
   }
 
@@ -69,17 +72,7 @@ class Node {
     this.node.connect(this.outputNode)
   }
 
-  connectAudioParam(Node, audioParam) {
-    this.outputNode.connect(Node.node[audioParam.name])
-    this.outputs.push({ name: Node.name + ' ' + audioParam.name, node: Node.node[audioParam.name] })
-  }
 
-  connectInnerNodeAudioParam(Node, INAudioParam, INAPIndex) {
-    const param = Node.innerNodeAudioParams[INAPIndex]
-    const destination = param.node[param.nodeAudioParam]
-    this.outputNode.connect(destination)
-    this.outputs.push({ name: Node.name + ' ' + param.name, node: destination })
-  }
 
   setInnerNodeAudioParam(index, value) {
     const innerNodeAudioParam = this.innerNodeAudioParams[index];
@@ -93,10 +86,7 @@ class Node {
     innerNodeAudioParam.set(parseFloat(value))
   }
 
-  connectOutputNode(Node) { //outuputNode = level gainNode
-    this.outputNode.connect(Node.outputNode)
-    this.outputs.push({ name: Node.name + ' Level', node: Node.outputNode })
-  }
+
 
   // connectDelay(Delay) {
   //   Delay.connectNativeNode(this.outputs[0].node, this.outputs[0].name)

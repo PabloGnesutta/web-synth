@@ -41,6 +41,33 @@ class Modulator extends Oscillator {
       ap.displayName = audioParamsConfig[index].displayName
     })
   }
+
+  connectAudioParam(Node, audioParam) {
+    this.outputNode.connect(Node.node[audioParam.name])
+    this.outputs.push({ name: Node.name + ' ' + audioParam.name, node: Node.node[audioParam.name] })
+  }
+
+  connectInnerNodeAudioParam(Node, INAudioParam, INAPIndex) {
+    const param = Node.innerNodeAudioParams[INAPIndex]
+    const destination = param.node[param.nodeAudioParam]
+    this.outputNode.connect(destination)
+    this.outputs.push({ name: Node.name + ' ' + param.name, node: destination })
+  }
+
+  connectLevel(Node) {
+    this.outputNode.connect(Node.outputNode.gain)
+    this.outputs.push({ name: Node.name + ' Level', node: Node.outputNode })
+  }
+
+  //puede ser un nodo o un parámetro de un nodo
+  disconnectOutput(output) {
+    console.log('output', output)
+    if (output.node.gain) this.outputNode.disconnect(output.node.gain)
+    else this.outputNode.disconnect(output.node)
+    const index = this.outputs.findIndex(o => o.name === output.name)
+    this.outputs.splice(index, 1)
+  }
+
 }
 
 module.exports = Modulator
