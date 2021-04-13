@@ -169,10 +169,10 @@ export default {
       this.defaultValue = initValue;
       this.initknobValue = this.knobValue;
       this.emitValue = initValue.toFixed(2);
-      this.processDisplayValue();
+      // this.processDisplayValue();
 
-      this.setKnobValueAndPosition(this.knobValue);
-      this.$emit("knobTurned", this.emitValue);
+      // this.setKnobValueAndPosition(this.knobValue);
+      // this.$emit("knobTurned", this.emitValue);
     },
 
     processDisplayValue() {

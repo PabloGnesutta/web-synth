@@ -59,9 +59,8 @@ class Modulator extends Oscillator {
     this.outputs.push({ name: Node.name + ' Level', node: Node.outputNode })
   }
 
-  //puede ser un nodo o un parámetro de un nodo
+  //puede ser un nodo o el level (outputNode.gain) de un nodo
   disconnectOutput(output) {
-    console.log('output', output)
     if (output.node.gain) this.outputNode.disconnect(output.node.gain)
     else this.outputNode.disconnect(output.node)
     const index = this.outputs.findIndex(o => o.name === output.name)
