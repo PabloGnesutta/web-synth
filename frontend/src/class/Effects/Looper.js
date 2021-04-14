@@ -11,22 +11,18 @@ class Looper extends Node {
     this.name = name || "Looper " + ++Looper.looperCount
     this.nodeType = "Looper"
     this.nodeRol = "Effect"
-    
+
     this.status = "CLEARED"
     this.loopAvailable = false
 
-    this.inputNode = Node.context.createGain()
-    this.node = this.inputNode
+    this.comp = Node.context.createDynamicsCompressor()
+    this.node = this.comp
     this.initGain(initialGain)
-
-    this.mediaDestination = Node.context.createMediaStreamDestination();
-    this.inputNode.connect(this.mediaDestination);
   }
 
   playLoop() {
     this.status = "PLAYING"
     this.source = Node.context.createBufferSource();
-    const comp = Node.context.createDynamicsCompressor();
     this.source.buffer = this.looperBuffer;
     this.source.loop = true;
 
@@ -63,11 +59,15 @@ class Looper extends Node {
     this.status = "RECORDING"
     this.chunks = [];
 
+    this.mediaDestination = Node.context.createMediaStreamDestination();
+    this.node.connect(this.mediaDestination);
+
     this.mediaRecorder = new MediaRecorder(
       this.mediaDestination.stream
     );
 
     this.mediaRecorder.ondataavailable = (evt) => {
+      console.log('ondataav')
       this.chunks.push(evt.data);
     };
 
@@ -83,6 +83,7 @@ class Looper extends Node {
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
           this.looperBuffer = audioBuffer
           this.loopAvailable = true
+          this.node.disconnect(this.mediaDestination)
           this.playLoop()
         });
       };

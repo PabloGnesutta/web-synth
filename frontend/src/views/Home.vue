@@ -67,13 +67,6 @@
               STOP
             </div>
           </div>
-          <!-- <div
-            class="btn btn-export"
-            v-if="recordingsAvailable"
-            @click="playExport"
-          >
-            Play Recording
-          </div> -->
           <div
             class="btn btn-export-download"
             v-if="recordingsAvailable"
@@ -163,10 +156,6 @@
         </div>
       </div>
 
-      <div class="recordings">
-        <!-- <div class="recording" v-for="recording in recordings"></div> -->
-      </div>
-
       <div class="canvases" v-show="showRecordWaveforms"></div>
     </div>
   </div>
@@ -219,6 +208,7 @@ export default {
       trankGainDefaultVal: 0.4,
 
       mainGain: null,
+      mixerGain: null,
       mainGainKnob: 0.5,
 
       keyEnabled: [],
@@ -377,12 +367,9 @@ export default {
 
     playExport() {
       this.exportSource = this.context.createBufferSource();
-      const comp = this.context.createDynamicsCompressor();
       this.exportSource.buffer = this.exportBuffer;
-      // source.loop = true;
 
-      this.exportSource.connect(comp);
-      comp.connect(this.mainGain);
+      this.exportSource.connect(this.context.destination);
       this.exportSource.start();
       this.playing = true;
 
@@ -420,13 +407,13 @@ export default {
     //     });
 
     //     source.onended = () => {
-    //       if (i === this.recordings.length - 1) this.stopPlaying();
+    //       if (i === this.recordings.length - 1) this.stopPlayingAllRecordings();
     //     };
     //   }
     //   console.log(this.getRecordingsURL());
     // },
 
-    // stopPlaying() {
+    // stopPlayingAllRecordings() {
     //   this.playingBuffers.forEach((pb) => {
     //     pb.source.disconnect();
     //     pb.sourceGain.disconnect();
@@ -500,8 +487,8 @@ export default {
     createTrack(instrument) {
       //track gain
       const trackGain = new Gain("Track Gain");
-      trackGain.setGain(0.4);
-      trackGain.connectNativeNode(this.mainGain, "Main Gain");
+      trackGain.setGain(1);
+      trackGain.connectNativeNode(this.mixerGain, "Mixer Gain");
 
       const trackGainAnalyser = this.context.createAnalyser();
       trackGain.connectNativeNode(trackGainAnalyser, "Analyser");
@@ -514,14 +501,10 @@ export default {
       )
         this.keypressListeners.push(instrument); //esto compensa midichannel
 
-      // const instrumentAnalyser = this.context.createAnalyser();
-      // instrument.connectNativeNode(instrumentAnalyser);
-
       this.tracks.push({
         name: "Track " + ++this.trackCount,
         displayName: "Track " + this.trackCount,
         instrument,
-        // instrumentAnalyser,
         modulators: [],
         effects: [],
         trackGain,
@@ -609,8 +592,8 @@ export default {
       this.mainGain.gain.value = this.mainGainKnob;
       this.mainGain.connect(this.context.destination);
 
-      this.analyser = this.context.createAnalyser();
-      this.mainGain.connect(this.analyser);
+      this.mixerGain = this.context.createGain();
+      this.mixerGain.connect(this.mainGain);
     },
 
     onMainGainKnobInput(val) {
