@@ -44,6 +44,9 @@
           </div>
           <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
           <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
+          <div class="btn btn-effect" @click="createEffect('Looper')">
+            Looper
+          </div>
           <!-- REC -->
           <br />
           <div class="btn btn-2 rec" v-if="!recording" @click="startRec">
@@ -173,6 +176,7 @@
 const Node = require("../class/Node");
 const Gain = require("../class/Effects/Gain");
 const Delay = require("../class/Effects/Delay");
+const Looper = require("../class/Effects/Looper");
 const Compressor = require("../class/Effects/Compressor");
 const BiquadFilter = require("../class/Effects/BiquadFilter");
 
@@ -193,6 +197,7 @@ const instrumentsDict = new Map([
 const effectsDict = new Map([
   ["Gain", Gain],
   ["Delay", Delay],
+  ["Looper", Looper],
   ["Compressor", Compressor],
   ["BiquadFilter", BiquadFilter],
 ]);

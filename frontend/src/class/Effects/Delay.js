@@ -5,7 +5,7 @@ const initialGain = 1
 const minDelayTime = 0.01
 const maxDelayTime = 3
 const initialDelayTime = 0.3
-const initialFeddback = 0.6
+const initialFeddback = 0.5
 
 const minMaxStep = [
   { name: 'gain', minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.01 },
@@ -92,7 +92,7 @@ class Delay extends Node {
         unit: '', //%
         minValue: 0,
         maxValue: 1,
-        defaultValue: 0,
+        defaultValue: 0.3,
         value: 0,
         step: 0.01,
         set(v) { setDryWet(v) }

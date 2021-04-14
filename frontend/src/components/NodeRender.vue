@@ -180,6 +180,48 @@
               </div>
             </div>
           </div>
+
+          <!-- Loop Controls -->
+          <div
+            class="loop-controls params-container"
+            v-if="Node.nodeType === 'Looper'"
+          >
+            <div
+              class="control-btn start-rec"
+              v-if="Node.status === 'CLEARED'"
+              @click="startRecording"
+            >
+              REC
+            </div>
+            <div
+              class="control-btn stop-rec"
+              v-if="Node.status === 'RECORDING'"
+              @click="stopRecording"
+            >
+              LOOP
+            </div>
+            <div
+              class="control-btn pause-loop"
+              v-if="Node.status === 'PLAYING'"
+              @click="stopLoop"
+            >
+              STOP
+            </div>
+            <div
+              class="control-btn play-loop"
+              v-if="Node.status === 'STOPPED'"
+              @click="playLoop"
+            >
+              PLAY
+            </div>
+            <div
+              class="control-btn clear-loop"
+              v-if="Node.loopAvailable"
+              @click="clearLoop"
+            >
+              CLEAR
+            </div>
+          </div>
         </div>
       </div>
       <!-- /node-params -->
@@ -260,6 +302,12 @@ import { mapGetters, mapMutations } from "vuex";
 import Knob from "./Knob";
 import AnalyserRender from "./AnalyserRender";
 export default {
+  data() {
+    return {
+      loopStatus: "CLEARED",
+    };
+  },
+
   props: ["Node", "analyser", "recEnabled"],
 
   computed: {
@@ -267,7 +315,9 @@ export default {
   },
 
   mounted() {
-    // console.log(this.recEnabled);
+    if (this.Node.nodeType === "Looper") {
+      window.addEventListener("keyup", this.processLoopKeyup);
+    }
   },
 
   methods: {
@@ -317,6 +367,42 @@ export default {
     setModType(mpIndex, e) {
       e.target.blur();
       this.Node.setModulationParam(mpIndex, e.target.value);
+    },
+
+    //Looper
+    startRecording() {
+      this.Node.startRecording();
+    },
+    stopRecording() {
+      this.Node.stopRecording();
+    },
+    stopLoop() {
+      this.Node.stopLoop();
+    },
+    playLoop() {
+      this.Node.playLoop();
+    },
+    clearLoop() {
+      this.Node.clearLoop();
+    },
+
+    processLoopKeyup(e) {
+      if (e.key != 0) return;
+      console.log("yey", this.Node.status);
+      switch (this.Node.status) {
+        case "CLEARED":
+          this.startRecording();
+          break;
+        case "RECORDING":
+          this.stopRecording();
+          break;
+        case "PLAYING":
+          this.stopLoop();
+          break;
+        case "STOPPED":
+          this.clearLoop();
+          break;
+      }
     },
 
     // CONNECTIONS
@@ -531,6 +617,10 @@ export default {
   width: 90px;
 }
 
+.Looper {
+  min-width: 140px;
+}
+
 .Track-Gain {
   width: 135px;
   .node-name {
@@ -595,5 +685,10 @@ export default {
 }
 .rec-disabled {
   color: gray;
+}
+
+.control-btn {
+  padding: 0.4em;
+  min-width: 60px;
 }
 </style>
