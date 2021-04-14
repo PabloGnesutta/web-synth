@@ -4,6 +4,9 @@
       <p>Welcome to web-synth</p>
       <p>Click anywhere to Start!</p>
     </div>
+    <div class="exporting-modal" v-if="exporting">
+      <div class="exporting-modal-content">Exporting... please wait</div>
+    </div>
     <div class="inited" v-if="inited">
       <div class="header">
         <div class="buttons">
@@ -43,25 +46,45 @@
           <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
           <!-- REC -->
           <br />
-          <div class="btn btn-2 rec" v-if="!recording" @click="rec">REC</div>
+          <div class="btn btn-2 rec" v-if="!recording" @click="startRec">
+            REC
+          </div>
           <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
             STOP
           </div>
           <div class="play-stop" v-if="recordingsAvailable">
-            <div class="btn play-recs" @click="startPlaying" v-if="!playing">
-              PLAY
+            <div v-if="!playing" @click="playExport" class="btn play-recs">
+              Play Recording
             </div>
-            <div @click="stopPlaying" class="btn stop-playing" v-if="playing">
+            <div
+              v-if="playing"
+              @click="stopPlayingExport"
+              class="btn stop-playing"
+            >
               STOP
             </div>
           </div>
+          <!-- <div
+            class="btn btn-export"
+            v-if="recordingsAvailable"
+            @click="playExport"
+          >
+            Play Recording
+          </div> -->
           <div
+            class="btn btn-export-download"
+            v-if="recordingsAvailable"
+            @click="downloadExport"
+          >
+            Download
+          </div>
+          <!-- <div
             v-if="renderFinished"
             class="btn"
             @click="showRecordWaveforms = !showRecordWaveforms"
           >
             wav
-          </div>
+          </div> -->
         </div>
       </div>
 
@@ -208,6 +231,10 @@ export default {
       mediaRecorders: [],
       recordings: [],
       blobs: [],
+      exportDestination: null,
+      exportBuffer: null,
+      exporting: false,
+      chunks: [],
 
       //canvas
       showRecordWaveforms: false,
@@ -236,7 +263,7 @@ export default {
       this.tracks[t].recEnabled = !this.tracks[t].recEnabled;
     },
 
-    rec() {
+    startRec() {
       if (this.recording) return;
       const recordingTracks = this.tracks.filter((t) => t.recEnabled);
       const total = recordingTracks.length;
@@ -247,6 +274,45 @@ export default {
       this.showRecordWaveforms = false;
 
       console.log("rec start");
+
+      // record entire mix
+
+      this.chunks = [];
+      this.exportDestination = this.context.createMediaStreamDestination();
+      this.mainGain.connect(this.exportDestination); //to do: make mixer node to avoid filtering by gain...
+
+      this.exportMediaRecorder = new MediaRecorder(
+        this.exportDestination.stream
+      );
+
+      this.exportMediaRecorder.ondataavailable = (evt) => {
+        this.chunks.push(evt.data);
+      };
+
+      this.exportMediaRecorder.onstop = () => {
+        this.exportBlob = new Blob(this.chunks, {
+          type: "audio/ogg; codecs=opus",
+        });
+        const exportFileReader = new FileReader();
+
+        exportFileReader.onloadend = () => {
+          const arrayBuffer = exportFileReader.result;
+
+          this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
+            this.exportBuffer = audioBuffer;
+            this.exporting = false;
+          });
+        };
+
+        exportFileReader.readAsArrayBuffer(this.exportBlob);
+      };
+
+      this.exportMediaRecorder.start();
+
+      //record each track
+
+      this.recordings = [];
+
       recordingTracks.forEach((t, i) => {
         let chunks = [];
         let dest = this.context.createMediaStreamDestination();
@@ -285,6 +351,8 @@ export default {
       this.mediaRecorders.forEach((mr) => {
         mr.stop();
       });
+      this.exportMediaRecorder.stop();
+      this.exportMediaRecorder = null;
       this.mediaRecorders = [];
       this.recording = false;
     },
@@ -292,27 +360,75 @@ export default {
     recordingsReady() {
       console.log("recordings ready");
       this.recordingsAvailable = true;
-      this.renderWaveforms()
     },
 
-    startPlaying() {
+    downloadExport() {
+      const a = document.createElement("a");
+      const fileName = "recording-" + new Date().toLocaleString("es-AR");
+      a.setAttribute("href", URL.createObjectURL(this.exportBlob));
+      a.setAttribute("download", fileName);
+      a.click();
+    },
+
+    playExport() {
+      this.exportSource = this.context.createBufferSource();
+      const comp = this.context.createDynamicsCompressor();
+      this.exportSource.buffer = this.exportBuffer;
+      // source.loop = true;
+
+      this.exportSource.connect(comp);
+      comp.connect(this.mainGain);
+      this.exportSource.start();
       this.playing = true;
-      this.recordings.forEach((recording) => {
-        const gain = this.context.createGain();
-        const source = this.context.createBufferSource();
-        source.buffer = recording.audioBuffer;
-        // source.loop = true;
 
-        source.connect(gain);
-        gain.connect(this.mainGain);
-        source.start();
-        this.playingBuffers.push({
-          source,
-          gain,
-        });
-      });
-      console.log(this.getRecordingsURL());
+      this.exportSource.onended = () => {
+        this.playing = false;
+      };
+
+      console.log("export download url:", URL.createObjectURL(this.exportBlob));
     },
+
+    stopPlayingExport() {
+      this.exportSource.stop(0);
+      this.playing = false;
+    },
+
+    // playAllRecordings() {
+    //   this.playing = true;
+    //   for (let i = 0; i < this.recordings.length; i++) {
+    //     const sourceGain = this.context.createGain();
+    //     const source = this.context.createBufferSource();
+    //     const comp = this.context.createDynamicsCompressor();
+
+    //     source.buffer = this.recordings[i].audioBuffer;
+    //     // source.loop = true;
+
+    //     source.connect(comp); //apply compression before playing/recording
+    //     comp.connect(sourceGain);
+    //     sourceGain.connect(this.mainGain);
+
+    //     source.start();
+    //     this.playingBuffers.push({
+    //       comp,
+    //       source,
+    //       sourceGain,
+    //     });
+
+    //     source.onended = () => {
+    //       if (i === this.recordings.length - 1) this.stopPlaying();
+    //     };
+    //   }
+    //   console.log(this.getRecordingsURL());
+    // },
+
+    // stopPlaying() {
+    //   this.playingBuffers.forEach((pb) => {
+    //     pb.source.disconnect();
+    //     pb.sourceGain.disconnect();
+    //   });
+    //   this.playingBuffers = [];
+    //   this.playing = false;
+    // },
 
     getRecordingsURL() {
       let URLs = [];
@@ -321,6 +437,8 @@ export default {
       });
       return URLs;
     },
+
+    //Waveforms:
 
     renderWaveforms() {
       for (let i = 0; i < this.recordings.length; i++)
@@ -357,15 +475,6 @@ export default {
       context.restore();
       console.log("done");
       document.querySelector(".canvases").appendChild(canvas);
-    },
-
-    stopPlaying() {
-      this.playingBuffers.forEach((pb) => {
-        pb.source.disconnect();
-        pb.gain.disconnect();
-      });
-      this.playingBuffers = [];
-      this.playing = false;
     },
 
     init() {
@@ -784,6 +893,22 @@ $yMaxVal: 60px; //e.srcElement.scrollTop;
 .scroll-pane-inner {
   height: $spHeight + $yMaxVal;
   width: $spWidth + $xMaxVal;
+}
+
+.exporting-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba($color: #000000, $alpha: 0.9);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  .exporting-modal-content {
+    font-size: 2rem;
+  }
 }
 
 canvas {
