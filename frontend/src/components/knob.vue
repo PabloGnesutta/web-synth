@@ -145,6 +145,9 @@ export default {
 
     onMouseUp() {
       window.removeEventListener("mousemove", this.moveKnob);
+      window.removeEventListener("mouseup", this.onMouseUp);
+      window.removeEventListener("keydown", this.onKeydown);
+      window.removeEventListener("keyup", this.onKeyup);
     },
 
     onKeydown(e) {

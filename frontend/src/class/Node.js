@@ -6,6 +6,8 @@ class Node {
     this.node = null
     this.nodeType = ""
 
+    this.muted = false
+
     this.outputNode = null
 
     this.minGain = 0
@@ -62,6 +64,8 @@ class Node {
     this.outputs.splice(index, 1)
   }
 
+
+
   initGain(initialGain) {
     this.gain = initialGain || 1
 
@@ -84,14 +88,17 @@ class Node {
     customParams.set(parseFloat(value))
   }
 
-  // connectDelay(Delay) {
-  //   Delay.connectNativeNode(this.outputs[0].node, this.outputs[0].name)
-  //   this.disconnectOutput(this.outputs[0].node)
-  // }
-
   setGain(value, time) {
-    this.outputNode.gain.setValueAtTime(value, time || 0)
+    const t = Node.context.currentTime
+    this.outputNode.gain.setValueAtTime(value, t)
     this.gain = value
+  }
+
+  setMute(muted) {
+    const t = Node.context.currentTime
+    this.muted = muted
+    if (muted) this.outputNode.gain.setValueAtTime(0, t)
+    else this.outputNode.gain.setValueAtTime(this.gain, t)
   }
 
   //debería entender tanto indice como nombre del parámetro

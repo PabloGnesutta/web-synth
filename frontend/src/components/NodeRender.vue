@@ -13,8 +13,15 @@
         X
       </div>
 
-      <div class="track-enabler" v-if="Node.nodeRol === 'Instrument'">
-        <div class="track-enabler-inner"></div>
+      <div
+        class="instrument-enabler"
+        v-if="Node.nodeRol === 'Instrument'"
+        @click="toggleInstrumentEnabled"
+      >
+        <div
+          class="instrument-enabler-inner"
+          :class="{ enabled: instrumentEnabled }"
+        ></div>
       </div>
       <!-- Node Name -->
       <div class="node-header">
@@ -319,7 +326,7 @@ export default {
     };
   },
 
-  props: ["Node", "analyser", "recEnabled"],
+  props: ["Node", "analyser", "recEnabled", "instrumentEnabled"],
 
   computed: {
     ...mapGetters(["appConnecting", "originNode"]),
@@ -357,6 +364,10 @@ export default {
 
     deleteNode() {
       this.$emit("deleteNode");
+    },
+
+    toggleInstrumentEnabled() {
+      this.$emit("toggleInstrumentEnabled");
     },
 
     setAudioParam(apIndex, value) {
@@ -547,14 +558,18 @@ export default {
   background: #444;
 }
 
-.track-enabler {
+.instrument-enabler {
   cursor: pointer;
   position: absolute;
   top: 0;
   left: 0;
-  .track-enabler-inner {
-    width: 10px;
-    height: 10px;
+  .instrument-enabler-inner {
+    width: 15px;
+    height: 15px;
+    background: red;
+    transition: background-color 0.2s ease-out;
+  }
+  .instrument-enabler-inner.enabled {
     background: green;
   }
 }

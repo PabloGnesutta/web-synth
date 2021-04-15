@@ -110,7 +110,9 @@
               <NodeRender
                 :Node="track.instrument"
                 :analyser="track.instrumentAnalyser"
+                :instrumentEnabled="track.instrumentEnabled"
                 @deleteNode="deleteTrack(t)"
+                @toggleInstrumentEnabled="toggleInstrumentEnabled(t)"
               />
             </div>
 
@@ -507,7 +509,7 @@ export default {
         trackGain,
         trackGainAnalyser,
         recEnabled: true,
-        recorder: null,
+        instrumentEnabled: true,
       });
 
       this.currentTrackIndex = this.tracks.length - 1;
@@ -544,6 +546,13 @@ export default {
       });
       track = null;
       this.tracks.splice(t, 1);
+    },
+
+    toggleInstrumentEnabled(t) {
+      const track = this.tracks[t];
+      console.log(track);
+      track.instrumentEnabled = !this.tracks[t].instrumentEnabled;
+      track.instrument.setMute(!track.instrumentEnabled);
     },
 
     insertEffect(Node) {
@@ -608,7 +617,10 @@ export default {
       this.mainGain.connect(this.context.destination);
 
       this.mixerGain = this.context.createGain();
-      this.mixerGain.connect(this.mainGain);
+      this.mixerComp = this.context.createDynamicsCompressor();
+
+      this.mixerGain.connect(this.mixerComp);
+      this.mixerComp.connect(this.mainGain);
     },
 
     onMainGainKnobInput(val) {
