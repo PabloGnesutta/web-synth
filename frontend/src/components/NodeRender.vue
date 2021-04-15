@@ -182,7 +182,7 @@
                     <option
                       :key="type"
                       v-for="type in motulationParam.types"
-                      :selected="type === motulationParam.type"
+                      :selected="type === motulationParam.value"
                     >
                       {{ type }}
                     </option>
@@ -191,6 +191,7 @@
               </div>
             </div>
           </div>
+          <!-- /modulation-params -->
 
           <!-- Loop Controls -->
           <div

@@ -72,8 +72,23 @@
           >
             Download
           </div>
+          <!-- Saved Works -->
           <div class="btn" @click="save">SAVE</div>
-          <div class="btn" @click="load">LOAD</div>
+          <div
+            v-if="this.saves && this.saves.length > 0"
+            class="btn load-work"
+            @click="showSavedWorks = !showSavedWorks"
+          >
+            <div>LOAD</div>
+            <div class="saved-works" :class="{ hidden: !showSavedWorks }">
+              <div :key="s" class="saved-work" v-for="(savedWork, s) in saves">
+                <div class="saved-work-name" @click="loadSave(s)">
+                  {{ savedWork.name }}
+                </div>
+                <div class="saved-work-delete" @click="deleteSave(s)">X</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -237,6 +252,10 @@ export default {
       playing: false,
       playingBuffers: [],
       recordingsAvailable: false,
+
+      //saved works
+      saves: [],
+      showSavedWorks: false,
     };
   },
 
@@ -248,6 +267,8 @@ export default {
     this.keyEnabled = Array(222).fill(true);
     navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
     document.querySelector(".Home").addEventListener("click", this.init);
+
+    this.saves = JSON.parse(localStorage.getItem("websynth-saves"));
   },
 
   methods: {
@@ -727,18 +748,34 @@ export default {
       if (!count) localStorage.setItem("websynth-count", 0);
       localStorage.setItem("websynth-count", ++count);
 
-      localStorage.setItem(
-        "websynth_save_" + count,
-        JSON.stringify(this.tracks)
-      );
+      const name = prompt("Saved work name", "My awesome work Nº" + count);
+      if (name) {
+        if (!this.saves) {
+          this.saves = [];
+          localStorage.setItem("websynth-saves", JSON.stringify([]));
+        }
+        this.saves.push({ name, tracks: JSON.stringify(this.tracks) });
+        localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
+      }
     },
 
-    load() {
-      const count = localStorage.getItem("websynth-count");
-      const tracks = JSON.parse(localStorage.getItem("websynth_save_" + count));
+    deleteSave(s) {
+      if (!confirm("Sure you want to delete " + this.saves[s].name + "?"))
+        return;
+      this.saves.splice(s, 1);
+      localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
+    },
+
+    loadSave(s) {
+      const tracks = JSON.parse(this.saves[s].tracks);
+
       tracks.forEach((t) => {
         const instrument = new (instrumentsDict.get(t.instrument.nodeType))();
         instrument.setGain(t.instrument.gain);
+
+        if (t.instrument.octave) instrument.octave = t.instrument.octave;
+        if (t.instrument.transpose)
+          instrument.transpose = t.instrument.transpose;
 
         this.createTrack(instrument);
 
@@ -846,6 +883,60 @@ export default {
   .btn.stop-rec {
     background: cyan;
     color: black;
+  }
+
+  //saves
+
+  .btn.load-work {
+    position: relative;
+    cursor: default;
+  }
+
+  .saved-works {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    min-width: 170px;
+    background: #555;
+    transform: translateY(calc(100% + 5px));
+  }
+
+  .saved-works.hidden {
+    display: none;
+  }
+
+  .saved-work {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5em;
+    padding: 0 0.4em;
+
+    margin-bottom: 0.5em;
+  }
+  .saved-work:last-child {
+    margin-bottom: 0;
+  }
+  .saved-work:hover {
+    background: #222;
+  }
+
+  .saved-work-name {
+    cursor: pointer;
+    padding: 0.5em;
+    flex: 1;
+  }
+
+  .saved-work-name:hover {
+    background: var(--color-2);
+  }
+
+  .saved-work-delete {
+    padding: 0.5em;
+    cursor: pointer;
+  }
+  .saved-work-delete:hover {
+    background: var(--color-1);
   }
 }
 
