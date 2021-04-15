@@ -12,6 +12,10 @@
       >
         X
       </div>
+
+      <div class="track-enabler" v-if="Node.nodeRol === 'Instrument'">
+        <div class="track-enabler-inner"></div>
+      </div>
       <!-- Node Name -->
       <div class="node-header">
         <div class="node-name" @click="nodeClicked()">
@@ -258,6 +262,13 @@
                 {{ output.name }}
               </span>
             </div>
+          </div>
+        </div>
+        <!-- Octave/Transpose -->
+        <div class="octave-transpose" v-if="Node.nodeRol === 'Instrument'">
+          <div class="octave" v-if="Node.octave">Octave: {{ Node.octave }}</div>
+          <div class="transpose" v-if="Node.transpose != undefined">
+            Transp.: {{ Node.transpose }}
           </div>
         </div>
 
@@ -536,6 +547,18 @@ export default {
   background: #444;
 }
 
+.track-enabler {
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  .track-enabler-inner {
+    width: 10px;
+    height: 10px;
+    background: green;
+  }
+}
+
 .types {
   margin-bottom: 0.2em;
 }
@@ -548,6 +571,7 @@ export default {
   .node-header {
     display: flex;
     align-items: center;
+    padding: 0.5em 0.5em 0;
   }
 }
 
@@ -640,6 +664,11 @@ export default {
 
 .connections {
   cursor: default;
+}
+
+.octave-transpose {
+  text-align: right;
+  font-size: 0.9rem;
 }
 
 .start,

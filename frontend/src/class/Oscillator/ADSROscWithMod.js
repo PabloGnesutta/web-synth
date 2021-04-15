@@ -3,18 +3,20 @@ const Oscillator = require("./Oscillator")
 
 const initialGain = 1
 
-class ADSROscillator extends Oscillator {
-  static ADSRCount = 0
+class ADSROscWithMod extends Oscillator {
+  static ADSRWithModCount = 0
 
   constructor(type, frequency) {
     super(type, frequency)
 
-    this.name = "ADSR " + ++ADSROscillator.ADSRCount
+    this.name = "ADSRWithMod " + ++ADSROscWithMod.ADSRWithModCount
     this.nodeType = "ADSROscillator"
 
     this.peak = 1
     this.detuneValue = 0
     this.status = "STOPPED"
+
+    this.ADSRGain = Node.context.createGain()
 
     // this.mods = [
     //   {
@@ -39,6 +41,7 @@ class ADSROscillator extends Oscillator {
   }
 
   start(frequency) {
+    const t = Node.context.currentTime
     this.ADSRGain = Node.context.createGain()
     this.ADSRGain.connect(this.outputNode)
 
@@ -47,7 +50,6 @@ class ADSROscillator extends Oscillator {
     this.node.connect(this.ADSRGain)
 
     //FM
-
     // this.mods.forEach(mod => {
     //   mod.modLevel.connect(this.node.frequency)
     //   mod.modLevel.gain.setValueAtTime(mod.modLevelValue, 0)
@@ -60,18 +62,16 @@ class ADSROscillator extends Oscillator {
     //   mod.mod.connect(mod.modLevel)
     // })
     this.modLevel.connect(this.node.frequency)
-    this.modLevel.gain.setValueAtTime(this.modLevelValue, 0)
+    this.modLevel.gain.setValueAtTime(this.modLevelValue, t)
 
     this.mod = Node.context.createOscillator()
     this.mod.type = this.modType
-    this.mod.frequency.value = frequency //sync with note freq
-    this.mod.detune.value = this.detuneValue
 
+    this.mod.frequency.setValueAtTime(frequency, t) //sync with note freq
+    this.mod.detune.value = this.detuneValue
     this.mod.connect(this.modLevel)
 
-    //---
-
-    this.node.frequency.setValueAtTime(frequency, 0)
+    this.node.frequency.setValueAtTime(frequency, t)
     this.node.detune.value = this.detuneValue
 
     this.playNote()
@@ -81,11 +81,11 @@ class ADSROscillator extends Oscillator {
     const t0 = Node.context.currentTime
     const t1 = t0 + this.A
 
+    this.mod.start(t0)
     this.node.start(t0)
     // this.mods.forEach(mod => {
     //   mod.mod.start(0)
     // })
-    this.mod.start(t0)
 
     this.status = "STARTED"
 
@@ -100,20 +100,20 @@ class ADSROscillator extends Oscillator {
     this.ADSRGain.gain.setValueAtTime(this.ADSRGain.gain.value, t);
     this.ADSRGain.gain.linearRampToValueAtTime(0, t + this.R)
 
-    const stop = setInterval(() => {
-      if (this.ADSRGain.gain.value < 0.001) {
-        this.node.disconnect()
-        this.node.stop(0)
-        this.mod.stop(0)
-        // this.mods.forEach(mod => {
-        //   mod.mod.stop(0)
-        // })
-        this.status = "STOPPED"
+    this.node.stop(t + this.R)
+    this.mod.stop(t + this.R)
+    // const stop = setInterval(() => {
+    //   if (this.ADSRGain.gain.value < 0.001) {
+    //     this.node.disconnect()
+    //     this.mod.disconnect()
+    //     this.node.stop(t)
+    //     this.mod.stop(t)
+    //     this.status = "STOPPED"
 
-        clearInterval(stop);
-      }
-    }, 10);
+    //     clearInterval(stop);
+    //   }
+    // }, 10);
   }
 }
 
-module.exports = ADSROscillator
+module.exports = ADSROscWithMod

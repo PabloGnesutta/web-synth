@@ -4,9 +4,7 @@
       <p>Welcome to web-synth</p>
       <p>Click anywhere to Start!</p>
     </div>
-    <div class="exporting-modal" v-if="exporting">
-      <div class="exporting-modal-content">Exporting... please wait</div>
-    </div>
+
     <div class="inited" v-if="inited">
       <div class="header">
         <div class="buttons">
@@ -162,6 +160,9 @@
 </template>
 
 <script>
+const notes = require("../data/notes");
+const noteKeys = require("../data/noteKeys");
+
 const Node = require("../class/Node");
 const Gain = require("../class/Effects/Gain");
 const Delay = require("../class/Effects/Delay");
@@ -359,7 +360,7 @@ export default {
 
     downloadExport() {
       const a = document.createElement("a");
-      const fileName = "recording-" + new Date().toLocaleString("es-AR");
+      const fileName = "websynth-export-" + new Date().toLocaleString("es-AR");
       a.setAttribute("href", URL.createObjectURL(this.exportBlob));
       a.setAttribute("download", fileName);
       a.click();
@@ -495,12 +496,8 @@ export default {
 
       //instrument
       instrument.connect(trackGain);
-      if (
-        instrument.nodeType === "Justinton" ||
-        instrument.nodeType === "Femod"
-      )
-        this.keypressListeners.push(instrument); //esto compensa midichannel
 
+      //track
       this.tracks.push({
         name: "Track " + ++this.trackCount,
         displayName: "Track " + this.trackCount,
@@ -515,10 +512,28 @@ export default {
 
       this.currentTrackIndex = this.tracks.length - 1;
       this.currentTrack = this.tracks[this.currentTrackIndex];
+
+      //keypressListeners
+      if (
+        instrument.nodeType === "Justinton" ||
+        instrument.nodeType === "Femod"
+      )
+        this.keypressListeners.push({
+          instrument,
+          trackName: this.currentTrack.name,
+        }); //esto compensa midichannel
     },
 
     deleteTrack(t) {
       let track = this.tracks[t];
+
+      //remove from keypressListeners
+      const kplIndex = this.keypressListeners.findIndex(
+        (kpl) => kpl.trackName === track.name
+      );
+      if (kplIndex !== -1) this.keypressListeners.splice(kplIndex, 1);
+
+      //remove track
       track.instrument.destroy();
       track.trackGain.destroy();
       track.effects.forEach((e) => {
@@ -603,15 +618,29 @@ export default {
     onKeydown(e) {
       if (!this.keyEnabled[e.keyCode]) return;
       this.keyEnabled[e.keyCode] = false;
-      this.keypressListeners.forEach((scaleInterface) => {
-        scaleInterface.processKeydown(e);
-      });
+
+      const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk.key);
+      if (noteKeyIndex != -1) {
+        this.keypressListeners.forEach((scaleInterface) => {
+          scaleInterface.instrument.playNote(noteKeyIndex);
+        });
+      }
     },
 
     onKeyup(e) {
       this.keyEnabled[e.keyCode] = true;
+      const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk.key);
+
+      if (noteKeyIndex != -1) {
+        this.keypressListeners.forEach((scaleInterface) => {
+          scaleInterface.instrument.stopNote(noteKeyIndex);
+        });
+      } else this.onOtherKeyup(e.key);
+    },
+
+    onOtherKeyup(key) {
       this.keypressListeners.forEach((scaleInterface) => {
-        scaleInterface.processKeyup(e);
+        scaleInterface.instrument.onOtherKeyup(key);
       });
     },
 

@@ -91,21 +91,9 @@ class Justinton extends Node {
 
   onOtherKeyup(key) {
     if (key === "z" && this.octave > 1) this.octave--;
-    if (key === "x") this.octave++;
-    if (key === "c") this.transpose--;
-    if (key === "v") this.transpose++;
-  }
-
-  processKeydown(e) {
-    const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk.key);
-    if (noteKeyIndex != -1) this.playNote(noteKeyIndex)
-    // else this.onOtherKeydown()
-  }
-
-  processKeyup(e) {
-    const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk.key);
-    if (noteKeyIndex != -1) this.stopNote(noteKeyIndex)
-    else this.onOtherKeyup(e.key)
+    if (key === "x") this.octave = this.octave < 8 ? this.octave + 1 : this.octave;
+    if (key === "c") this.transpose = this.transpose <= -12 ? -12 : this.transpose - 1;
+    if (key === "v") this.transpose = this.transpose < 12 ? this.transpose + 1 : this.transpose;
   }
 
   initCustomParams() {
@@ -173,7 +161,7 @@ class Justinton extends Node {
       {
         name: "detune",
         displayName: "fine",
-        unit: 'hz',
+        unit: '%',
         minValue: -100,
         maxValue: 100,
         value: initialDetune,
