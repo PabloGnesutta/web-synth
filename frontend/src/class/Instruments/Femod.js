@@ -26,10 +26,10 @@ class Femod extends Node {
     this.octave = 3
     this.transpose = 0
 
-    this.A = initialA
-    this.D = initialD
-    this.S = initialS
-    this.R = initialR
+    // this.A = initialA
+    // this.D = initialD
+    // this.S = initialS
+    // this.R = initialR
 
     this.scaleNodes = []
 
@@ -214,7 +214,7 @@ class Femod extends Node {
       {
         name: "type",
         displayName: "mod type",
-        type: "triangle",
+        value: "triangle",
         types: ['sine', 'triangle', 'sawtooth', 'square'],
         set(v) { setModType(v) }
       },

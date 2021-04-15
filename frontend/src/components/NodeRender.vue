@@ -15,8 +15,8 @@
 
       <div
         class="instrument-enabler"
-        v-if="Node.nodeRol === 'Instrument'"
         @click="toggleInstrumentEnabled"
+        v-if="Node.nodeRol === 'Instrument'"
       >
         <div
           class="instrument-enabler-inner"
@@ -32,8 +32,8 @@
         <div class="types" v-if="Node.types">
           <select @input="setType($event)">
             <option
-              v-for="type in Node.types"
               :key="type"
+              v-for="type in Node.types"
               :selected="type === Node.type"
             >
               {{ type }}
@@ -71,7 +71,7 @@
                   :ref="Node.name + '-' + audioParam.name"
                   :minVal="audioParam.minValue"
                   :maxVal="audioParam.maxValue"
-                  :initVal="audioParam.defaultValue"
+                  :initVal="audioParam.value"
                   :unit="audioParam.unit"
                   @knobTurned="setAudioParam(apIndex, $event)"
                 />
@@ -105,10 +105,10 @@
               >
                 <Knob
                   :ref="Node.name + '-' + innerNodeAudioParam.name"
+                  :unit="innerNodeAudioParam.unit"
                   :minVal="innerNodeAudioParam.minValue"
                   :maxVal="innerNodeAudioParam.maxValue"
-                  :initVal="innerNodeAudioParam.defaultValue"
-                  :unit="innerNodeAudioParam.unit"
+                  :initVal="innerNodeAudioParam.value"
                   @knobTurned="setInnerNodeAudioParam(inapIndex, $event)"
                 />
               </div>
@@ -134,10 +134,10 @@
                 <div class="knob-wrapper">
                   <Knob
                     :ref="Node.name + '-' + customParam.name"
+                    :unit="customParam.unit"
                     :minVal="customParam.minValue"
                     :maxVal="customParam.maxValue"
-                    :initVal="customParam.defaultValue"
-                    :unit="customParam.unit"
+                    :initVal="customParam.value"
                     @knobTurned="setCustomParam(cpIndex, $event)"
                   />
                 </div>
@@ -152,8 +152,8 @@
           >
             <div
               class="modulation-param param"
-              v-for="(motulationParam, mpIndex) in Node.modulationParams"
               :key="motulationParam.name"
+              v-for="(motulationParam, mpIndex) in Node.modulationParams"
               :class="[getCssNodeName(Node.name + ' ' + motulationParam.name)]"
             >
               <div class="param-name">
@@ -170,18 +170,18 @@
                 >
                   <Knob
                     :ref="Node.name + '-' + motulationParam.name"
+                    :unit="motulationParam.unit"
                     :minVal="motulationParam.minValue"
                     :maxVal="motulationParam.maxValue"
-                    :initVal="motulationParam.defaultValue"
-                    :unit="motulationParam.unit"
+                    :initVal="motulationParam.value"
                     @knobTurned="setModulationParam(mpIndex, $event)"
                   />
                 </div>
                 <div class="select-wrapper" v-else>
                   <select @input="setModType(mpIndex, $event)">
                     <option
-                      v-for="type in motulationParam.types"
                       :key="type"
+                      v-for="type in motulationParam.types"
                       :selected="type === motulationParam.type"
                     >
                       {{ type }}
@@ -199,36 +199,36 @@
           >
             <div
               class="control-btn start-rec"
-              v-if="Node.status === 'CLEARED'"
               @click="startRecording"
+              v-if="Node.status === 'CLEARED'"
             >
               REC
             </div>
             <div
               class="control-btn stop-rec"
-              v-if="Node.status === 'RECORDING'"
               @click="stopRecording"
+              v-if="Node.status === 'RECORDING'"
             >
               LOOP
             </div>
             <div
               class="control-btn pause-loop"
-              v-if="Node.status === 'PLAYING'"
               @click="stopLoop"
+              v-if="Node.status === 'PLAYING'"
             >
               STOP
             </div>
             <div
               class="control-btn play-loop"
-              v-if="Node.status === 'STOPPED'"
               @click="playLoop"
+              v-if="Node.status === 'STOPPED'"
             >
               PLAY
             </div>
             <div
               class="control-btn clear-loop"
-              v-if="Node.loopAvailable"
               @click="clearLoop"
+              v-if="Node.loopAvailable"
             >
               CLEAR
             </div>
@@ -246,8 +246,8 @@
         >
           <div
             class="start"
-            v-if="Node.status === 'STOPPED'"
             @click="startOsc()"
+            v-if="Node.status === 'STOPPED'"
           >
             START
           </div>
@@ -259,8 +259,8 @@
             <h5>Outputs</h5>
             <div
               class="output"
-              v-for="output in Node.outputs"
               @click="disconnect(output)"
+              v-for="output in Node.outputs"
               @mouseenter="onMouseEnterOutput(output)"
               @mouseleave="onMouseLeaveOutput(output)"
               :key="output.name"
@@ -282,17 +282,17 @@
         <!-- Level -->
         <div
           class="level"
-          @click="levelClicked"
           v-if="Node.level"
+          @click="levelClicked"
           :class="getCssNodeName(Node.name + ' Level')"
         >
           <div class="param-name">Level</div>
           <div class="knob-wrapper" @click="knobClicked(Node.name + '-level')">
             <Knob
               :ref="Node.name + '-level'"
+              :initVal="Node.gain"
               :minVal="Node.minGain"
               :maxVal="Node.maxGain"
-              :initVal="Node.gain"
               @knobTurned="setNodeGain($event)"
             />
           </div>
@@ -302,8 +302,8 @@
       <!-- Track Gain controls -->
       <div class="node-controls" v-if="recEnabled !== undefined">
         <div class="rec-enabled-disabled" @click="toggleRecEnabled">
-          <div v-if="recEnabled" class="rec-enabled">Rec enabled</div>
-          <div v-if="!recEnabled" class="rec-disabled">Rec disabled</div>
+          <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
+          <div v-else class="rec-btn rec-disabled">Rec disabled</div>
         </div>
       </div>
     </div>
@@ -723,6 +723,9 @@ export default {
 
 .rec-enabled-disabled {
   cursor: pointer;
+}
+.rec-btn {
+  user-select: none;
 }
 .rec-enabled {
   color: red;

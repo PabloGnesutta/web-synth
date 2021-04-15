@@ -72,13 +72,8 @@
           >
             Download
           </div>
-          <!-- <div
-            v-if="renderFinished"
-            class="btn"
-            @click="showRecordWaveforms = !showRecordWaveforms"
-          >
-            wav
-          </div> -->
+          <div class="btn" @click="save">SAVE</div>
+          <div class="btn" @click="load">LOAD</div>
         </div>
       </div>
 
@@ -589,11 +584,13 @@ export default {
     createEffect(className) {
       const Node = new (effectsDict.get(className))();
       this.insertEffect(Node);
+      return Node;
     },
 
     createInstrument(className) {
       const Node = new (instrumentsDict.get(className))();
       this.createTrack(Node);
+      return Node;
     },
 
     createModulator() {
@@ -619,8 +616,8 @@ export default {
       this.mixerGain = this.context.createGain();
       this.mixerComp = this.context.createDynamicsCompressor();
 
-      this.mixerGain.connect(this.mixerComp);
-      this.mixerComp.connect(this.mainGain);
+      this.mixerGain.connect(this.mainGain);
+      // this.mixerComp.connect(this.mainGain);
     },
 
     onMainGainKnobInput(val) {
@@ -734,6 +731,63 @@ export default {
         "websynth_save_" + count,
         JSON.stringify(this.tracks)
       );
+    },
+
+    load() {
+      const count = localStorage.getItem("websynth-count");
+      const tracks = JSON.parse(localStorage.getItem("websynth_save_" + count));
+      tracks.forEach((t) => {
+        const instrument = new (instrumentsDict.get(t.instrument.nodeType))();
+        instrument.setGain(t.instrument.gain);
+
+        this.createTrack(instrument);
+
+        //seting instruments
+
+        if (t.instrument.audioParams)
+          t.instrument.audioParams.forEach((ins_ap, i) => {
+            instrument.setAudioParam(i, ins_ap.value);
+          });
+
+        if (t.instrument.innerNodeAudioParams)
+          t.instrument.innerNodeAudioParams.forEach((ins_inap, i) => {
+            instrument.setInnerNodeAudioParam(i, ins_inap.value);
+          });
+
+        if (t.instrument.customParams)
+          t.instrument.customParams.forEach((ins_cp, i) => {
+            instrument.setCustomParam(i, ins_cp.value);
+          });
+
+        if (t.instrument.modulationParams)
+          t.instrument.modulationParams.forEach((ins_mp, i) => {
+            instrument.setModulationParam(i, ins_mp.value);
+          });
+
+        //setting effects
+
+        t.effects.forEach((ef) => {
+          const effect = new (effectsDict.get(ef.nodeType))();
+          effect.setGain(ef.gain);
+
+          if (ef.audioParams)
+            ef.audioParams.forEach((ef_ap, i) => {
+              effect.setAudioParam(i, ef_ap.value);
+            });
+
+          if (ef.innerNodeAudioParams)
+            ef.innerNodeAudioParams.forEach((ef_inap, i) => {
+              effect.setInnerNodeAudioParam(i, ef_inap.value);
+            });
+
+          if (ef.customParams)
+            ef.customParams.forEach((ef_cp, i) => {
+              effect.setCustomParam(i, ef_cp.value);
+            });
+
+          this.insertEffect(effect);
+        });
+      });
     },
 
     getCssNodeName(name) {

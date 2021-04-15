@@ -15,8 +15,9 @@ class Looper extends Node {
     this.status = "CLEARED"
     this.loopAvailable = false
 
-    this.comp = Node.context.createDynamicsCompressor()
-    this.node = this.comp
+    // this.comp = Node.context.createDynamicsCompressor()
+    // this.node = this.comp
+    this.node = Node.context.createGain()
     this.initGain(initialGain)
   }
 

@@ -11,7 +11,7 @@ class Node {
     this.outputNode = null
 
     this.minGain = 0
-    this.maxGain = 1
+    this.maxGain = 3
     this.gain = 1
     this.gainStep = 0.01
 

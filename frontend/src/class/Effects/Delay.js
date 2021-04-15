@@ -81,6 +81,7 @@ class Delay extends Node {
 
   initCustomParams() {
     const setDryWet = (value) => {
+      console.log('set custom param delay', value)
       this.wetGain.gain.value = value
       this.dryGain.gain.value = value.map(0, 1, 1, 0)
     }
