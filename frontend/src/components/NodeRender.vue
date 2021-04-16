@@ -198,14 +198,14 @@
             <div class="control-btns params-container">
               <div
                 class="control-btn start-rec"
-                @click="startRecording"
+                @click="scheduleLoopStartRecording"
                 v-if="Node.status === 'CLEARED'"
               >
                 REC
               </div>
               <div
                 class="control-btn stop-rec"
-                @click="stopRecording"
+                @click="scheduleLoopStopRecording"
                 v-if="Node.status === 'RECORDING'"
               >
                 LOOP
@@ -220,9 +220,12 @@
               <div
                 class="control-btn play-loop"
                 @click="playLoop"
-                v-if="Node.status === 'STOPPED'"
+                v-if="Node.loopAvailable && Node.status === 'STOPPED'"
               >
                 PLAY
+              </div>
+              <div class="control-btn" v-if="Node.status === 'STARTING'">
+                STARTING
               </div>
               <div
                 class="control-btn clear-loop"
@@ -341,7 +344,7 @@ export default {
   props: ["Node", "analyser", "recEnabled", "instrumentEnabled"],
 
   computed: {
-    ...mapGetters(["context", "appConnecting", "originNode"]),
+    ...mapGetters(["context", "nextBeatTime", "appConnecting", "originNode"]),
   },
 
   mounted() {
@@ -405,17 +408,21 @@ export default {
     },
 
     //Looper
-    startRecording() {
-      this.Node.startRecording();
+    scheduleLoopStartRecording() {
+      this.Node.nextBeatTime = this.nextBeatTime;
+      this.Node.startRecording(this.nextBeatTime);
     },
-    stopRecording() {
-      this.Node.stopRecording();
+    scheduleLoopStopRecording() {
+      this.Node.nextBeatTime = this.nextBeatTime;
+      this.Node.stopRecording(this.nextBeatTime);
     },
+
     stopLoop() {
       this.Node.stopLoop();
     },
+
     playLoop() {
-      this.Node.playLoop();
+      this.Node.playLoop(this.nextBeatTime);
     },
     clearLoop() {
       this.Node.clearLoop();
@@ -449,13 +456,12 @@ export default {
 
     processLoopKeyup(e) {
       if (e.key != 0) return;
-      console.log("yey", this.Node.status);
       switch (this.Node.status) {
         case "CLEARED":
-          this.startRecording();
+          this.scheduleLoopStartRecording();
           break;
         case "RECORDING":
-          this.stopRecording();
+          this.scheduleLoopStopRecording();
           break;
         case "PLAYING":
           this.stopLoop();

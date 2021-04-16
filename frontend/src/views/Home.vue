@@ -6,92 +6,20 @@
     </div>
 
     <div class="inited" v-if="inited">
-      <div class="header">
-        <div class="buttons">
-          <!-- Instruments -->
-          <div
-            class="btn btn-instrument"
-            @click="createInstrument('Justinton')"
-          >
-            Justinton
-          </div>
-          <div class="btn btn-instrument" @click="createInstrument('Femod')">
-            Femod
-          </div>
-          <div class="btn btn-instrument" @click="createInstrument('Carrier')">
-            Oscillator
-          </div>
-          <div
-            class="btn btn-instrument"
-            @click="createInstrument('WhiteNoise')"
-          >
-            White Noise
-          </div>
-          <!-- Modulator -->
-          <br />
-          <div class="btn btn-modulator" @click="createModulator">
-            Modulator
-          </div>
-          <!-- Effects -->
-          <br />
-          <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
-            Filter
-          </div>
-          <div class="btn btn-effect" @click="createEffect('Compressor')">
-            Compressor
-          </div>
-          <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
-          <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
-          <div class="btn btn-effect" @click="createEffect('Looper')">
-            Looper
-          </div>
-          <!-- REC -->
-          <br />
-          <div class="btn btn-2 rec" v-if="!recording" @click="startRec">
-            REC
-          </div>
-          <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
-            STOP
-          </div>
-          <div class="play-stop" v-if="recordingsAvailable">
-            <div v-if="!playing" @click="playExport" class="btn play-recs">
-              Play Recording
-            </div>
-            <div
-              v-if="playing"
-              @click="stopPlayingExport"
-              class="btn stop-playing"
-            >
-              STOP
-            </div>
-          </div>
-          <div
-            class="btn btn-export-download"
-            v-if="recordingsAvailable"
-            @click="downloadExport"
-          >
-            Download
-          </div>
-          <!-- Saved Works -->
-          <div class="btn" @click="save">SAVE</div>
-          <div
-            v-if="this.saves && this.saves.length > 0"
-            class="btn load-work"
-            @click="showSavedWorks = !showSavedWorks"
-          >
-            <div>LOAD</div>
-            <div class="saved-works" :class="{ hidden: !showSavedWorks }">
-              <div :key="s" class="saved-work" v-for="(savedWork, s) in saves">
-                <div class="saved-work-name" @click="loadSave(s)">
-                  {{ savedWork.name }}
-                </div>
-                <div class="saved-work-delete" @click="deleteSave(s)">X</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <Header
+        @createInstrument="createInstrument"
+        @createModulator="createModulator"
+        @createEffect="createEffect"
+        @startRec="startRec"
+        @stopRec="stopRec"
+        @playExport="playExport"
+        @stopPlayingExport="stopPlayingExport"
+        @downloadExport="downloadExport"
+        :tracks="tracks"
+        :playing="playing"
+        :recording="recording"
+        :recordingsAvailable="recordingsAvailable"
+      />
       <!-- TRACKS -->
       <div class="tracks" :class="{ mapping: mapping }">
         <div
@@ -136,6 +64,8 @@
                 :ref="'Node-' + n"
                 @deleteNode="deleteEffect(t, n)"
                 @levelClicked="levelClicked(Node)"
+                @scheduleLoopStartRecording="scheduleLoopStartRecording"
+                @scheduleLoopStopRecording="scheduleLoopStopRecording"
               />
               <div class="track-right-placeholder"></div>
             </div>
@@ -166,8 +96,8 @@
         </div>
       </div>
 
-      <div>
-        <input type="file" @change="onChangeFile" />
+      <div class="click">
+        <Click />
       </div>
     </div>
   </div>
@@ -208,6 +138,8 @@ const effectsDict = new Map([
 
 import { mapMutations, mapGetters } from "vuex";
 import NodeRender from "../components/NodeRender";
+import Header from "../components/Header";
+import Click from "../components/Click";
 import Knob from "../components/Knob";
 
 export default {
@@ -235,10 +167,22 @@ export default {
       mapping: false,
       refBeignMapped: null,
 
+      //Click
+      tempo: 60.0,
+      lookahead: 25.0,
+      scheduleAheadTime: 0.1,
+
+      totalBeats: 4,
+      currentBeat: 1,
+      nextBeatTime: 0.0,
+
+      notesInQueue: [],
+      timerID: null,
+
       //rec
-      recording: false,
       mediaRecorders: [],
       recordings: [],
+      recording: false,
       blobs: [],
       exportDestination: null,
       exportBuffer: null,
@@ -253,10 +197,6 @@ export default {
       playing: false,
       playingBuffers: [],
       recordingsAvailable: false,
-
-      //saved works
-      saves: [],
-      showSavedWorks: false,
     };
   },
 
@@ -268,8 +208,6 @@ export default {
     this.keyEnabled = Array(222).fill(true);
     navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
     document.querySelector(".Home").addEventListener("click", this.init);
-
-    this.saves = JSON.parse(localStorage.getItem("websynth-saves"));
   },
 
   methods: {
@@ -278,10 +216,97 @@ export default {
       this.tracks[t].recEnabled = !this.tracks[t].recEnabled;
     },
 
-    onChangeFile(e) {},
+    init() {
+      if (this.context) return;
+      this.inited = true;
+      document.querySelector(".Home").removeEventListener("click", this.init);
+      this.setContext(new (window.AudioContext || window.webkitAudioContext)());
+      Node.context = this.context;
+      // this.scheduler();
+
+      this.createMainGain();
+
+      window.addEventListener("keyup", this.onKeyup);
+      window.addEventListener("keydown", this.onKeydown);
+
+      this.createTrack(new Femod("sine"));
+      this.createEffect("Looper");
+    },
+
+    //Click
+
+    // nextNote() {
+    //   const secondsPerBeat = 60.0 / this.tempo;
+
+    //   this.nextBeatTime += secondsPerBeat;
+    //   this.setNextBeatTime(this.nextBeatTime);
+    //   this.currentBeat =
+    //     this.currentBeat === this.totalBeats ? 1 : this.currentBeat + 1;
+    // },
+
+    sheduleClickNote(time) {
+      const freq = this.currentBeat === 1 ? 440 : 220;
+      var osc = this.context.createOscillator();
+      osc.connect(this.context.destination);
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, time);
+
+      osc.start(time);
+      osc.stop(time + 0.05);
+    },
+
+    scheduler() {
+      while (
+        this.nextBeatTime <
+        this.context.currentTime + this.scheduleAheadTime
+      ) {
+        this.sheduleClickNote(this.nextBeatTime);
+        this.nextNote();
+      }
+      this.timerID = window.setTimeout(this.scheduler, this.lookahead);
+    },
+
+    scheduleLoopStartRecording() {},
+    scheduleLoopStopRecording() {},
+
+    nextNote() {
+      const secondsPerBeat = 60.0 / this.tempo;
+
+      this.nextBeatTime += secondsPerBeat;
+      console.log(Node.nextBeatTime);
+      Node.nextBeatTime = this.nextBeatTime;
+      console.log(Node.nextBeatTime);
+      this.currentBeat =
+        this.currentBeat === this.totalBeats ? 1 : this.currentBeat + 1;
+    },
+
+    sheduleClickNote(time) {
+      const freq = this.currentBeat === 1 ? 440 : 220;
+      var osc = this.context.createOscillator();
+      osc.connect(this.context.destination);
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, time);
+
+      osc.start(time);
+      osc.stop(time + 0.05);
+    },
+
+    scheduler() {
+      while (
+        this.nextBeatTime <
+        this.context.currentTime + this.scheduleAheadTime
+      ) {
+        this.sheduleClickNote(this.nextBeatTime);
+        this.nextNote();
+      }
+      this.timerID = window.setTimeout(this.scheduler, this.lookahead);
+    },
+
+    //---
 
     startRec() {
-      if (this.recording) return;
       const recordingTracks = this.tracks.filter((t) => t.recEnabled);
       const total = recordingTracks.length;
       let c = 0;
@@ -448,22 +473,6 @@ export default {
       document.querySelector(".canvases").appendChild(canvas);
     },
 
-    init() {
-      if (this.context) return;
-      this.inited = true;
-      document.querySelector(".Home").removeEventListener("click", this.init);
-      this.setContext(new (window.AudioContext || window.webkitAudioContext)());
-      Node.context = this.context;
-
-      this.createMainGain();
-
-      window.addEventListener("keyup", this.onKeyup);
-      window.addEventListener("keydown", this.onKeydown);
-
-      this.createTrack(new Femod("sine"));
-      this.createEffect("Looper");
-    },
-
     createTrack(instrument) {
       //track gain
       const trackGain = new Gain("Track Gain");
@@ -562,27 +571,19 @@ export default {
     },
 
     // CREATE NODES
-
-    createEffect(className) {
-      const Node = new (effectsDict.get(className))();
-      this.insertEffect(Node);
-      return Node;
-    },
-
     createInstrument(className) {
       const Node = new (instrumentsDict.get(className))();
       this.createTrack(Node);
       return Node;
     },
-
+    createEffect(className) {
+      const Node = new (effectsDict.get(className))();
+      this.insertEffect(Node);
+      return Node;
+    },
     createModulator() {
       const track = this.tracks[this.currentTrackIndex];
       track.modulators.push(new Modulator("sawtooth"));
-    },
-
-    createPiano() {
-      const scaleInterface = new ScaleInterface("sawtooth");
-      this.createTrack(scaleInterface);
     },
 
     trackClicked(t) {
@@ -704,32 +705,7 @@ export default {
       console.log("Could not access your MIDI devices.");
     },
 
-    save() {
-      let count = localStorage.getItem("websynth-count");
-      if (!count) localStorage.setItem("websynth-count", 0);
-      localStorage.setItem("websynth-count", ++count);
-
-      const name = prompt("Saved work name", "My awesome work Nº" + count);
-      if (name) {
-        if (!this.saves) {
-          this.saves = [];
-          localStorage.setItem("websynth-saves", JSON.stringify([]));
-        }
-        this.saves.push({ name, tracks: JSON.stringify(this.tracks) });
-        localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
-      }
-    },
-
-    deleteSave(s) {
-      if (!confirm("Sure you want to delete " + this.saves[s].name + "?"))
-        return;
-      this.saves.splice(s, 1);
-      localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
-    },
-
-    loadSave(s) {
-      const tracks = JSON.parse(this.saves[s].tracks);
-
+    loadSave(tracks) {
       tracks.forEach((t) => {
         const instrument = new (instrumentsDict.get(t.instrument.nodeType))();
         instrument.setGain(t.instrument.gain);
@@ -800,6 +776,8 @@ export default {
 
   components: {
     Knob,
+    Click,
+    Header,
     NodeRender,
   },
 };
@@ -808,97 +786,6 @@ export default {
 <style lang="scss">
 .Home {
   min-height: 100vh;
-}
-
-.header {
-  position: fixed;
-  top: 0;
-  z-index: 1;
-  background: black;
-  padding: 0.2em;
-  width: 100%;
-
-  .buttons {
-    display: flex;
-    justify-content: center;
-    gap: 1em;
-  }
-
-  .btn {
-    padding: 0.5em 1em;
-    background: gray;
-    cursor: pointer;
-  }
-  .btn-instrument {
-    background: var(--color-1);
-  }
-  .btn-modulator {
-    background: var(--color-2);
-  }
-  .btn-effect {
-    background: green;
-  }
-  .btn.rec {
-    background: red;
-  }
-  .btn.stop-rec {
-    background: cyan;
-    color: black;
-  }
-
-  //saves
-
-  .btn.load-work {
-    position: relative;
-    cursor: default;
-  }
-
-  .saved-works {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    min-width: 170px;
-    background: #555;
-    transform: translateY(calc(100% + 5px));
-  }
-
-  .saved-works.hidden {
-    display: none;
-  }
-
-  .saved-work {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5em;
-    padding: 0 0.4em;
-
-    margin-bottom: 0.5em;
-  }
-  .saved-work:last-child {
-    margin-bottom: 0;
-  }
-  .saved-work:hover {
-    background: #222;
-  }
-
-  .saved-work-name {
-    cursor: pointer;
-    padding: 0.5em;
-    flex: 1;
-  }
-
-  .saved-work-name:hover {
-    background: var(--color-2);
-  }
-
-  .saved-work-delete {
-    padding: 0.5em;
-    cursor: pointer;
-  }
-  .saved-work-delete:hover {
-    background: var(--color-1);
-  }
 }
 
 .tracks {

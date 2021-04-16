@@ -17,27 +17,29 @@ class Looper extends Node {
     this.loopAvailable = false
     this.looperBuffer = null
     this.looperBlob = null
+    this.nextBeatTime = 0;
 
     this.node = Node.context.createGain()
     this.initGain(initialGain)
   }
 
-  playLoop() {
+  playLoop(nextBeatTime) {
     this.status = "PLAYING"
     this.source = Node.context.createBufferSource();
     this.source.buffer = this.looperBuffer;
-    this.source.loop = true;
+    // this.source.loop = true;
 
     this.source.connect(this.outputNode);
-    this.source.start();
+    this.source.start(nextBeatTime || 0);
     this.playing = true;
 
+
     this.source.onended = () => {
-      this.playing = false;
+      if (this.status !== 'STOPPED')
+        this.playLoop(Node.lastBeatTime)
     };
-    console.log('playLoop', this.looperBuffer)
-    // console.log(this.name + " download url:", URL.createObjectURL(this.looperBlob));
   }
+
 
   stopLoop() {
     if (this.source) {
@@ -45,7 +47,6 @@ class Looper extends Node {
       this.source.stop();
     }
     this.status = "STOPPED"
-    console.log('stopLoop')
   }
 
   clearLoop() {
@@ -56,9 +57,9 @@ class Looper extends Node {
   }
 
   startRecording() {
-    console.log('startRecording')
     this.stopLoop()
-    this.status = "RECORDING"
+    this.status = "STARTING"
+
     this.chunks = [];
 
     this.mediaDestination = Node.context.createMediaStreamDestination();
@@ -69,7 +70,6 @@ class Looper extends Node {
     );
 
     this.mediaRecorder.ondataavailable = (evt) => {
-      console.log('ondataav')
       this.chunks.push(evt.data);
     };
 
@@ -92,20 +92,38 @@ class Looper extends Node {
       fileReader.readAsArrayBuffer(this.looperBlob);
     };
 
-    this.mediaRecorder.start();
+    this.startMediaRecorder()
+
+  }
+
+  startMediaRecorder() {
+    const req = window.requestAnimationFrame(this.startMediaRecorder.bind(this));
+    if (Node.context.currentTime >= this.nextBeatTime) {
+      this.mediaRecorder.start();
+      this.status = "RECORDING"
+      console.log('startRecording')
+      this.nextBeatTime = 0
+      window.cancelAnimationFrame(req)
+    }
   }
 
   setAudioBuffer(audioBuffer) {
     this.looperBuffer = audioBuffer
     this.loopAvailable = true
     this.status = "STOPPED"
-    console.log('setaudiobuffer', audioBuffer)
   }
 
   stopRecording() {
-    this.mediaRecorder.stop();
-    this.status = "STOPPED"
-    console.log('stopRecording')
+    // nextBeatTime = nextBeatTime
+    const req = window.requestAnimationFrame(this.stopRecording.bind(this));
+    if (Node.context.currentTime >= this.nextBeatTime) {
+      this.status = "STOPPED"
+      console.log('stopREcording')
+      this.mediaRecorder.stop();
+      this.nextBeatTime = 0
+      window.cancelAnimationFrame(req)
+    }
+
   }
 }
 module.exports = Looper

@@ -10,12 +10,19 @@ export default new Vuex.Store({
 
     originNode: null,
     appConnecting: false,
+
+    nextBeatTime: 0,
   },
 
   getters: {
     context: (state) => {
       return state.context
     },
+
+    nextBeatTime: (state) => {
+      return state.nextBeatTime
+    },
+
     appIsMapping: (state) => {
       return state.appIsMapping
     },
@@ -32,6 +39,10 @@ export default new Vuex.Store({
   mutations: {
     setContext: (state, payload) => {
       state.context = payload
+    },
+
+    setNextBeatTime: (state, payload) => {
+      state.nextBeatTime = payload
     },
 
     setAppIsMapping: (state, payload) => {

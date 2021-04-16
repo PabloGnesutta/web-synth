@@ -1,5 +1,7 @@
 class Node {
   static context = null
+  static nextBeatTime = 0
+  static lastBeatTime = 0
 
   constructor(name) {
     this.name = name || "Some Node"
