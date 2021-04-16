@@ -420,13 +420,13 @@ export default {
     stopLoop() {
       this.Node.stopLoop();
     },
-
     playLoop() {
       this.Node.playLoop(this.nextBeatTime);
     },
     clearLoop() {
       this.Node.clearLoop();
     },
+
     downloadLoop() {
       const a = document.createElement("a");
       let fileName = "websynth-loop-" + new Date().toLocaleString("es-AR");
@@ -455,7 +455,7 @@ export default {
     },
 
     processLoopKeyup(e) {
-      if (e.key != 0) return;
+      if (e.keyCode != 48) return; //0 key
       switch (this.Node.status) {
         case "CLEARED":
           this.scheduleLoopStartRecording();

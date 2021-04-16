@@ -17,6 +17,7 @@ class Looper extends Node {
     this.loopAvailable = false
     this.looperBuffer = null
     this.looperBlob = null
+    this.loopDuration = 0;
     this.nextBeatTime = 0;
 
     this.node = Node.context.createGain()
@@ -26,8 +27,8 @@ class Looper extends Node {
   playLoop(nextBeatTime) {
     this.status = "PLAYING"
     this.source = Node.context.createBufferSource();
+    this.loopDuration = this.looperBuffer.duration
     this.source.buffer = this.looperBuffer;
-    // this.source.loop = true;
 
     this.source.connect(this.outputNode);
     this.source.start(nextBeatTime || 0);
@@ -35,11 +36,10 @@ class Looper extends Node {
 
 
     this.source.onended = () => {
-      if (this.status !== 'STOPPED')
+      if (this.status !== 'STOPPED' && this.status !== 'CLEARED')
         this.playLoop(Node.lastBeatTime)
     };
   }
-
 
   stopLoop() {
     if (this.source) {
@@ -99,11 +99,11 @@ class Looper extends Node {
   startMediaRecorder() {
     const req = window.requestAnimationFrame(this.startMediaRecorder.bind(this));
     if (Node.context.currentTime >= this.nextBeatTime) {
+      window.cancelAnimationFrame(req)
       this.mediaRecorder.start();
       this.status = "RECORDING"
       console.log('startRecording')
       this.nextBeatTime = 0
-      window.cancelAnimationFrame(req)
     }
   }
 
@@ -117,11 +117,11 @@ class Looper extends Node {
     // nextBeatTime = nextBeatTime
     const req = window.requestAnimationFrame(this.stopRecording.bind(this));
     if (Node.context.currentTime >= this.nextBeatTime) {
+      window.cancelAnimationFrame(req)
+      this.mediaRecorder.stop();
       this.status = "STOPPED"
       console.log('stopREcording')
-      this.mediaRecorder.stop();
       this.nextBeatTime = 0
-      window.cancelAnimationFrame(req)
     }
 
   }

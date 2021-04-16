@@ -64,8 +64,6 @@
                 :ref="'Node-' + n"
                 @deleteNode="deleteEffect(t, n)"
                 @levelClicked="levelClicked(Node)"
-                @scheduleLoopStartRecording="scheduleLoopStartRecording"
-                @scheduleLoopStopRecording="scheduleLoopStopRecording"
               />
               <div class="track-right-placeholder"></div>
             </div>
@@ -97,7 +95,7 @@
       </div>
 
       <div class="click">
-        <Click />
+        <Click :mainGain="mainGain" />
       </div>
     </div>
   </div>
@@ -168,16 +166,16 @@ export default {
       refBeignMapped: null,
 
       //Click
-      tempo: 60.0,
-      lookahead: 25.0,
-      scheduleAheadTime: 0.1,
+      // tempo: 60.0,
+      // lookahead: 25.0,
+      // scheduleAheadTime: 0.1,
 
-      totalBeats: 4,
-      currentBeat: 1,
-      nextBeatTime: 0.0,
+      // totalBeats: 4,
+      // currentBeat: 1,
+      // nextBeatTime: 0.0,
 
-      notesInQueue: [],
-      timerID: null,
+      // notesInQueue: [],
+      // timerID: null,
 
       //rec
       mediaRecorders: [],
@@ -244,67 +242,28 @@ export default {
     //     this.currentBeat === this.totalBeats ? 1 : this.currentBeat + 1;
     // },
 
-    sheduleClickNote(time) {
-      const freq = this.currentBeat === 1 ? 440 : 220;
-      var osc = this.context.createOscillator();
-      osc.connect(this.context.destination);
+    // sheduleClickNote(time) {
+    //   const freq = this.currentBeat === 1 ? 440 : 220;
+    //   var osc = this.context.createOscillator();
+    //   osc.connect(this.context.destination);
 
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(freq, time);
+    //   osc.type = "triangle";
+    //   osc.frequency.setValueAtTime(freq, time);
 
-      osc.start(time);
-      osc.stop(time + 0.05);
-    },
+    //   osc.start(time);
+    //   osc.stop(time + 0.05);
+    // },
 
-    scheduler() {
-      while (
-        this.nextBeatTime <
-        this.context.currentTime + this.scheduleAheadTime
-      ) {
-        this.sheduleClickNote(this.nextBeatTime);
-        this.nextNote();
-      }
-      this.timerID = window.setTimeout(this.scheduler, this.lookahead);
-    },
-
-    scheduleLoopStartRecording() {},
-    scheduleLoopStopRecording() {},
-
-    nextNote() {
-      const secondsPerBeat = 60.0 / this.tempo;
-
-      this.nextBeatTime += secondsPerBeat;
-      console.log(Node.nextBeatTime);
-      Node.nextBeatTime = this.nextBeatTime;
-      console.log(Node.nextBeatTime);
-      this.currentBeat =
-        this.currentBeat === this.totalBeats ? 1 : this.currentBeat + 1;
-    },
-
-    sheduleClickNote(time) {
-      const freq = this.currentBeat === 1 ? 440 : 220;
-      var osc = this.context.createOscillator();
-      osc.connect(this.context.destination);
-
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(freq, time);
-
-      osc.start(time);
-      osc.stop(time + 0.05);
-    },
-
-    scheduler() {
-      while (
-        this.nextBeatTime <
-        this.context.currentTime + this.scheduleAheadTime
-      ) {
-        this.sheduleClickNote(this.nextBeatTime);
-        this.nextNote();
-      }
-      this.timerID = window.setTimeout(this.scheduler, this.lookahead);
-    },
-
-    //---
+    // scheduler() {
+    //   while (
+    //     this.nextBeatTime <
+    //     this.context.currentTime + this.scheduleAheadTime
+    //   ) {
+    //     this.sheduleClickNote(this.nextBeatTime);
+    //     this.nextNote();
+    //   }
+    //   this.timerID = window.setTimeout(this.scheduler, this.lookahead);
+    // },
 
     startRec() {
       const recordingTracks = this.tracks.filter((t) => t.recEnabled);
