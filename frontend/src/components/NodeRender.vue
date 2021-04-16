@@ -193,45 +193,55 @@
           </div>
           <!-- /modulation-params -->
 
-          <!-- Loop Controls -->
-          <div
-            class="loop-controls params-container"
-            v-if="Node.nodeType === 'Looper'"
-          >
-            <div
-              class="control-btn start-rec"
-              @click="startRecording"
-              v-if="Node.status === 'CLEARED'"
-            >
-              REC
+          <!-- Looper -->
+          <div class="loop-controls" v-if="Node.nodeType === 'Looper'">
+            <div class="control-btns params-container">
+              <div
+                class="control-btn start-rec"
+                @click="startRecording"
+                v-if="Node.status === 'CLEARED'"
+              >
+                REC
+              </div>
+              <div
+                class="control-btn stop-rec"
+                @click="stopRecording"
+                v-if="Node.status === 'RECORDING'"
+              >
+                LOOP
+              </div>
+              <div
+                class="control-btn pause-loop"
+                @click="stopLoop"
+                v-if="Node.status === 'PLAYING'"
+              >
+                STOP
+              </div>
+              <div
+                class="control-btn play-loop"
+                @click="playLoop"
+                v-if="Node.status === 'STOPPED'"
+              >
+                PLAY
+              </div>
+              <div
+                class="control-btn clear-loop"
+                @click="clearLoop"
+                v-if="Node.loopAvailable"
+              >
+                CLEAR
+              </div>
             </div>
-            <div
-              class="control-btn stop-rec"
-              @click="stopRecording"
-              v-if="Node.status === 'RECORDING'"
-            >
-              LOOP
+            <!-- Upload -->
+
+            <div class="upload-loop">
+              <div class="label">{{ loopFileName || "Load Loop" }}</div>
+              <input type="file" @change="loadLoopBuffer" />
             </div>
-            <div
-              class="control-btn pause-loop"
-              @click="stopLoop"
-              v-if="Node.status === 'PLAYING'"
-            >
-              STOP
-            </div>
-            <div
-              class="control-btn play-loop"
-              @click="playLoop"
-              v-if="Node.status === 'STOPPED'"
-            >
-              PLAY
-            </div>
-            <div
-              class="control-btn clear-loop"
-              @click="clearLoop"
-              v-if="Node.loopAvailable"
-            >
-              CLEAR
+            <div class="download-loop">
+              <span class="label" v-if="Node.looperBlob" @click="downloadLoop">
+                Download
+              </span>
             </div>
           </div>
         </div>
@@ -324,19 +334,21 @@ export default {
   data() {
     return {
       loopStatus: "CLEARED",
+      loopFileName: "",
     };
   },
 
   props: ["Node", "analyser", "recEnabled", "instrumentEnabled"],
 
   computed: {
-    ...mapGetters(["appConnecting", "originNode"]),
+    ...mapGetters(["context", "appConnecting", "originNode"]),
   },
 
   mounted() {
     if (this.Node.nodeType === "Looper") {
       window.addEventListener("keyup", this.processLoopKeyup);
     }
+    console.log("mounted", this.Node);
   },
 
   methods: {
@@ -407,6 +419,32 @@ export default {
     },
     clearLoop() {
       this.Node.clearLoop();
+    },
+    downloadLoop() {
+      const a = document.createElement("a");
+      let fileName = "websynth-loop-" + new Date().toLocaleString("es-AR");
+      fileName = prompt("Loop name: ", fileName);
+      if (!fileName) return;
+      a.setAttribute("href", URL.createObjectURL(this.Node.looperBlob));
+      a.setAttribute("download", fileName);
+      a.click();
+    },
+
+    loadLoopBuffer(e) {
+      const file = e.target.files[0];
+      this.loopFileName = file.name;
+
+      const fileReader = new FileReader();
+
+      fileReader.onloadend = () => {
+        const arrayBuffer = fileReader.result;
+
+        this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
+          this.Node.setAudioBuffer(audioBuffer);
+        });
+      };
+
+      fileReader.readAsArrayBuffer(file);
     },
 
     processLoopKeyup(e) {
@@ -657,10 +695,6 @@ export default {
   width: 90px;
 }
 
-.Looper {
-  min-width: 140px;
-}
-
 .Track-Gain {
   width: 135px;
   .node-name {
@@ -735,8 +769,60 @@ export default {
   color: gray;
 }
 
+// Looper
+
+.Looper {
+  min-width: 140px;
+}
+
+.control-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  min-height: 73px;
+}
 .control-btn {
   padding: 0.4em;
   min-width: 60px;
+  cursor: pointer;
+  background: var(--color-1);
+}
+.upload-loop {
+  margin-top: 0.5em;
+  width: 100%;
+  background: #111;
+  position: relative;
+  .label {
+    padding: 0.6em;
+    width: 200px;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  input {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    // z-index: 10;
+  }
+}
+.upload-loop:hover {
+  background: var(--color-1);
+}
+.download-loop {
+  margin-top: 0.2em;
+  .label {
+    cursor: default;
+    user-select: none;
+    color: #bbb;
+    padding: 0.2em;
+  }
+  .label:hover {
+    color: var(--color-2);
+  }
 }
 </style>

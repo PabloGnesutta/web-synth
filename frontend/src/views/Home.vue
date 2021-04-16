@@ -166,7 +166,9 @@
         </div>
       </div>
 
-      <div class="canvases" v-show="showRecordWaveforms"></div>
+      <div>
+        <input type="file" @change="onChangeFile" />
+      </div>
     </div>
   </div>
 </template>
@@ -213,7 +215,6 @@ export default {
   data() {
     return {
       inited: false,
-      context: null,
 
       tracks: [],
       trackCount: 0,
@@ -260,7 +261,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(["appIsMapping", "appConnecting"]),
+    ...mapGetters(["context", "appIsMapping", "appConnecting"]),
   },
 
   mounted() {
@@ -272,10 +273,12 @@ export default {
   },
 
   methods: {
-    ...mapMutations(["setAppIsMapping"]),
+    ...mapMutations(["setAppIsMapping", "setContext"]),
     toggleRecEnabled(t) {
       this.tracks[t].recEnabled = !this.tracks[t].recEnabled;
     },
+
+    onChangeFile(e) {},
 
     startRec() {
       if (this.recording) return;
@@ -378,7 +381,9 @@ export default {
 
     downloadExport() {
       const a = document.createElement("a");
-      const fileName = "websynth-export-" + new Date().toLocaleString("es-AR");
+      let fileName = "websynth-export-" + new Date().toLocaleString("es-AR");
+      fileName = prompt("Export name: ", fileName);
+      if (!fileName) return;
       a.setAttribute("href", URL.createObjectURL(this.exportBlob));
       a.setAttribute("download", fileName);
       a.click();
@@ -402,51 +407,6 @@ export default {
     stopPlayingExport() {
       this.exportSource.stop(0);
       this.playing = false;
-    },
-
-    // playAllRecordings() {
-    //   this.playing = true;
-    //   for (let i = 0; i < this.recordings.length; i++) {
-    //     const sourceGain = this.context.createGain();
-    //     const source = this.context.createBufferSource();
-    //     const comp = this.context.createDynamicsCompressor();
-
-    //     source.buffer = this.recordings[i].audioBuffer;
-    //     // source.loop = true;
-
-    //     source.connect(comp); //apply compression before playing/recording
-    //     comp.connect(sourceGain);
-    //     sourceGain.connect(this.mainGain);
-
-    //     source.start();
-    //     this.playingBuffers.push({
-    //       comp,
-    //       source,
-    //       sourceGain,
-    //     });
-
-    //     source.onended = () => {
-    //       if (i === this.recordings.length - 1) this.stopPlayingAllRecordings();
-    //     };
-    //   }
-    //   console.log(this.getRecordingsURL());
-    // },
-
-    // stopPlayingAllRecordings() {
-    //   this.playingBuffers.forEach((pb) => {
-    //     pb.source.disconnect();
-    //     pb.sourceGain.disconnect();
-    //   });
-    //   this.playingBuffers = [];
-    //   this.playing = false;
-    // },
-
-    getRecordingsURL() {
-      let URLs = [];
-      this.blobs.forEach((blob) => {
-        URLs.push(URL.createObjectURL(blob));
-      });
-      return URLs;
     },
 
     //Waveforms:
@@ -492,7 +452,7 @@ export default {
       if (this.context) return;
       this.inited = true;
       document.querySelector(".Home").removeEventListener("click", this.init);
-      this.context = new (window.AudioContext || window.webkitAudioContext)();
+      this.setContext(new (window.AudioContext || window.webkitAudioContext)());
       Node.context = this.context;
 
       this.createMainGain();
@@ -501,6 +461,7 @@ export default {
       window.addEventListener("keydown", this.onKeydown);
 
       this.createTrack(new Femod("sine"));
+      this.createEffect("Looper");
     },
 
     createTrack(instrument) {

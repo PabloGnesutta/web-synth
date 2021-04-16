@@ -13,10 +13,11 @@ class Looper extends Node {
     this.nodeRol = "Effect"
 
     this.status = "CLEARED"
-    this.loopAvailable = false
 
-    // this.comp = Node.context.createDynamicsCompressor()
-    // this.node = this.comp
+    this.loopAvailable = false
+    this.looperBuffer = null
+    this.looperBlob = null
+
     this.node = Node.context.createGain()
     this.initGain(initialGain)
   }
@@ -34,8 +35,8 @@ class Looper extends Node {
     this.source.onended = () => {
       this.playing = false;
     };
-    console.log('playLoop')
-    console.log(this.name + " download url:", URL.createObjectURL(this.looperBlob));
+    console.log('playLoop', this.looperBuffer)
+    // console.log(this.name + " download url:", URL.createObjectURL(this.looperBlob));
   }
 
   stopLoop() {
@@ -82,8 +83,7 @@ class Looper extends Node {
         const arrayBuffer = fileReader.result;
 
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-          this.looperBuffer = audioBuffer
-          this.loopAvailable = true
+          this.setAudioBuffer(audioBuffer)
           this.node.disconnect(this.mediaDestination)
           this.playLoop()
         });
@@ -93,6 +93,13 @@ class Looper extends Node {
     };
 
     this.mediaRecorder.start();
+  }
+
+  setAudioBuffer(audioBuffer) {
+    this.looperBuffer = audioBuffer
+    this.loopAvailable = true
+    this.status = "STOPPED"
+    console.log('setaudiobuffer', audioBuffer)
   }
 
   stopRecording() {

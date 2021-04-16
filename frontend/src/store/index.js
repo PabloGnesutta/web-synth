@@ -5,6 +5,7 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
+    context: null,
     appIsMapping: false,
 
     originNode: null,
@@ -12,6 +13,9 @@ export default new Vuex.Store({
   },
 
   getters: {
+    context: (state) => {
+      return state.context
+    },
     appIsMapping: (state) => {
       return state.appIsMapping
     },
@@ -26,6 +30,10 @@ export default new Vuex.Store({
   },
 
   mutations: {
+    setContext: (state, payload) => {
+      state.context = payload
+    },
+
     setAppIsMapping: (state, payload) => {
       state.appIsMapping = payload
     },
