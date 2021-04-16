@@ -37,7 +37,7 @@ class Looper extends Node {
 
     this.source.onended = () => {
       if (this.status !== 'STOPPED' && this.status !== 'CLEARED')
-        this.playLoop(Node.lastBeatTime)
+        this.playLoop(Node.nextBeatTime)
     };
   }
 
@@ -85,7 +85,7 @@ class Looper extends Node {
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
           this.setAudioBuffer(audioBuffer)
           this.node.disconnect(this.mediaDestination)
-          this.playLoop()
+          this.playLoop(Node.nextBeatTime)
         });
       };
 
@@ -114,16 +114,14 @@ class Looper extends Node {
   }
 
   stopRecording() {
-    // nextBeatTime = nextBeatTime
-    const req = window.requestAnimationFrame(this.stopRecording.bind(this));
-    if (Node.context.currentTime >= this.nextBeatTime) {
-      window.cancelAnimationFrame(req)
-      this.mediaRecorder.stop();
-      this.status = "STOPPED"
-      console.log('stopREcording')
-      this.nextBeatTime = 0
-    }
-
+    // const req = window.requestAnimationFrame(this.stopRecording.bind(this));
+    // if (Node.context.currentTime >= this.nextBeatTime) {
+    // window.cancelAnimationFrame(req)
+    this.mediaRecorder.stop();
+    this.status = "STOPPED"
+    console.log('stopREcording')
+    // this.nextBeatTime = 0
+    // }
   }
 }
 module.exports = Looper
