@@ -119,8 +119,9 @@ export default {
 
       Node.lastBeatTime = this.nextBeatTime;
       this.nextBeatTime += secondsPerBeat;
-      this.setNextBeatTime(this.nextBeatTime);
       Node.nextBeatTime = this.nextBeatTime;
+      this.setNextBeatTime(this.nextBeatTime);
+
       this.currentBeat =
         this.currentBeat === this.totalBeats ? 1 : this.currentBeat + 1;
     },

@@ -2,9 +2,9 @@
   <div class="header">
     <div class="buttons">
       <!-- Instruments -->
-      <div class="btn btn-instrument" @click="createInstrument('Justinton')">
+      <!-- <div class="btn btn-instrument" @click="createInstrument('Justinton')">
         Justinton
-      </div>
+      </div> -->
       <div class="btn btn-instrument" @click="createInstrument('Femod')">
         Femod
       </div>

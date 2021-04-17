@@ -34,7 +34,6 @@ class Looper extends Node {
     this.source.start(nextBeatTime || 0);
     this.playing = true;
 
-
     this.source.onended = () => {
       if (this.status !== 'STOPPED' && this.status !== 'CLEARED')
         this.playLoop(Node.nextBeatTime)
@@ -99,8 +98,8 @@ class Looper extends Node {
   startMediaRecorder() {
     const req = window.requestAnimationFrame(this.startMediaRecorder.bind(this));
     if (Node.context.currentTime >= this.nextBeatTime) {
-      window.cancelAnimationFrame(req)
       this.mediaRecorder.start();
+      window.cancelAnimationFrame(req)
       this.status = "RECORDING"
       console.log('startRecording')
       this.nextBeatTime = 0
