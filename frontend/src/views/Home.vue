@@ -165,19 +165,6 @@ export default {
       mapping: false,
       refBeignMapped: null,
 
-      //Click
-      // tempo: 60.0,
-      // lookahead: 25.0,
-      // scheduleAheadTime: 0.1,
-
-      // totalBeats: 4,
-      // currentBeat: 1,
-      // nextBeatTime: 0.0,
-
-      // notesInQueue: [],
-      // timerID: null,
-
-      //rec
       mediaRecorders: [],
       recordings: [],
       recording: false,
@@ -204,7 +191,11 @@ export default {
 
   mounted() {
     this.keyEnabled = Array(222).fill(true);
-    navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
+    if (navigator.requestMIDIAccess) {
+      navigator
+        .requestMIDIAccess()
+        .then(this.onMIDISuccess, this.onMIDIFailure);
+    }
     document.querySelector(".Home").addEventListener("click", this.init);
   },
 
@@ -231,40 +222,6 @@ export default {
       this.createEffect("Looper");
     },
 
-    //Click
-
-    // nextNote() {
-    //   const secondsPerBeat = 60.0 / this.tempo;
-
-    //   this.nextBeatTime += secondsPerBeat;
-    //   this.setNextBeatTime(this.nextBeatTime);
-    //   this.currentBeat =
-    //     this.currentBeat === this.totalBeats ? 1 : this.currentBeat + 1;
-    // },
-
-    // sheduleClickNote(time) {
-    //   const freq = this.currentBeat === 1 ? 440 : 220;
-    //   var osc = this.context.createOscillator();
-    //   osc.connect(this.context.destination);
-
-    //   osc.type = "triangle";
-    //   osc.frequency.setValueAtTime(freq, time);
-
-    //   osc.start(time);
-    //   osc.stop(time + 0.05);
-    // },
-
-    // scheduler() {
-    //   while (
-    //     this.nextBeatTime <
-    //     this.context.currentTime + this.scheduleAheadTime
-    //   ) {
-    //     this.sheduleClickNote(this.nextBeatTime);
-    //     this.nextNote();
-    //   }
-    //   this.timerID = window.setTimeout(this.scheduler, this.lookahead);
-    // },
-
     startRec() {
       const recordingTracks = this.tracks.filter((t) => t.recEnabled);
       const total = recordingTracks.length;
@@ -274,13 +231,11 @@ export default {
       this.renderFinished = false;
       this.showRecordWaveforms = false;
 
-      console.log("rec start");
-
       // record entire mix
 
       this.chunks = [];
       this.exportDestination = this.context.createMediaStreamDestination();
-      this.mainGain.connect(this.exportDestination); //to do: make mixer node to avoid filtering by gain...
+      this.mainGain.connect(this.exportDestination);
 
       this.exportMediaRecorder = new MediaRecorder(
         this.exportDestination.stream
@@ -309,6 +264,7 @@ export default {
       };
 
       this.exportMediaRecorder.start();
+      console.log("export rec start");
 
       //record each track
 
@@ -345,6 +301,7 @@ export default {
         };
 
         mediaRecorder.start();
+        console.log("track " + i + 1 + " rec start");
       });
     },
 
@@ -364,10 +321,11 @@ export default {
     },
 
     downloadExport() {
-      const a = document.createElement("a");
       let fileName = "websynth-export-" + new Date().toLocaleString("es-AR");
       fileName = prompt("Export name: ", fileName);
       if (!fileName) return;
+
+      const a = document.createElement("a");
       a.setAttribute("href", URL.createObjectURL(this.exportBlob));
       a.setAttribute("download", fileName);
       a.click();
@@ -391,45 +349,6 @@ export default {
     stopPlayingExport() {
       this.exportSource.stop(0);
       this.playing = false;
-    },
-
-    //Waveforms:
-
-    renderWaveforms() {
-      for (let i = 0; i < this.recordings.length; i++)
-        this.renderWaveform(this.recordings[i]);
-      this.renderFinished = true;
-      console.log("finished rendering");
-    },
-
-    renderWaveform({ audioBuffer, track }) {
-      console.log("rendering waveform", track);
-      let canvas = document.createElement("canvas");
-      canvas.width = audioBuffer.duration * 100;
-
-      const canvasWidth = canvas.width;
-      const canvasHeight = 150;
-      const context = canvas.getContext("2d");
-      var leftChannel = audioBuffer.getChannelData(0); // Float32Array describing left channel
-
-      context.save();
-      context.fillStyle = "#222";
-      context.fillRect(0, 0, canvasWidth, canvasHeight);
-      context.strokeStyle = "#122";
-      context.globalCompositeOperation = "lighter";
-      context.translate(0, canvasHeight / 2);
-      context.globalAlpha = 0.06; // lineOpacity ;
-      for (var i = 0; i < leftChannel.length; i++) {
-        var x = Math.floor((canvasWidth * i) / leftChannel.length);
-        var y = (leftChannel[i] * canvasHeight) / 2 - 2;
-        context.beginPath();
-        context.moveTo(x, 0);
-        context.lineTo(x + 1, y);
-        context.stroke();
-      }
-      context.restore();
-      console.log("done");
-      document.querySelector(".canvases").appendChild(canvas);
     },
 
     createTrack(instrument) {
@@ -662,6 +581,45 @@ export default {
 
     onMIDIFailure() {
       console.log("Could not access your MIDI devices.");
+    },
+
+    //Waveforms:
+
+    renderWaveforms() {
+      for (let i = 0; i < this.recordings.length; i++)
+        this.renderWaveform(this.recordings[i]);
+      this.renderFinished = true;
+      console.log("finished rendering");
+    },
+
+    renderWaveform({ audioBuffer, track }) {
+      console.log("rendering waveform", track);
+      let canvas = document.createElement("canvas");
+      canvas.width = audioBuffer.duration * 100;
+
+      const canvasWidth = canvas.width;
+      const canvasHeight = 150;
+      const context = canvas.getContext("2d");
+      var leftChannel = audioBuffer.getChannelData(0); // Float32Array describing left channel
+
+      context.save();
+      context.fillStyle = "#222";
+      context.fillRect(0, 0, canvasWidth, canvasHeight);
+      context.strokeStyle = "#122";
+      context.globalCompositeOperation = "lighter";
+      context.translate(0, canvasHeight / 2);
+      context.globalAlpha = 0.06; // lineOpacity ;
+      for (var i = 0; i < leftChannel.length; i++) {
+        var x = Math.floor((canvasWidth * i) / leftChannel.length);
+        var y = (leftChannel[i] * canvasHeight) / 2 - 2;
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x + 1, y);
+        context.stroke();
+      }
+      context.restore();
+      console.log("done");
+      document.querySelector(".canvases").appendChild(canvas);
     },
 
     loadSave(tracks) {
