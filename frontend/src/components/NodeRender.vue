@@ -344,7 +344,15 @@ export default {
   props: ["Node", "analyser", "recEnabled", "instrumentEnabled"],
 
   computed: {
-    ...mapGetters(["context", "nextBeatTime", "appConnecting", "originNode"]),
+    ...mapGetters([
+      "context",
+      "totalBeats",
+      "currentBeat",
+      "nextBeatTime",
+      "secondsPerBeat",
+      "appConnecting",
+      "originNode",
+    ]),
   },
 
   mounted() {
@@ -409,19 +417,26 @@ export default {
 
     //Looper
     scheduleLoopStartRecording() {
-      this.Node.nextBeatTime = this.nextBeatTime;
-      this.Node.startRecording(this.nextBeatTime);
-    },
-    scheduleLoopStopRecording() {
-      this.Node.nextBeatTime = this.nextBeatTime;
-      this.Node.stopRecording(this.nextBeatTime);
+      const beatsRemainingTo1 = this.totalBeats - this.currentBeat;
+      const nextBeatTime =
+        this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
+
+      this.Node.startRecording(nextBeatTime);
     },
 
-    stopLoop() {
-      this.Node.stopLoop();
+    scheduleLoopStopRecording() {
+      const beatsRemainingTo1 = this.totalBeats - this.currentBeat;
+      const nextBeatTime =
+        this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
+
+      this.Node.stopRecording(nextBeatTime);
     },
+
     playLoop() {
       this.Node.playLoop(this.nextBeatTime);
+    },
+    stopLoop() {
+      this.Node.stopLoop();
     },
     clearLoop() {
       this.Node.clearLoop();
@@ -582,6 +597,7 @@ export default {
     text-align: left;
     padding: 0.5em;
     cursor: default;
+    user-select: none;
   }
 }
 
@@ -664,6 +680,7 @@ export default {
 
 .param-name {
   padding: 0.3em 0.2em 0.5em;
+  user-select: none;
 }
 
 // Specific Node Styles:

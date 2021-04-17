@@ -73,8 +73,8 @@ export default {
     setKnobValueAndPosition(knobValue) {
       this.knobValue = knobValue;
       this.deg = knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
-      const r = knobValue.map(0, this.maxKnobVal, 10, 150);
-      this.trackColor = `rgb(0, ${r}, ${r});`;
+      const r = knobValue.map(0, this.maxKnobVal, 255, 10);
+      this.trackColor = `rgb(100, ${r},200);`;
     },
 
     emitAndSetEmitValueWithKnobValue(knobValue) {
@@ -148,6 +148,8 @@ export default {
       window.removeEventListener("mouseup", this.onMouseUp);
       window.removeEventListener("keydown", this.onKeydown);
       window.removeEventListener("keyup", this.onKeyup);
+      this.ctrlPressed = false;
+      this.shiftPressed = false;
     },
 
     onKeydown(e) {
@@ -215,6 +217,7 @@ export default {
 .knob-handle {
   position: absolute;
   background: #445863;
+  background: white;
   border-bottom-left-radius: 3px;
   border-top-left-radius: 3px;
   transform: rotate(-50deg);

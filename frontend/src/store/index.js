@@ -11,7 +11,11 @@ export default new Vuex.Store({
     originNode: null,
     appConnecting: false,
 
+    //click
+    secondsPerBeat: 0,
     nextBeatTime: 0,
+    currentBeat: 1,
+    totalBeats: 4,
   },
 
   getters: {
@@ -19,8 +23,21 @@ export default new Vuex.Store({
       return state.context
     },
 
+    //click
+    secondsPerBeat: (state) => {
+      return state.secondsPerBeat
+    },
+
     nextBeatTime: (state) => {
       return state.nextBeatTime
+    },
+
+    currentBeat: (state) => {
+      return state.currentBeat
+    },
+
+    totalBeats: (state) => {
+      return state.totalBeats
     },
 
     appIsMapping: (state) => {
@@ -41,8 +58,21 @@ export default new Vuex.Store({
       state.context = payload
     },
 
+    //click
+    setSecondsPerBeat: (state, payload) => {
+      state.secondsPerBeat = payload
+    },
+
     setNextBeatTime: (state, payload) => {
       state.nextBeatTime = payload
+    },
+
+    setCurrentBeat: (state, payload) => {
+      state.currentBeat = payload
+    },
+
+    setTotalBeats: (state, payload) => {
+      state.totalBeats = payload
     },
 
     setAppIsMapping: (state, payload) => {

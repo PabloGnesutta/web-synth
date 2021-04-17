@@ -25,6 +25,7 @@ class Looper extends Node {
   }
 
   playLoop(nextBeatTime) {
+    console.log('playloop', nextBeatTime)
     this.status = "PLAYING"
     this.source = Node.context.createBufferSource();
     this.loopDuration = this.looperBuffer.duration
@@ -55,9 +56,10 @@ class Looper extends Node {
     this.status = "CLEARED"
   }
 
-  startRecording() {
+  startRecording(nextBeatTime) {
     this.stopLoop()
     this.status = "STARTING"
+    this.nextBeatTime = nextBeatTime
 
     this.chunks = [];
 
@@ -84,7 +86,7 @@ class Looper extends Node {
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
           this.setAudioBuffer(audioBuffer)
           this.node.disconnect(this.mediaDestination)
-          this.playLoop(Node.nextBeatTime)
+          this.playLoop(this.nextBeatTime)
         });
       };
 
@@ -112,7 +114,8 @@ class Looper extends Node {
     this.status = "STOPPED"
   }
 
-  stopRecording() {
+  stopRecording(nextBeatTime) {
+    this.nextBeatTime = nextBeatTime;
     // const req = window.requestAnimationFrame(this.stopRecording.bind(this));
     // if (Node.context.currentTime >= this.nextBeatTime) {
     // window.cancelAnimationFrame(req)

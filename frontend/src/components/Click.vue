@@ -1,18 +1,37 @@
 <template>
-  <div>
-    <div>
-      <div>Tempo:</div>
-      <input type="range" min="30" max="300" step="1" v-model="tempo" />
-      <div>{{ tempo }} bpm</div>
-    </div>
+  <div class="Click">
+    <h3>click</h3>
 
-    <div class="on-off">
+    <div class="section on-off">
       <div class="on" v-if="clickActive" @click="turnOff">ON</div>
       <div class="off" v-if="!clickActive" @click="turnOn">OFF</div>
     </div>
 
+    <div class="section signature">
+      <div @click="substractFromTimeSignature" class="time-signature-control">
+        -
+      </div>
+      <div class="current-signature">
+        {{ totalBeats }}/{{ beatSubdivition }}
+      </div>
+      <div @click="addToTimeSignature" class="time-signature-control">+</div>
+    </div>
+
     <div>
-      <div>Volume</div>
+      <div class="label">Tempo:</div>
+      <input
+        type="range"
+        min="30"
+        max="300"
+        step="1"
+        v-model="tempoKnobValue"
+        @input="setTempo"
+      />
+      <div class="label">{{ tempo }} bpm</div>
+    </div>
+
+    <div class="section volume">
+      <div class="label">Volume</div>
       <input
         type="range"
         min="0"
@@ -21,7 +40,7 @@
         step="0.01"
         @input="setClickLevel"
       />
-      <div>{{ clickLevel }}</div>
+      <div class="label">{{ clickLevel }}</div>
     </div>
   </div>
 </template>
@@ -32,13 +51,16 @@ import { mapGetters, mapMutations } from "vuex";
 export default {
   data() {
     return {
+      tempoKnobValue: 60.0,
       tempo: 60.0,
       lookahead: 25.0,
       scheduleAheadTime: 0.1,
 
       totalBeats: 4,
       currentBeat: 1,
+      beatSubdivition: 4,
       nextBeatTime: 0.0,
+      secondsPerBeat: 0,
 
       timerID: null,
 
@@ -63,11 +85,86 @@ export default {
     this.clickGain.connect(this.mainGain);
 
     this.loadClickSamples();
-    // this.scheduler();
+    this.setTempo();
+    this.scheduler();
   },
 
   methods: {
-    ...mapMutations(["setNextBeatTime"]),
+    ...mapMutations(["setNextBeatTime", "setCurrentBeat", "setSecondsPerBeat"]),
+
+    turnOff() {
+      window.clearTimeout(this.timerID);
+      this.currentBeat = 1;
+      this.nextBeatTime = 0.0;
+      this.secondsPerBeat = 0.0;
+      this.clickActive = false;
+      this.setCurrentBeat(this.currentBeat);
+      this.setNextBeatTime(this.nextBeatTime);
+      this.setSecondsPerBeat(this.secondsPerBeat);
+    },
+
+    turnOn() {
+      this.currentBeat = 1;
+      this.setCurrentBeat(this.currentBeat);
+      this.nextBeatTime = this.context.currentTime;
+      this.setNextBeatTime(this.nextBeatTime);
+      this.setTempo();
+      this.scheduler();
+      this.clickActive = true;
+    },
+
+    setClickLevel() {
+      this.clickGain.gain.setValueAtTime(this.clickLevel, 0);
+    },
+
+    addToTimeSignature() {
+      this.currentBeat = 1;
+      this.totalBeats = this.totalBeats < 12 ? this.totalBeats + 1 : 1;
+    },
+    substractFromTimeSignature() {
+      this.currentBeat = 1;
+      this.totalBeats = this.totalBeats > 1 ? this.totalBeats - 1 : 12;
+    },
+
+    nextNote() {
+      // this.secondsPerBeat = 60.0 / this.tempo;
+
+      Node.lastBeatTime = this.nextBeatTime;
+      this.nextBeatTime += this.secondsPerBeat;
+      Node.nextBeatTime = this.nextBeatTime;
+      this.setNextBeatTime(this.nextBeatTime);
+      this.setCurrentBeat(this.currentBeat);
+
+      //next beat
+      this.currentBeat =
+        this.currentBeat >= this.totalBeats ? 1 : this.currentBeat + 1;
+    },
+
+    setTempo() {
+      this.tempo = this.tempoKnobValue;
+      this.secondsPerBeat = 60.0 / this.tempo;
+      this.setSecondsPerBeat(this.secondsPerBeat);
+    },
+
+    sheduleClickNote(time) {
+      const source = this.context.createBufferSource();
+      if (this.currentBeat === 1) source.buffer = this.clickBuffer1;
+      else source.buffer = this.clickBuffer2;
+
+      source.connect(this.clickGain);
+      source.start(time);
+    },
+
+    scheduler() {
+      while (
+        this.nextBeatTime <
+        this.context.currentTime + this.scheduleAheadTime
+      ) {
+        this.sheduleClickNote(this.nextBeatTime);
+        this.nextNote();
+      }
+      this.timerID = window.setTimeout(this.scheduler, this.lookahead);
+    },
 
     loadClickSamples() {
       const that = this;
@@ -96,58 +193,42 @@ export default {
 
       request2.send();
     },
-
-    turnOff() {
-      window.clearTimeout(this.timerID);
-      this.nextBeatTime = 0.0;
-      this.clickActive = false;
-    },
-
-    turnOn() {
-      this.clickActive = true;
-      this.nextBeatTime = this.context.currentTime;
-      this.currentBeat = 1;
-      this.scheduler();
-    },
-
-    setClickLevel() {
-      this.clickGain.gain.setValueAtTime(this.clickLevel, 0);
-    },
-
-    nextNote() {
-      const secondsPerBeat = 60.0 / this.tempo;
-
-      Node.lastBeatTime = this.nextBeatTime;
-      this.nextBeatTime += secondsPerBeat;
-      Node.nextBeatTime = this.nextBeatTime;
-      this.setNextBeatTime(this.nextBeatTime);
-
-      this.currentBeat =
-        this.currentBeat === this.totalBeats ? 1 : this.currentBeat + 1;
-    },
-
-    sheduleClickNote(time) {
-      const source = this.context.createBufferSource();
-      if (this.currentBeat === 1) source.buffer = this.clickBuffer1;
-      else source.buffer = this.clickBuffer2;
-
-      source.connect(this.clickGain);
-      source.start(time);
-    },
-
-    scheduler() {
-      while (
-        this.nextBeatTime <
-        this.context.currentTime + this.scheduleAheadTime
-      ) {
-        this.sheduleClickNote(this.nextBeatTime);
-        this.nextNote();
-      }
-      this.timerID = window.setTimeout(this.scheduler, this.lookahead);
-    },
   },
 };
 </script>
 
-<style>
+<style lang="scss" scoped>
+.Click {
+  margin-top: 1em;
+}
+
+.section {
+  padding: 0.5em;
+}
+
+.on-off {
+  user-select: none;
+  cursor: pointer;
+  display: inline-block;
+  padding: 0.5em;
+}
+
+.signature {
+  display: flex;
+  justify-content: center;
+  gap: 1em;
+  font-size: 1.2rem;
+  user-select: none;
+  .current-signature {
+    padding: 0.2em;
+  }
+  .time-signature-control {
+    cursor: pointer;
+    padding: 0.2em 0.4em;
+  }
+}
+
+.label {
+  user-select: none;
+}
 </style>
