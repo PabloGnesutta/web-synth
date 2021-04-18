@@ -33,7 +33,7 @@
           @click="trackClicked(t)"
         >
           <!-- Modulators -->
-          <div class="track-inner">
+          <div class="track-inner" :class="'track-inner_' + t">
             <div class="track-modulators">
               <NodeRender
                 v-for="(Mod, m) in track.modulators"
@@ -435,6 +435,11 @@ export default {
 
       prev.disconnect().connect(Node).connect(next);
       effects.push(Node);
+      this.$nextTick(() => {
+        const trackInnerClass = ".track-inner_" + this.currentTrackIndex;
+        const trackInner = document.querySelector(trackInnerClass);
+        trackInner.scrollTo(trackInner.offsetWidth, 0);
+      });
     },
 
     deleteEffect(t, n) {
