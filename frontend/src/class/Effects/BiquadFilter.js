@@ -18,7 +18,7 @@ class BiquadFilter extends Node {
     this.name = name || "Filter " + ++BiquadFilter.bqCount
     this.nodeType = "BiquadFilter"
 
-    this.types = ['lowpass', 'highpass', 'bandpass', 'notch', 'lowshelf', 'highshelf', 'peaking']
+    this.types = ['lowpass', 'highpass', 'bandpass', 'notch']
     this.type = type || this.types[0]
 
     this.node = Node.context.createBiquadFilter()
@@ -76,14 +76,14 @@ class BiquadFilter extends Node {
         freq = 4000
         q.minValue = 0.01
         q.maxValue = 10
-        q.value = 0
+        q.value = 1
         q.step = 0.01
         break;
       default:
         freq = 0
         q.minValue = -100
         q.maxValue = 100
-        q.value = 0
+        q.value = 1
         q.step = 0.01
     }
     //freq

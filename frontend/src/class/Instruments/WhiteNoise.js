@@ -1,40 +1,44 @@
 const Node = require("../Node")
 
-const initialGain = 0
-const minMaxStep = [
-  { name: 'playbackRate', displayName: 'playback rate', minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.001 },
+const initialGain = 0.5
+const audioParamsConfig = [
+  { name: 'playbackRate', displayName: 'playback rate', unit: '', minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.001 },
 ]
 
-class Delay extends Node {
+class WhiteNoise extends Node {
   static noiseCount = 0
 
   constructor(name) {
     super(name)
 
-    this.name = name || "Noise " + ++Delay.noiseCount
-    this.nodeType = "BufferSource"
+    this.name = name || "Noise " + ++WhiteNoise.noiseCount
+    this.nodeType = "WhiteNoise"
     this.nodeRol = "Instrument"
 
-    const bufferSize = 2 * Node.context.sampleRate;
-    const noiseBuffer = Node.context.createBuffer(
-      1,
-      bufferSize,
-      Node.context.sampleRate
-    );
+    this.playing = false
 
-    const output = noiseBuffer.getChannelData(0);
-    for (var i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
-    }
+    this.createWhiteNoiseBuffer()
+    this.node = Node.context.createGain()
 
-    this.node = Node.context.createBufferSource();
-    this.node.buffer = noiseBuffer;
-    this.node.loop = true;
-
-    super.getAudioParams(['detune'])
-    super.setMinMaxStep(minMaxStep)
+    // super.getAudioParams(['detune'])
+    super.initParams(audioParamsConfig)
     this.initGain(initialGain)
-    this.node.start()
+  }
+
+  playNote(noteIndex) {
+    if (this.playing) return
+    this.whiteNoise = Node.context.createBufferSource();
+    this.whiteNoise.connect(this.node)
+    this.whiteNoise.buffer = this.noiseBuffer;
+    this.whiteNoise.loop = true;
+    this.whiteNoise.start()
+    this.playing = true
+  }
+
+  stopNote(noteIndex) {
+    if (!this.playing) return
+    this.whiteNoise.stop()
+    this.playing = false
   }
 
   initGain(initialGain) {
@@ -46,6 +50,18 @@ class Delay extends Node {
 
     this.node.connect(this.outputNode)
   }
+
+  createWhiteNoiseBuffer() {
+    const bufferSize = 2 * Node.context.sampleRate;
+    this.noiseBuffer = Node.context.createBuffer(
+      1,
+      bufferSize,
+      Node.context.sampleRate
+    );
+
+    const output = this.noiseBuffer.getChannelData(0);
+    for (var i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+  }
 }
 
-module.exports = Delay
+module.exports = WhiteNoise

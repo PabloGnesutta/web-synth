@@ -6,12 +6,11 @@ class Oscillator extends Node {
 
     this.nodeType = "Oscillator"
     this.types = ['sine', 'triangle', 'sawtooth', 'square']
-    this.oscType = type || 'triangle'
+    this.type = type || 'triangle'
 
     //falta setear el type inicial en el dropdown
 
     this.frequency = frequency || '440'
-
     this.node = Node.context.createOscillator()
 
     super.getAudioParams()
@@ -19,7 +18,7 @@ class Oscillator extends Node {
 
   start() {
     this.node = Node.context.createOscillator()
-    this.node.type = this.oscType
+    this.node.type = this.type
     this.node.frequency.setValueAtTime(this.frequency, 0)
     this.node.connect(this.outputNode)
     this.node.start(0)
@@ -31,6 +30,7 @@ class Oscillator extends Node {
     this.node.disconnect()
     this.status = "STOPPED"
   }
+
 }
 
 module.exports = Oscillator

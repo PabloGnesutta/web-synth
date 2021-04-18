@@ -23,6 +23,7 @@
           :class="{ enabled: instrumentEnabled }"
         ></div>
       </div>
+
       <!-- Node Name -->
       <div class="node-header">
         <div class="node-name" @click="nodeClicked()">
@@ -313,11 +314,16 @@
         </div>
       </div>
       <!-- /node-footer -->
+
       <!-- Track Gain controls -->
-      <div class="node-controls" v-if="recEnabled !== undefined">
+      <div class="node-controls" v-if="Node.name === 'Track Gain'">
         <div class="rec-enabled-disabled" @click="toggleRecEnabled">
           <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
           <div v-else class="rec-btn rec-disabled">Rec disabled</div>
+        </div>
+        <div class="mute-unmute" @click="toggleMute">
+          <div class="unmute" v-if="Node.muted">M</div>
+          <div class="mute" v-else>M</div>
         </div>
       </div>
     </div>
@@ -359,7 +365,8 @@ export default {
     if (this.Node.nodeType === "Looper") {
       window.addEventListener("keyup", this.processLoopKeyup);
     }
-    console.log("mounted", this.Node);
+    console.log("NodeRender mounted", this.Node);
+    // this.type = this.Node.type;
   },
 
   methods: {
@@ -372,9 +379,11 @@ export default {
     setType(e) {
       this.Node.setType(e.target.value);
       e.target.blur();
+      console.log(this.Node.nodeType);
+      if (this.Node.nodeType === "Carrier") return;
       if (this.Node.audioParams.length > 0)
         this.setParamsConstraints(this.Node.audioParams);
-      // if (this.Node.customParams) //no seteo los custom params para no cambiar el ADSR
+      // if (this.Node.customParams) //no seteo los custom params para no cambiar el ADSR seteado
       //   this.setParamsConstraints(this.Node.customParams);
     },
 
@@ -388,6 +397,10 @@ export default {
 
     deleteNode() {
       this.$emit("deleteNode");
+    },
+
+    toggleMute() {
+      this.Node.toggleMute();
     },
 
     toggleInstrumentEnabled() {
@@ -429,6 +442,7 @@ export default {
       const nextBeatTime =
         this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
 
+      // this.Node.nextBeatTime = nextBeatTime;
       this.Node.stopRecording(nextBeatTime);
     },
 
@@ -779,19 +793,6 @@ export default {
   background: var(--color-2);
 }
 
-.rec-enabled-disabled {
-  cursor: pointer;
-}
-.rec-btn {
-  user-select: none;
-}
-.rec-enabled {
-  color: red;
-}
-.rec-disabled {
-  color: gray;
-}
-
 // Looper
 
 .Looper {
@@ -833,9 +834,11 @@ export default {
     // z-index: 10;
   }
 }
+
 .upload-loop:hover {
   background: var(--color-1);
 }
+
 .download-loop {
   margin-top: 0.2em;
   .label {
@@ -846,6 +849,38 @@ export default {
   }
   .label:hover {
     color: var(--color-2);
+  }
+}
+
+// Track gain
+.rec-enabled-disabled {
+  cursor: pointer;
+  margin-bottom: 1em;
+}
+.rec-btn {
+  user-select: none;
+}
+.rec-enabled {
+  color: red;
+}
+.rec-disabled {
+  color: gray;
+}
+
+.mute-unmute {
+  cursor: pointer;
+  .mute,
+  .unmute {
+    width: 20px;
+    height: 20px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .mute {
+    background: green;
+  }
+  .unmute {
+    background: red;
   }
 }
 </style>

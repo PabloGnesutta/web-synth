@@ -21,15 +21,10 @@ class Femod extends Node {
     this.nodeRol = "Instrument"
 
     this.types = ["sine", "triangle", "sawtooth", "square"]
-    this.type = tpye || "sine"
+    this.type = tpye || "sawtooth"
 
     this.octave = 3
     this.transpose = 0
-
-    // this.A = initialA
-    // this.D = initialD
-    // this.S = initialS
-    // this.R = initialR
 
     this.scaleNodes = []
 

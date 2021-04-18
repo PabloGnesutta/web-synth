@@ -16,6 +16,7 @@ export default new Vuex.Store({
     nextBeatTime: 0,
     currentBeat: 1,
     totalBeats: 4,
+    tempo: 60.0,
   },
 
   getters: {
@@ -24,6 +25,10 @@ export default new Vuex.Store({
     },
 
     //click
+    tempo: (state) => {
+      return state.tempo
+    },
+
     secondsPerBeat: (state) => {
       return state.secondsPerBeat
     },
@@ -59,6 +64,10 @@ export default new Vuex.Store({
     },
 
     //click
+    setTempo: (state, payload) => {
+      state.tempo = payload
+    },
+
     setSecondsPerBeat: (state, payload) => {
       state.secondsPerBeat = payload
     },

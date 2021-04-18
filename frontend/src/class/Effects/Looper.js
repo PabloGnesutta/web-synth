@@ -18,21 +18,21 @@ class Looper extends Node {
     this.looperBuffer = null
     this.looperBlob = null
     this.loopDuration = 0;
+
     this.nextBeatTime = 0;
 
     this.node = Node.context.createGain()
     this.initGain(initialGain)
   }
 
-  playLoop(nextBeatTime) {
-    console.log('playloop', nextBeatTime)
+  playLoop(startAt) {
     this.status = "PLAYING"
     this.source = Node.context.createBufferSource();
-    this.loopDuration = this.looperBuffer.duration
+
     this.source.buffer = this.looperBuffer;
 
     this.source.connect(this.outputNode);
-    this.source.start(nextBeatTime || 0);
+    this.source.start(startAt || 0);
     this.playing = true;
 
     this.source.onended = () => {
@@ -53,6 +53,7 @@ class Looper extends Node {
     this.stopLoop()
     this.loopAvailable = false;
     this.looperBuffer = null;
+    this.loopDuration = 0
     this.status = "CLEARED"
   }
 
@@ -87,6 +88,7 @@ class Looper extends Node {
           this.setAudioBuffer(audioBuffer)
           this.node.disconnect(this.mediaDestination)
           this.playLoop(this.nextBeatTime)
+          // this.playLoop(0)
         });
       };
 
@@ -110,6 +112,7 @@ class Looper extends Node {
 
   setAudioBuffer(audioBuffer) {
     this.looperBuffer = audioBuffer
+    this.loopDuration = audioBuffer.duration
     this.loopAvailable = true
     this.status = "STOPPED"
   }

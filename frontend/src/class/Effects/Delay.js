@@ -7,7 +7,7 @@ const maxDelayTime = 3
 const initialDelayTime = 0.3
 const initialFeddback = 0.5
 
-const minMaxStep = [
+const audioParamsConfig = [
   { name: 'gain', minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.01 },
 ]
 
@@ -49,7 +49,7 @@ class Delay extends Node {
     this.initInnerNodeAudioParams()
     this.initCustomParams()
 
-    super.setMinMaxStep(minMaxStep)
+    super.initParams(audioParamsConfig)
 
     //audio source must connect to node and bypass
   }
@@ -81,7 +81,6 @@ class Delay extends Node {
 
   initCustomParams() {
     const setDryWet = (value) => {
-      console.log('set custom param delay', value)
       this.wetGain.gain.value = value
       this.dryGain.gain.value = value.map(0, 1, 1, 0)
     }

@@ -25,7 +25,7 @@
         max="300"
         step="1"
         v-model="tempoKnobValue"
-        @input="setTempo"
+        @input="setTempoAndSecondsPerBeat"
       />
       <div class="label">{{ tempo }} bpm</div>
     </div>
@@ -57,7 +57,7 @@ export default {
       scheduleAheadTime: 0.1,
 
       totalBeats: 4,
-      currentBeat: 1,
+      nextBeat: 1,
       beatSubdivition: 4,
       nextBeatTime: 0.0,
       secondsPerBeat: 0,
@@ -73,8 +73,6 @@ export default {
     };
   },
 
-  props: ["mainGain"],
-
   computed: {
     ...mapGetters(["context"]),
   },
@@ -82,11 +80,12 @@ export default {
   mounted() {
     this.clickGain = this.context.createGain();
     this.clickGain.gain.setValueAtTime(this.clickLevel, 0);
-    this.clickGain.connect(this.mainGain);
+    this.clickGain.connect(this.context.destination);
 
     this.loadClickSamples();
-    this.setTempo();
-    this.scheduler();
+    this.setTempoAndSecondsPerBeat();
+
+    if (this.clickActive) this.scheduler();
   },
 
   methods: {
@@ -94,21 +93,21 @@ export default {
 
     turnOff() {
       window.clearTimeout(this.timerID);
-      this.currentBeat = 1;
+      this.nextBeat = 1;
       this.nextBeatTime = 0.0;
       this.secondsPerBeat = 0.0;
       this.clickActive = false;
-      this.setCurrentBeat(this.currentBeat);
+      this.setCurrentBeat(this.nextBeat);
       this.setNextBeatTime(this.nextBeatTime);
       this.setSecondsPerBeat(this.secondsPerBeat);
     },
 
     turnOn() {
-      this.currentBeat = 1;
-      this.setCurrentBeat(this.currentBeat);
+      this.nextBeat = 1;
       this.nextBeatTime = this.context.currentTime;
+      this.setCurrentBeat(this.nextBeat);
       this.setNextBeatTime(this.nextBeatTime);
-      this.setTempo();
+      this.setTempoAndSecondsPerBeat();
       this.scheduler();
       this.clickActive = true;
     },
@@ -118,29 +117,25 @@ export default {
     },
 
     addToTimeSignature() {
-      this.currentBeat = 1;
+      this.nextBeat = 1;
       this.totalBeats = this.totalBeats < 12 ? this.totalBeats + 1 : 1;
     },
     substractFromTimeSignature() {
-      this.currentBeat = 1;
+      this.nextBeat = 1;
       this.totalBeats = this.totalBeats > 1 ? this.totalBeats - 1 : 12;
     },
 
     nextNote() {
-      // this.secondsPerBeat = 60.0 / this.tempo;
-
-      Node.lastBeatTime = this.nextBeatTime;
       this.nextBeatTime += this.secondsPerBeat;
       Node.nextBeatTime = this.nextBeatTime;
-      this.setNextBeatTime(this.nextBeatTime);
-      this.setCurrentBeat(this.currentBeat);
 
-      //next beat
-      this.currentBeat =
-        this.currentBeat >= this.totalBeats ? 1 : this.currentBeat + 1;
+      this.setNextBeatTime(this.nextBeatTime);
+      this.setCurrentBeat(this.nextBeat);
+
+      this.nextBeat = this.nextBeat >= this.totalBeats ? 1 : this.nextBeat + 1;
     },
 
-    setTempo() {
+    setTempoAndSecondsPerBeat() {
       this.tempo = this.tempoKnobValue;
       this.secondsPerBeat = 60.0 / this.tempo;
       this.setSecondsPerBeat(this.secondsPerBeat);
@@ -148,7 +143,7 @@ export default {
 
     sheduleClickNote(time) {
       const source = this.context.createBufferSource();
-      if (this.currentBeat === 1) source.buffer = this.clickBuffer1;
+      if (this.nextBeat === 1) source.buffer = this.clickBuffer1;
       else source.buffer = this.clickBuffer2;
 
       source.connect(this.clickGain);

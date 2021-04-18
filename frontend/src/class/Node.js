@@ -97,10 +97,15 @@ class Node {
   }
 
   setMute(muted) {
-    const t = Node.context.currentTime
     this.muted = muted
-    if (muted) this.outputNode.gain.setValueAtTime(0, t)
-    else this.outputNode.gain.setValueAtTime(this.gain, t)
+    if (muted) this.outputNode.gain.setValueAtTime(0, 0)
+    else this.outputNode.gain.setValueAtTime(this.gain, 0)
+  }
+
+  toggleMute() {
+    this.muted = !this.muted
+    if (this.muted) this.outputNode.gain.setValueAtTime(0, 0)
+    else this.outputNode.gain.setValueAtTime(this.gain, 0)
   }
 
   //debería entender tanto indice como nombre del parámetro
@@ -142,12 +147,14 @@ class Node {
     }
   }
 
-  setMinMaxStep(minMaxStep) {
+  initParams(audioParamsConfig) {
     this.audioParams.forEach(ap => {
-      const index = minMaxStep.findIndex(mms => mms.name === ap.name)
+      const index = audioParamsConfig.findIndex(apc => apc.name === ap.name)
       for (let key in ap) {
-        ap[key] = minMaxStep[index][key]
+        ap[key] = audioParamsConfig[index][key]
       }
+      ap.unit = audioParamsConfig[index].unit
+      ap.displayName = audioParamsConfig[index].displayName
     })
   }
 

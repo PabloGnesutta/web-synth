@@ -95,7 +95,7 @@
       </div>
 
       <div class="click">
-        <Click :mainGain="mainGain" />
+        <Click :mainGain="mainGain" ref="click" />
       </div>
     </div>
   </div>
@@ -218,7 +218,7 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.createTrack(new Femod("sine"));
+      this.createTrack(new Femod());
       this.createEffect("Looper");
     },
 
@@ -380,14 +380,15 @@ export default {
       this.currentTrack = this.tracks[this.currentTrackIndex];
 
       //keypressListeners
-      if (
-        instrument.nodeType === "Justinton" ||
-        instrument.nodeType === "Femod"
-      )
-        this.keypressListeners.push({
-          instrument,
-          trackName: this.currentTrack.name,
-        }); //esto compensa midichannel
+      // if (
+      //   instrument.nodeType === "Justinton" ||
+      //   instrument.nodeType === "Femod" ||
+      //   instrument.nodeType === 'WhiteNoise'
+      // )
+      this.keypressListeners.push({
+        instrument,
+        trackName: this.currentTrack.name,
+      }); //esto compensa midichannel
     },
 
     deleteTrack(t) {
@@ -414,9 +415,21 @@ export default {
 
     toggleInstrumentEnabled(t) {
       const track = this.tracks[t];
-      console.log(track);
       track.instrumentEnabled = !this.tracks[t].instrumentEnabled;
-      track.instrument.setMute(!track.instrumentEnabled);
+
+      if (track.instrumentEnabled) {
+        this.keypressListeners.push({
+          instrument: track.instrument,
+          trackName: track.name,
+        }); //esto compensa midichannel
+      } else {
+        const i = this.keypressListeners.findIndex(
+          (kpl) => kpl.trackName === track.name
+        );
+        this.keypressListeners.splice(i, 1);
+      }
+
+      // track.instrument.setMute(!track.instrumentEnabled);
     },
 
     insertEffect(Node) {

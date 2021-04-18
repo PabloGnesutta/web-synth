@@ -1,4 +1,5 @@
 const Oscillator = require("../Oscillator/Oscillator")
+const notes = require("../../data/notes")
 
 const initialGain = 0.5
 const detuneMax = 100
@@ -19,6 +20,9 @@ class Carrier extends Oscillator {
     this.nodeType = "Carrier"
     this.nodeRol = "Instrument"
 
+    this.octave = 3
+    this.transpose = 0
+
     this.status = "STOPPED"
 
     this.initParams()
@@ -34,6 +38,24 @@ class Carrier extends Oscillator {
       ap.unit = audioParamsConfig[index].unit
       ap.displayName = audioParamsConfig[index].displayName
     })
+  }
+
+  playNote(i) {
+    let noteIndex = i + 12 * this.octave + this.transpose
+    if (noteIndex < 0) noteIndex = 0
+    if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
+
+    this.frequency = notes[noteIndex].freq
+    this.node.frequency.setValueAtTime(this.frequency, 0)
+  }
+
+  stopNote(i) { }
+
+  onOtherKeyup(key) {
+    if (key === "z" && this.octave > 1) this.octave--;
+    if (key === "x") this.octave = this.octave < 8 ? this.octave + 1 : this.octave;
+    if (key === "c") this.transpose = this.transpose <= -12 ? -12 : this.transpose - 1;
+    if (key === "v") this.transpose = this.transpose < 12 ? this.transpose + 1 : this.transpose;
   }
 }
 
