@@ -88,7 +88,7 @@
           </div>
 
           <!-- Inner Node Audio Params -->
-          <!-- <div
+          <div
             class="inner-node-audio-params params-container"
             v-if="Node.innerNodeAudioParams"
           >
@@ -121,7 +121,7 @@
                 />
               </div>
             </div>
-          </div> -->
+          </div>
 
           <!-- Custom Params -->
           <div class="custom-params params-container" v-if="Node.customParams">
@@ -258,23 +258,19 @@
         </div>
       </div>
       <!-- /node-body -->
-      <div class="node-footer">
-        <!-- Start/Stop -->
-        <div
-          class="start-stop"
-          v-if="
-            Node.nodeType === 'Carrier' || Node.nodeType === 'ADSROscillator'
-          "
-        >
-          <div
-            class="start"
-            @click="startOsc()"
-            v-if="Node.status === 'STOPPED'"
-          >
-            START
-          </div>
-          <div class="stop" v-else @click="stopOsc()">STOP</div>
+
+      <!-- Start/Stop -->
+      <div
+        class="start-stop"
+        v-if="Node.nodeType === 'Carrier' || Node.nodeType === 'ADSROscillator'"
+      >
+        <div class="start" @click="startOsc()" v-if="Node.status === 'STOPPED'">
+          START
         </div>
+        <div class="stop" v-else @click="stopOsc()">STOP</div>
+      </div>
+
+      <div class="node-footer">
         <!-- Connections -->
         <div class="connections" v-if="Node.nodeType === 'Modulator'">
           <div class="outputs" v-if="Node.outputs.length > 0">
@@ -293,6 +289,7 @@
             </div>
           </div>
         </div>
+
         <!-- Octave/Transpose -->
         <div class="octave-transpose" v-if="Node.nodeRol === 'Instrument'">
           <div class="octave" v-if="Node.octave">Octave: {{ Node.octave }}</div>
@@ -335,6 +332,7 @@
       </div>
     </div>
     <!-- /node -->
+
     <div class="analyser-wrapper" v-if="analyser">
       <AnalyserRender :analyser="analyser" :parent="Node.name" />
     </div>
@@ -712,6 +710,7 @@ export default {
 .param-name {
   padding: 0.3em 0.2em 0.5em;
   user-select: none;
+  font-size: 0.9rem;
 }
 
 // Specific Node Styles:
@@ -722,7 +721,8 @@ export default {
 }
 
 .Carrier,
-.Modulator {
+.Modulator,
+.WhiteNoise {
   min-width: 160px;
 }
 

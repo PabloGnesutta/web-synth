@@ -5,7 +5,7 @@ const QMax = 30
 const frequencyMax = 7000
 
 const audioParamsConfig = [
-  { name: 'frequency', displayName: 'freq', unit: 'hz', minValue: 20, maxValue: frequencyMax, value: 0, defaultValue: 0, step: 1 },
+  { name: 'frequency', displayName: 'cutoff', unit: 'hz', minValue: 20, maxValue: frequencyMax, value: 0, defaultValue: 0, step: 1 },
   { name: 'Q', displayName: 'res', unit: '', minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01 },
 ]
 

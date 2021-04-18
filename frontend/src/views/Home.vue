@@ -734,7 +734,8 @@ export default {
   padding: 0.3em 0.5em;
 
   display: flex;
-  align-items: center;
+  // align-items: center;
+  // align-items: flex-end;
   gap: 0.5em;
   border: 2px solid transparent;
   transition: border-color 0.2s ease-out;
@@ -743,7 +744,8 @@ export default {
 .track-inner {
   background: transparent;
   display: flex;
-  align-items: center;
+  // align-items: center;
+  // align-items: flex-end;
   gap: 1em;
   overflow-x: auto;
   padding-bottom: 0.3em;
@@ -754,6 +756,11 @@ export default {
   // width: 10px;
 }
 
+.node {
+  height: 100%;
+}
+
+.track-instrument .container {height: 100%;}
 .track-instrument .node .node-name {
   color: var(--color-1);
   font-size: 1.1rem;
@@ -771,8 +778,12 @@ export default {
 
 .track-effects {
   display: flex;
-  align-items: center;
+  // align-items: center;
   gap: 0.5em;
+}
+
+.track-gain {
+  align-self: flex-end;
 }
 
 // IF CONNECTING

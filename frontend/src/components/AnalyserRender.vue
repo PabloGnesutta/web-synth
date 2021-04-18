@@ -1,6 +1,13 @@
 <template>
-  <div class="canvas-container" @click="canvasClicked">
-    <canvas :ref="'canvas-' + parent" :class="{ expanded: expanded }"></canvas>
+  <div class="AnalyserRender">
+    <canvas
+      :ref="'canvas-' + parent"
+      :class="{ expanded: expanded }"
+      @click.self="canvasClicked"
+    ></canvas>
+    <div class="switch" v-if="expanded" @click="switchMode">
+      {{ mode }}
+    </div>
   </div>
 </template>
 
@@ -19,6 +26,8 @@ export default {
       bufferLength: null,
 
       expanded: false,
+
+      mode: "spectrum",
     };
   },
 
@@ -39,14 +48,27 @@ export default {
   },
 
   methods: {
+    switchMode() {
+      if (this.mode === "spectrum") this.mode = "waveshape";
+      else this.mode = "spectrum";
+
+      if (this.mode === "spectrum") {
+        window.cancelAnimationFrame(this.renderWaveForm);
+        this.renderSpectrum();
+      } else {
+        window.cancelAnimationFrame(this.renderSpectrum);
+        this.renderWaveForm();
+      }
+    },
+
     canvasClicked() {
-      // window.cancelAnimationFrame(this.renderSpectrum)
+      window.cancelAnimationFrame(this.renderSpectrum)
       this.expanded = !this.expanded;
       if (this.expanded)
         this.barWidth = (this.canvas.width / this.bufferLength) * 2.5;
       else this.barWidth = this.canvas.width;
 
-      this.renderSpectrum();
+      // this.renderWaveForm();
     },
 
     renderSpectrum() {
@@ -111,6 +133,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.AnalyserRender {
+  position: relative;
+}
 canvas {
   width: 13px;
   height: 256px;
@@ -121,5 +146,14 @@ canvas {
 }
 canvas.expanded {
   width: 400px;
+}
+.switch {
+  cursor: default;
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: white;
+  background: gray;
+  padding: 0.2em;
 }
 </style>

@@ -31,8 +31,17 @@ class WhiteNoise extends Node {
     this.node = Node.context.createBiquadFilter()
     this.node.type = 'bandpass'
 
+    this.mod = Node.context.createOscillator()
+    this.modGain = Node.context.createGain()
+    this.mod.connect(this.modGain)
+    this.modGain.gain.value = 500
+    this.mod.frequency.value = 10
+    this.mod.start()
+    this.modGain.connect(this.node.frequency)
+
     super.getAudioParams(['gain', 'detune'])
     super.initParams(audioParamsConfig)
+    this.initInnerNodeAudioParams()
     this.initGain(initialGain)
   }
 
@@ -56,6 +65,21 @@ class WhiteNoise extends Node {
   }
 
   onOtherKeyup(key) {
+  }
+
+  initInnerNodeAudioParams() {
+    this.innerNodeAudioParams = [
+      {
+        name: 'modFrequency', displayName: 'mod freq', unit: 'hz',
+        minValue: 0, maxValue: 500, value: 0, defaultValue: 0, step: 0.01,
+        node: this.mod, nodeAudioParam: 'frequency'
+      },
+      {
+        name: 'modAmount', displayName: 'mod amt', unit: '', //%
+        minValue: 0, maxValue: 1000, value: 0, defaultValue: 0, step: 0.01,
+        node: this.modGain, nodeAudioParam: 'gain'
+      },
+    ]
   }
 
   initGain(initialGain) {

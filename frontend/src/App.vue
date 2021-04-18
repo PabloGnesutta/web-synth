@@ -59,7 +59,8 @@ select:focus {
 }
 
 .track-inner::-webkit-scrollbar-thumb {
-  background: #113e3e;
+  background: var(--color-2);
+  // background: #113e3e;
 }
 
 #app {
