@@ -61,7 +61,6 @@ export default {
 
   mounted() {
     this.setParamContraints(this.minVal, this.maxVal, parseFloat(this.initVal));
-    console.log("knob mounted");
   },
 
   methods: {

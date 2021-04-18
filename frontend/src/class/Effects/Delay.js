@@ -67,7 +67,7 @@ class Delay extends Node {
   initInnerNodeAudioParams() {
     this.innerNodeAudioParams = [
       {
-        name: 'delay time', displayName: 'time', unit: 's',
+        name: 'delayTime', displayName: 'time', unit: 's',
         minValue: minDelayTime, maxValue: maxDelayTime, value: initialDelayTime, defaultValue: initialDelayTime, step: 0.01,
         node: this.delay, nodeAudioParam: 'delayTime'
       },

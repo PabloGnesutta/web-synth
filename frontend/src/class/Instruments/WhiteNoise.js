@@ -1,8 +1,18 @@
 const Node = require("../Node")
 
-const initialGain = 0.5
+const initialGain = 1
+const QMax = 30
+const frequencyMax = 7000
+
 const audioParamsConfig = [
-  { name: 'playbackRate', displayName: 'playback rate', unit: '', minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.001 },
+  {
+    name: 'frequency', displayName: 'cutoff', unit: 'hz',
+    minValue: 20, maxValue: frequencyMax, value: frequencyMax, defaultValue: frequencyMax, step: 1
+  },
+  {
+    name: 'Q', displayName: 'res', unit: '',
+    minValue: -QMax, maxValue: QMax, value: 2, defaultValue: 2, step: 0.01
+  },
 ]
 
 class WhiteNoise extends Node {
@@ -18,27 +28,34 @@ class WhiteNoise extends Node {
     this.playing = false
 
     this.createWhiteNoiseBuffer()
-    this.node = Node.context.createGain()
+    this.node = Node.context.createBiquadFilter()
+    this.node.type = 'bandpass'
 
-    // super.getAudioParams(['detune'])
+    super.getAudioParams(['gain', 'detune'])
     super.initParams(audioParamsConfig)
     this.initGain(initialGain)
   }
 
-  playNote(noteIndex) {
+  playNote(i) {
+    const cutoff = i.map(15, 0, 500, frequencyMax);
     if (this.playing) return
     this.whiteNoise = Node.context.createBufferSource();
-    this.whiteNoise.connect(this.node)
     this.whiteNoise.buffer = this.noiseBuffer;
     this.whiteNoise.loop = true;
+    this.whiteNoise.connect(this.node)
+    this.node.frequency.setValueAtTime(this.node.frequency.value, 0)
+    this.node.frequency.setValueAtTime(cutoff, 0)
     this.whiteNoise.start()
     this.playing = true
   }
 
-  stopNote(noteIndex) {
+  stopNote(i) {
     if (!this.playing) return
     this.whiteNoise.stop()
     this.playing = false
+  }
+
+  onOtherKeyup(key) {
   }
 
   initGain(initialGain) {

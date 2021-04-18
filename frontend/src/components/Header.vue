@@ -12,7 +12,7 @@
         Oscillator
       </div>
       <div class="btn btn-instrument" @click="createInstrument('WhiteNoise')">
-        White Noise
+        Noise
       </div>
       <!-- Modulator -->
       <br />

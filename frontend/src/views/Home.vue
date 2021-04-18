@@ -218,8 +218,7 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.createTrack(new Femod());
-      this.createEffect("Looper");
+      this.createTrack(new WhiteNoise());
     },
 
     startRec() {
@@ -379,16 +378,12 @@ export default {
       this.currentTrackIndex = this.tracks.length - 1;
       this.currentTrack = this.tracks[this.currentTrackIndex];
 
-      //keypressListeners
-      // if (
-      //   instrument.nodeType === "Justinton" ||
-      //   instrument.nodeType === "Femod" ||
-      //   instrument.nodeType === 'WhiteNoise'
-      // )
       this.keypressListeners.push({
         instrument,
         trackName: this.currentTrack.name,
       }); //esto compensa midichannel
+
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     },
 
     deleteTrack(t) {
@@ -755,7 +750,7 @@ export default {
 }
 
 .track-instrument .node .node-name {
-  color: var(--color-2);
+  color: var(--color-1);
   font-size: 1.1rem;
 }
 
@@ -781,13 +776,13 @@ export default {
     border: 2px solid yellow;
   }
 
-  .node:not(.current-node):not(.Track-Gain) {
+  .node:not(.current-node):not(.Track-Gain):not(.Delay):not(.Femod) {
     border-color: green;
     .node-name {
       color: var(--color-2);
     }
     .param-name.connectable {
-      color: var(--color-1);
+      color: yellow;
       cursor: pointer;
     }
     .param-name:not(.connectable) {

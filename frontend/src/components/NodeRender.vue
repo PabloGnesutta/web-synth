@@ -44,8 +44,15 @@
       </div>
       <!-- /node-header -->
 
-      <div class="node-params">
-        <div class="params-wrapper">
+      <div class="node-body">
+        <div v-if="Node.nodeType === 'Delay'" class="delay-wrapper">
+          <DelayBody
+            :Node="Node"
+            @setCustomParam="setCustomParamFromChild"
+            @setInnerNodeAudioParam="setInnerNodeAudioParamFromChild"
+          />
+        </div>
+        <div v-else class="node-body-inner">
           <div
             class="audio-params params-container"
             v-if="Node.audioParams.length > 0"
@@ -81,7 +88,7 @@
           </div>
 
           <!-- Inner Node Audio Params -->
-          <div
+          <!-- <div
             class="inner-node-audio-params params-container"
             v-if="Node.innerNodeAudioParams"
           >
@@ -114,7 +121,7 @@
                 />
               </div>
             </div>
-          </div>
+          </div> -->
 
           <!-- Custom Params -->
           <div class="custom-params params-container" v-if="Node.customParams">
@@ -250,7 +257,7 @@
           </div>
         </div>
       </div>
-      <!-- /node-params -->
+      <!-- /node-body -->
       <div class="node-footer">
         <!-- Start/Stop -->
         <div
@@ -301,7 +308,7 @@
           @click="levelClicked"
           :class="getCssNodeName(Node.name + ' Level')"
         >
-          <div class="param-name">Level</div>
+          <div class="param-name connectable">Level</div>
           <div class="knob-wrapper" @click="knobClicked(Node.name + '-level')">
             <Knob
               :ref="Node.name + '-level'"
@@ -339,6 +346,7 @@ import { mapGetters, mapMutations } from "vuex";
 
 import Knob from "./Knob";
 import AnalyserRender from "./AnalyserRender";
+import DelayBody from "./specifig-nodes/DelayBody";
 export default {
   data() {
     return {
@@ -415,8 +423,16 @@ export default {
       this.Node.setInnerNodeAudioParam(inapIndex, value);
     },
 
+    setInnerNodeAudioParamFromChild({ inapIndex, value }) {
+      this.setInnerNodeAudioParam(inapIndex, value);
+    },
+
     setCustomParam(cpIndex, value) {
       this.Node.setCustomParam(cpIndex, value);
+    },
+
+    setCustomParamFromChild({ cpIndex, value }) {
+      this.setCustomParam(cpIndex, value);
     },
 
     setModulationParam(mpIndex, value) {
@@ -584,12 +600,13 @@ export default {
 
   components: {
     Knob,
+    DelayBody,
     AnalyserRender,
   },
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .container {
   display: flex;
   align-items: flex-end;
@@ -668,7 +685,7 @@ export default {
 // PARAMS
 
 .params-wrapper {
-  width: 100%;
+  // width: 100%;
 }
 
 .params-container {

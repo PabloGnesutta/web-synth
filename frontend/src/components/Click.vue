@@ -60,7 +60,7 @@ export default {
       nextBeat: 1,
       beatSubdivition: 4,
       nextBeatTime: 0.0,
-      secondsPerBeat: 0,
+      // secondsPerBeat: 0,
 
       timerID: null,
 
@@ -74,7 +74,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(["context"]),
+    ...mapGetters(["context", "secondsPerBeat"]),
   },
 
   mounted() {
@@ -95,11 +95,11 @@ export default {
       window.clearTimeout(this.timerID);
       this.nextBeat = 1;
       this.nextBeatTime = 0.0;
-      this.secondsPerBeat = 0.0;
+      // this.secondsPerBeat = 0.0;
       this.clickActive = false;
       this.setCurrentBeat(this.nextBeat);
       this.setNextBeatTime(this.nextBeatTime);
-      this.setSecondsPerBeat(this.secondsPerBeat);
+      this.setSecondsPerBeat(0.0);
     },
 
     turnOn() {
@@ -137,8 +137,8 @@ export default {
 
     setTempoAndSecondsPerBeat() {
       this.tempo = this.tempoKnobValue;
-      this.secondsPerBeat = 60.0 / this.tempo;
-      this.setSecondsPerBeat(this.secondsPerBeat);
+      // this.secondsPerBeat = 60.0 / this.tempo;
+      this.setSecondsPerBeat(60.0 / this.tempo);
     },
 
     sheduleClickNote(time) {

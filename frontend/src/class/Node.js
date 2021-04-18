@@ -110,6 +110,7 @@ class Node {
 
   //debería entender tanto indice como nombre del parámetro
   setAudioParam(index, value) {
+    console.log('setAudioParam', value)
     const param = this.audioParams[index];
     let curvedValue = parseFloat(value)
     // console.log(curvedValue)
@@ -120,7 +121,9 @@ class Node {
     // } else {
     //   curvedValue = curvedValue.map(4001, 7000, 4000, 7000)
     // }
-    this.node[param.name].setValueAtTime(curvedValue, 0);
+
+    // this.node[param.name].setValueAtTime(curvedValue, 0);
+    this.node[param.name].value = curvedValue;
     this.audioParams[index].value = parseFloat(value);
   }
 

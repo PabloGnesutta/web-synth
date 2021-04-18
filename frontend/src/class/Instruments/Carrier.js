@@ -20,8 +20,12 @@ class Carrier extends Oscillator {
     this.nodeType = "Carrier"
     this.nodeRol = "Instrument"
 
+    this.frequency = initFreq
+
     this.octave = 3
     this.transpose = 0
+
+    // this.lastNoteFreq = 220;
 
     this.status = "STOPPED"
 
@@ -44,12 +48,15 @@ class Carrier extends Oscillator {
     let noteIndex = i + 12 * this.octave + this.transpose
     if (noteIndex < 0) noteIndex = 0
     if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
-
+    // this.lastNoteFreq = this.frequency
     this.frequency = notes[noteIndex].freq
     this.node.frequency.setValueAtTime(this.frequency, 0)
   }
 
-  stopNote(i) { }
+  stopNote(i) {
+    // this.node.frequency.setValueAtTime(this.lastNoteFreq, 0)
+    // this.lastNoteFreq = this.frequency
+  }
 
   onOtherKeyup(key) {
     if (key === "z" && this.octave > 1) this.octave--;
