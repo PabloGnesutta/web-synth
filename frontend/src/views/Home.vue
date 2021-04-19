@@ -112,6 +112,7 @@ const Looper = require("../class/Effects/Looper");
 const Compressor = require("../class/Effects/Compressor");
 const BiquadFilter = require("../class/Effects/BiquadFilter");
 
+const Mic = require("../class/Instruments/Mic");
 const Femod = require("../class/Instruments/Femod");
 const Carrier = require("../class/Instruments/Carrier");
 const WhiteNoise = require("../class/Instruments/WhiteNoise");
@@ -120,6 +121,7 @@ const Justinton = require("../class/Instruments/Justinton");
 const Modulator = require("../class/Oscillator/Modulator");
 
 const instrumentsDict = new Map([
+  ["Mic", Mic],
   ["Femod", Femod],
   ["Carrier", Carrier],
   ["Justinton", Justinton],
@@ -155,6 +157,8 @@ export default {
       mixerGain: null,
       mainGainKnob: 0.5,
 
+      mic: null,
+
       keyEnabled: [],
       keypressListeners: [],
 
@@ -182,6 +186,10 @@ export default {
       playing: false,
       playingBuffers: [],
       recordingsAvailable: false,
+
+      //keys
+      m_pressed: false,
+      ctrl_pressed: false,
     };
   },
 
@@ -218,7 +226,24 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.createTrack(new WhiteNoise());
+      this.createTrack(new Femod());
+
+      this.getUserMedia();
+    },
+
+    getUserMedia() {
+      const that = this;
+      navigator.mediaDevices
+        .getUserMedia({ audio: true, video: false })
+        .then(function (stream) {
+          that.createTrack(new Mic(stream));
+        })
+        .catch(function (err) {
+          alert(
+            "Couldn't get user media, continuing without mic input. Error: " +
+              err
+          );
+        });
     },
 
     startRec() {
@@ -417,11 +442,13 @@ export default {
           instrument: track.instrument,
           trackName: track.name,
         }); //esto compensa midichannel
+        if (track.instrument.name === "Mic") track.instrument.setMute(false);
       } else {
         const i = this.keypressListeners.findIndex(
           (kpl) => kpl.trackName === track.name
         );
         this.keypressListeners.splice(i, 1);
+        if (track.instrument.name === "Mic") track.instrument.setMute(true);
       }
 
       // track.instrument.setMute(!track.instrumentEnabled);
@@ -507,7 +534,7 @@ export default {
         this.keypressListeners.forEach((scaleInterface) => {
           scaleInterface.instrument.playNote(noteKeyIndex);
         });
-      }
+      } else this.onOtherDown(e);
     },
 
     onKeyup(e) {
@@ -518,10 +545,33 @@ export default {
         this.keypressListeners.forEach((scaleInterface) => {
           scaleInterface.instrument.stopNote(noteKeyIndex);
         });
-      } else this.onOtherKeyup(e.key);
+      } else this.onOtherKeyup(e);
     },
 
-    onOtherKeyup(key) {
+    onOtherDown({ key, keyCode }) {
+      if (keyCode === 77) this.m_pressed = true;
+      if (keyCode === 17) this.ctrl_pressed = true;
+    },
+
+    onOtherKeyup({ key, keyCode }) {
+      console.log(keyCode, key);
+      //1 a 9
+      if (keyCode >= 49 && keyCode <= 57)
+        if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
+
+      //m
+      if (keyCode === 77) {
+        this.m_pressed = false;
+        if (this.ctrl_pressed) this.currentTrack.trackGain.toggleMute();
+      }
+
+      //q
+      if (keyCode === 81)
+        if (this.ctrl_pressed) this.deleteTrack(this.currentTrackIndex);
+
+      //ctrl
+      if (keyCode === 17) this.ctrl_pressed = false;
+
       this.keypressListeners.forEach((scaleInterface) => {
         scaleInterface.instrument.onOtherKeyup(key);
       });
@@ -760,7 +810,9 @@ export default {
   height: 100%;
 }
 
-.track-instrument .container {height: 100%;}
+.track-instrument .container {
+  height: 100%;
+}
 .track-instrument .node .node-name {
   color: var(--color-1);
   font-size: 1.1rem;

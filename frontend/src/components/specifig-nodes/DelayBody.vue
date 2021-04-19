@@ -111,14 +111,14 @@ export default {
       this.syncButtonSelected = i;
       const delayTime = this.secondsPerBeat / this.syncButtons[i].value;
 
-      if (this.sync) this.setInnerNodeAudioParam(0, delayTime, true);
+      if (this.sync) this.setInnerNodeAudioParam("delayTime", delayTime, true);
     },
 
     toggleSync() {
       this.sync = !this.sync;
 
       if (this.sync) this.setSync(this.syncButtonSelected);
-      else this.setInnerNodeAudioParam(0, this.delayTimeKnobValue);
+      else this.setInnerNodeAudioParam("delayTime", this.delayTimeKnobValue);
     },
 
     getCssNodeName(name) {
@@ -131,9 +131,8 @@ export default {
 
     setInnerNodeAudioParam(inapIndex, value, callerIsSetSync) {
       if (inapIndex === 0 && !callerIsSetSync) {
-        //delay time
+        //delayTime
         this.delayTimeKnobValue = value;
-        console.log("delay time change");
       }
       this.$emit("setInnerNodeAudioParam", { inapIndex, value });
     },

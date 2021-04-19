@@ -46,21 +46,10 @@ class ADSROscWithMod extends Oscillator {
     this.ADSRGain.connect(this.outputNode)
 
     this.node = Node.context.createOscillator()
-    this.node.type = this.oscType
+    this.node.type = this.type
     this.node.connect(this.ADSRGain)
 
     //FM
-    // this.mods.forEach(mod => {
-    //   mod.modLevel.connect(this.node.frequency)
-    //   mod.modLevel.gain.setValueAtTime(mod.modLevelValue, 0)
-
-    //   mod.mod = Node.context.createOscillator()
-    //   mod.mod.type = mod.modType
-    //   mod.mod.frequency.value = frequency //sync with note freq
-    //   mod.mod.detune.value = this.detuneValue
-
-    //   mod.mod.connect(mod.modLevel)
-    // })
     this.modLevel.connect(this.node.frequency)
     this.modLevel.gain.setValueAtTime(this.modLevelValue, t)
 
@@ -70,6 +59,7 @@ class ADSROscWithMod extends Oscillator {
     this.mod.frequency.setValueAtTime(frequency, t) //sync with note freq
     this.mod.detune.value = this.detuneValue
     this.mod.connect(this.modLevel)
+    //---
 
     this.node.frequency.setValueAtTime(frequency, t)
     this.node.detune.value = this.detuneValue
@@ -99,9 +89,18 @@ class ADSROscWithMod extends Oscillator {
     this.ADSRGain.gain.cancelScheduledValues(t);
     this.ADSRGain.gain.setValueAtTime(this.ADSRGain.gain.value, t);
     this.ADSRGain.gain.linearRampToValueAtTime(0, t + this.R)
-
+    //disconnect
     this.node.stop(t + this.R)
     this.mod.stop(t + this.R)
+
+    this.node.onended = () => {
+      console.log('ended')
+      // this.node.disconnect()
+      // this.mod.disconnect()
+
+    }
+    setTimeout(() => {
+    }, this.R * 1000);
     // const stop = setInterval(() => {
     //   if (this.ADSRGain.gain.value < 0.001) {
     //     this.node.disconnect()

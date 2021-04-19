@@ -35,31 +35,32 @@ class WhiteNoise extends Node {
     this.modGain = Node.context.createGain()
     this.mod.connect(this.modGain)
     this.modGain.gain.value = 500
-    this.mod.frequency.value = 10
+    // this.mod.frequency.value = 10
     this.mod.start()
     this.modGain.connect(this.node.frequency)
 
-    super.getAudioParams(['gain', 'detune'])
+    super.getAudioParams(['gain', 'detune', 'frequency'])
     super.initParams(audioParamsConfig)
     this.initInnerNodeAudioParams()
     this.initGain(initialGain)
   }
 
   playNote(i) {
-    const cutoff = i.map(15, 0, 500, frequencyMax);
+    const filterFreq = i.map(15, 0, 500, frequencyMax);
     if (this.playing) return
     this.whiteNoise = Node.context.createBufferSource();
     this.whiteNoise.buffer = this.noiseBuffer;
     this.whiteNoise.loop = true;
     this.whiteNoise.connect(this.node)
-    this.node.frequency.setValueAtTime(this.node.frequency.value, 0)
-    this.node.frequency.setValueAtTime(cutoff, 0)
+    // this.node.frequency.setValueAtTime(this.node.frequency.value, 0)
+    this.node.frequency.setValueAtTime(filterFreq, 0)
     this.whiteNoise.start()
     this.playing = true
   }
 
   stopNote(i) {
     if (!this.playing) return
+    this.whiteNoise.disconnect()
     this.whiteNoise.stop()
     this.playing = false
   }
@@ -76,21 +77,21 @@ class WhiteNoise extends Node {
       },
       {
         name: 'modAmount', displayName: 'mod amt', unit: '', //%
-        minValue: 0, maxValue: 1000, value: 0, defaultValue: 0, step: 0.01,
+        minValue: 0, maxValue: 1000, value: 500, defaultValue: 500, step: 0.01,
         node: this.modGain, nodeAudioParam: 'gain'
       },
     ]
   }
 
-  initGain(initialGain) {
-    this.gain = initialGain
+  // initGain(initialGain) {
+  //   this.gain = initialGain
 
-    this.level = Node.context.createGain()
-    this.level.gain.setValueAtTime(this.gain, 0)
-    this.outputNode = this.level
+  //   this.level = Node.context.createGain()
+  //   this.level.gain.setValueAtTime(this.gain, 0)
+  //   this.outputNode = this.level
 
-    this.node.connect(this.outputNode)
-  }
+  //   this.node.connect(this.outputNode)
+  // }
 
   createWhiteNoiseBuffer() {
     const bufferSize = 2 * Node.context.sampleRate;

@@ -66,8 +66,6 @@ class Node {
     this.outputs.splice(index, 1)
   }
 
-
-
   initGain(initialGain) {
     this.gain = initialGain || 1
 
@@ -78,16 +76,42 @@ class Node {
     this.node.connect(this.outputNode)
   }
 
-  setInnerNodeAudioParam(index, value) {
+  //debería entender tanto indice como nombre del parámetro
+  setAudioParam(indexOrName, value) {
+    let index;
+    if (typeof (indexOrName) === 'number') index = indexOrName
+    else index = this.audioParams.findIndex(ap => ap.name === indexOrName)
+
+    let curvedValue = parseFloat(value)
+    // console.log(curvedValue)
+    // if (curvedValue <= 2000) {
+    //   curvedValue = curvedValue.map(0, 2000, 0, 1000)
+    // } else if (curvedValue <= 4000) {
+    //   curvedValue = curvedValue.map(2001, 4000, 1000, 4000)
+    // } else {
+    //   curvedValue = curvedValue.map(4001, 7000, 4000, 7000)
+    // }
+
+    const param = this.audioParams[index];
+    this.node[param.name].setValueAtTime(curvedValue, 0);
+    // this.node[param.name].value = curvedValue;
+    this.audioParams[index].value = parseFloat(value);
+  }
+
+  setInnerNodeAudioParam(indexOrName, value) {
+    let index;
+    if (typeof (indexOrName) === 'number') index = indexOrName
+    else index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
+
     const innerNodeAudioParam = this.innerNodeAudioParams[index];
     innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
     this.innerNodeAudioParams[index].value = parseFloat(value);
   }
 
   setCustomParam(index, value) {
-    const customParams = this.customParams[index];
-    customParams.value = value
-    customParams.set(parseFloat(value))
+    const customParam = this.customParams[index];
+    customParam.value = value
+    customParam.set(parseFloat(value))
   }
 
   setGain(value, time) {
@@ -106,25 +130,6 @@ class Node {
     this.muted = !this.muted
     if (this.muted) this.outputNode.gain.setValueAtTime(0, 0)
     else this.outputNode.gain.setValueAtTime(this.gain, 0)
-  }
-
-  //debería entender tanto indice como nombre del parámetro
-  setAudioParam(index, value) {
-    console.log('setAudioParam', value)
-    const param = this.audioParams[index];
-    let curvedValue = parseFloat(value)
-    // console.log(curvedValue)
-    // if (curvedValue <= 2000) {
-    //   curvedValue = curvedValue.map(0, 2000, 0, 1000)
-    // } else if (curvedValue <= 4000) {
-    //   curvedValue = curvedValue.map(2001, 4000, 1000, 4000)
-    // } else {
-    //   curvedValue = curvedValue.map(4001, 7000, 4000, 7000)
-    // }
-
-    // this.node[param.name].setValueAtTime(curvedValue, 0);
-    this.node[param.name].value = curvedValue;
-    this.audioParams[index].value = parseFloat(value);
   }
 
   setType(type) {

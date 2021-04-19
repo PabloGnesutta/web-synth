@@ -5,8 +5,9 @@ const QMax = 30
 const frequencyMax = 7000
 
 const audioParamsConfig = [
-  { name: 'frequency', displayName: 'cutoff', unit: 'hz', minValue: 20, maxValue: frequencyMax, value: 0, defaultValue: 0, step: 1 },
+  { name: 'frequency', displayName: 'freq', unit: 'hz', minValue: 20, maxValue: frequencyMax, value: 0, defaultValue: 0, step: 1 },
   { name: 'Q', displayName: 'res', unit: '', minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01 },
+  { name: 'gain', displayName: 'gain', unit: '', minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01 },
 ]
 
 class BiquadFilter extends Node {
@@ -18,13 +19,13 @@ class BiquadFilter extends Node {
     this.name = name || "Filter " + ++BiquadFilter.bqCount
     this.nodeType = "BiquadFilter"
 
-    this.types = ['lowpass', 'highpass', 'bandpass', 'notch']
+    this.types = ['lowpass', 'highpass', 'bandpass', 'notch', 'lowshelf', 'highshelf', 'peaking']
     this.type = type || this.types[0]
 
     this.node = Node.context.createBiquadFilter()
     this.node.type = this.type
 
-    super.getAudioParams(['gain', 'detune'])  //exclude params
+    super.getAudioParams(['detune', 'gain'])  //exclude params
     this.initParams()
     this.initGain(initialGain)
   }

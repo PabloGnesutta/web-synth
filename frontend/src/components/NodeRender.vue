@@ -385,7 +385,6 @@ export default {
     setType(e) {
       this.Node.setType(e.target.value);
       e.target.blur();
-      console.log(this.Node.nodeType);
       if (this.Node.nodeType === "Carrier") return;
       if (this.Node.audioParams.length > 0)
         this.setParamsConstraints(this.Node.audioParams);
@@ -681,10 +680,6 @@ export default {
 }
 
 // PARAMS
-
-.params-wrapper {
-  // width: 100%;
-}
 
 .params-container {
   padding-bottom: 0.2em;

@@ -76,7 +76,7 @@ class Femod extends Node {
   setType(value) {
     this.type = value
     this.scaleNodes.forEach(sn => {
-      sn.oscType = value
+      sn.type = value
       sn.node.type = value
     })
   }
@@ -139,7 +139,7 @@ class Femod extends Node {
         displayName: "decay",
         unit: 's',
         minValue: 0.01,
-        maxValue: 1,
+        maxValue: 3,
         value: initialD,
         defaultValue: initialD,
         step: 0.01,
@@ -161,7 +161,7 @@ class Femod extends Node {
         displayName: "release",
         unit: 's',
         minValue: 0.001,
-        maxValue: 3,
+        maxValue: 5,
         value: initialR,
         defaultValue: initialR,
         step: 0.001,

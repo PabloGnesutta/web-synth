@@ -62,13 +62,12 @@ export default {
     },
 
     canvasClicked() {
-      window.cancelAnimationFrame(this.renderSpectrum)
+      window.cancelAnimationFrame(this.renderSpectrum);
+      window.cancelAnimationFrame(this.renderWaveForm);
       this.expanded = !this.expanded;
       if (this.expanded)
         this.barWidth = (this.canvas.width / this.bufferLength) * 2.5;
       else this.barWidth = this.canvas.width;
-
-      // this.renderWaveForm();
     },
 
     renderSpectrum() {
@@ -105,7 +104,7 @@ export default {
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
       this.ctx.lineWidth = 2;
-      this.ctx.strokeStyle = "rgb(0, 0, 0)";
+      this.ctx.strokeStyle = "rgb(2, 2, 2)";
 
       this.ctx.beginPath();
 

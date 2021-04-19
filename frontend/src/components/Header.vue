@@ -5,26 +5,43 @@
       <!-- <div class="btn btn-instrument" @click="createInstrument('Justinton')">
         Justinton
       </div> -->
-      <div class="btn btn-instrument" @click="createInstrument('Femod')">
-        Femod
-      </div>
-      <div class="btn btn-instrument" @click="createInstrument('Carrier')">
-        Oscillator
-      </div>
-      <div class="btn btn-instrument" @click="createInstrument('WhiteNoise')">
-        Noise
+      <div class="menu instruments">
+        <div
+          class="btn label"
+          @click="showInstrumentsMenu = !showInstrumentsMenu"
+        >
+          Instruments
+        </div>
+        <div class="dropdown" :class="{ hidden: !showInstrumentsMenu }">
+          <div
+            class="btn btn-instrument dropdown-item"
+            @click="createInstrument('Femod')"
+          >
+            Femod
+          </div>
+          <div
+            class="btn btn-instrument dropdown-item"
+            @click="createInstrument('Carrier')"
+          >
+            Oscillator
+          </div>
+          <div
+            class="btn btn-instrument dropdown-item"
+            @click="createInstrument('WhiteNoise')"
+          >
+            Noise
+          </div>
+        </div>
       </div>
       <!-- Modulator -->
       <br />
-      <div class="btn btn-modulator" @click="createModulator">Modulator</div>
+      <div class="btn btn-modulator" @click="createModulator">Mod</div>
       <!-- Effects -->
       <br />
       <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
         Filter
       </div>
-      <div class="btn btn-effect" @click="createEffect('Compressor')">
-        Compressor
-      </div>
+      <div class="btn btn-effect" @click="createEffect('Compressor')">Comp</div>
       <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
       <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
       <div class="btn btn-effect" @click="createEffect('Looper')">Looper</div>
@@ -36,7 +53,7 @@
       </div>
       <div class="play-stop" v-if="recordingsAvailable">
         <div v-if="!playing" @click="playExport" class="btn play-recs">
-          Play Recording
+          Play REC
         </div>
         <div v-if="playing" @click="stopPlayingExport" class="btn stop-playing">
           STOP
@@ -66,6 +83,26 @@
           </div>
         </div>
       </div>
+
+      <!-- Config -->
+      <div class="menu config">
+        <div class="btn label" @click="showConfigMenu = !showConfigMenu">
+          Config
+        </div>
+        <div class="dropdown" :class="{ hidden: !showConfigMenu }">
+          <div class="keystrokes-label">Keystrokes:</div>
+          <div class="dropdown-item">Ctrl + m: <span>Mute current</span></div>
+          <div class="dropdown-item">
+            m + (1..9): <span>Mute track 1-9</span>
+          </div>
+          <div class="dropdown-item">0 (zero): <span>Trigger Looper</span></div>
+          <div class="dropdown-item">ctrl + q: <span>Delete current</span></div>
+          <div class="dropdown-item">z: <span>Octave down</span></div>
+          <div class="dropdown-item">x: <span>Octave up</span></div>
+          <div class="dropdown-item">c: <span>Transpose down</span></div>
+          <div class="dropdown-item">v: <span>Transpose up</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -74,6 +111,8 @@
 export default {
   data() {
     return {
+      showInstrumentsMenu: false,
+      showConfigMenu: false,
       showSavedWorks: false,
       saves: [],
     };
@@ -88,6 +127,7 @@ export default {
   methods: {
     createInstrument(className) {
       this.$emit("createInstrument", className);
+      this.showInstrumentsMenu = false;
     },
     createEffect(className) {
       this.$emit("createEffect", className);
@@ -164,9 +204,7 @@ export default {
     background: gray;
     cursor: pointer;
   }
-  .btn-instrument {
-    background: var(--color-1);
-  }
+
   .btn-modulator {
     background: var(--color-2);
   }
@@ -179,6 +217,58 @@ export default {
   .btn.stop-rec {
     background: cyan;
     color: black;
+  }
+
+  .menu {
+    position: relative;
+  }
+
+  .dropdown {
+    position: absolute;
+    min-width: 150px;
+  }
+
+  .dropdown.hidden {
+    display: none;
+  }
+
+  .dropdown-item {
+    padding: 0.5em;
+  }
+
+  .menu.instruments {
+    .label {
+      background: teal;
+    }
+    .dropdown {
+      background: teal;
+    }
+    .dropdown-item {
+      background: var(--color-1);
+      margin-bottom: 0.5em;
+    }
+    .dropdown-item:hover {
+      background: var(--color-2);
+    }
+  }
+
+  .menu.config {
+    .label {
+    }
+    .dropdown {
+      right: 0;
+      bottom: 0;
+      transform: translateY(calc(100% + 5px));
+      min-width: 200px;
+      background: rgb(255, 83, 83);
+      .keystrokes-label {
+        padding: 0.5em;
+        font-weight: bold;
+      }
+      span {
+        color: black;
+      }
+    }
   }
 
   //saves
