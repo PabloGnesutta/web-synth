@@ -89,29 +89,11 @@ class ADSROscWithMod extends Oscillator {
     this.ADSRGain.gain.cancelScheduledValues(t);
     this.ADSRGain.gain.setValueAtTime(this.ADSRGain.gain.value, t);
     this.ADSRGain.gain.linearRampToValueAtTime(0, t + this.R)
-    //disconnect
+
     this.node.stop(t + this.R)
     this.mod.stop(t + this.R)
+    this.status = "STOPPED"
 
-    this.node.onended = () => {
-      console.log('ended')
-      // this.node.disconnect()
-      // this.mod.disconnect()
-
-    }
-    setTimeout(() => {
-    }, this.R * 1000);
-    // const stop = setInterval(() => {
-    //   if (this.ADSRGain.gain.value < 0.001) {
-    //     this.node.disconnect()
-    //     this.mod.disconnect()
-    //     this.node.stop(t)
-    //     this.mod.stop(t)
-    //     this.status = "STOPPED"
-
-    //     clearInterval(stop);
-    //   }
-    // }, 10);
   }
 }
 

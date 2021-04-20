@@ -108,6 +108,7 @@
 </template>
 
 <script>
+import { mapGetters, mapMutations } from "vuex";
 export default {
   data() {
     return {
@@ -120,11 +121,18 @@ export default {
 
   props: ["tracks", "recording", "playing", "recordingsAvailable"],
 
+  computed: {
+    ...mapGetters(["tempo", "totalBeats"]),
+  },
+
   mounted() {
+    //tener un array aparte en localstorage con sólo los nombres para no cargar en memoria al pedo
     this.saves = JSON.parse(localStorage.getItem("websynth-saves"));
   },
 
   methods: {
+    ...mapMutations(["setTempo", "setTotalBeats"]),
+
     createInstrument(className) {
       this.$emit("createInstrument", className);
       this.showInstrumentsMenu = false;
@@ -164,7 +172,12 @@ export default {
           this.saves = [];
           localStorage.setItem("websynth-saves", JSON.stringify([]));
         }
-        this.saves.push({ name, tracks: JSON.stringify(this.tracks) });
+        this.saves.push({
+          name,
+          tempo: this.tempo,
+          totalBeats: this.totalBeats,
+          tracks: JSON.stringify(this.tracks),
+        });
         localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
       }
     },
@@ -172,6 +185,8 @@ export default {
     loadSave(s) {
       const tracks = JSON.parse(this.saves[s].tracks);
       this.$emit("loadSave", tracks);
+      this.setTempo(this.saves[s].tempo);
+      this.setTotalBeats(this.saves[s].totalBeats);
     },
 
     deleteSave(s) {

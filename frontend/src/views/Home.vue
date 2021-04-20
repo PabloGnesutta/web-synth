@@ -15,6 +15,7 @@
         @playExport="playExport"
         @stopPlayingExport="stopPlayingExport"
         @downloadExport="downloadExport"
+        @loadSave="loadSave"
         :tracks="tracks"
         :playing="playing"
         :recording="recording"
@@ -95,7 +96,7 @@
       </div>
 
       <div class="click">
-        <Click :mainGain="mainGain" ref="click" />
+        <Click ref="click" />
       </div>
     </div>
   </div>
@@ -204,6 +205,7 @@ export default {
         .requestMIDIAccess()
         .then(this.onMIDISuccess, this.onMIDIFailure);
     }
+
     document.querySelector(".Home").addEventListener("click", this.init);
   },
 
@@ -214,9 +216,9 @@ export default {
     },
 
     init() {
-      if (this.context) return;
       this.inited = true;
       document.querySelector(".Home").removeEventListener("click", this.init);
+      this.addLeaveListener();
       this.setContext(new (window.AudioContext || window.webkitAudioContext)());
       Node.context = this.context;
       // this.scheduler();
@@ -228,7 +230,7 @@ export default {
 
       this.createTrack(new Femod());
 
-      this.getUserMedia();
+      // this.getUserMedia();
     },
 
     getUserMedia() {
@@ -406,7 +408,7 @@ export default {
       this.keypressListeners.push({
         instrument,
         trackName: this.currentTrack.name,
-      }); //esto compensa midichannel
+      });
 
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     },
@@ -441,7 +443,7 @@ export default {
         this.keypressListeners.push({
           instrument: track.instrument,
           trackName: track.name,
-        }); //esto compensa midichannel
+        });
         if (track.instrument.name === "Mic") track.instrument.setMute(false);
       } else {
         const i = this.keypressListeners.findIndex(
@@ -450,8 +452,6 @@ export default {
         this.keypressListeners.splice(i, 1);
         if (track.instrument.name === "Mic") track.instrument.setMute(true);
       }
-
-      // track.instrument.setMute(!track.instrumentEnabled);
     },
 
     insertEffect(Node) {
@@ -747,9 +747,19 @@ export default {
     getCssNodeName(name) {
       return name.replace(new RegExp(" ", "g"), "-");
     },
+
+    addLeaveListener() {
+      window.onbeforeunload = function (e) {
+        e = e || window.event;
+        if (e) e.returnValue = "Sure?";
+        return "Sure?";
+      };
+    },
   },
 
   beforeDestroy() {
+    console.log("beforedestroy");
+    this.setContext(null);
     window.removeEventListener("keyup", this.onKeyup);
     window.removeEventListener("keydown", this.onKeydown);
   },

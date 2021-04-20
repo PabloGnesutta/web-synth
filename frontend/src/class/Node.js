@@ -44,13 +44,13 @@ class Node {
   connectNativeNode(node, name) {
     this.outputNode.connect(node)
     this.outputs.push({ node, name: name || "Some Native Node" })
+    return node
   }
 
   disconnect() {
     this.outputs.forEach(o => {
       this.disconnectOutput(o.node)
     })
-    // this.disconnectOutput(this.outputs[0].node)
     return this
   }
 
@@ -60,11 +60,11 @@ class Node {
     this.outputs.splice(index, 1)
   }
 
-  disconnectNativeOutput(node) {
-    this.outputNode.disconnect(node)
-    const index = this.outputs.findIndex(o => o.name === output.name)
-    this.outputs.splice(index, 1)
-  }
+  // disconnectNativeOutput(node) {
+  //   this.outputNode.disconnect(node)
+  //   const index = this.outputs.findIndex(o => o.name === output.name)
+  //   this.outputs.splice(index, 1)
+  // }
 
   initGain(initialGain) {
     this.gain = initialGain || 1
@@ -76,32 +76,28 @@ class Node {
     this.node.connect(this.outputNode)
   }
 
-  //debería entender tanto indice como nombre del parámetro
   setAudioParam(indexOrName, value) {
-    let index;
-    if (typeof (indexOrName) === 'number') index = indexOrName
-    else index = this.audioParams.findIndex(ap => ap.name === indexOrName)
+    let index = indexOrName
+    if (typeof (indexOrName) !== 'number') index = this.audioParams.findIndex(ap => ap.name === indexOrName)
 
     let curvedValue = parseFloat(value)
     // console.log(curvedValue)
     // if (curvedValue <= 2000) {
     //   curvedValue = curvedValue.map(0, 2000, 0, 1000)
     // } else if (curvedValue <= 4000) {
-    //   curvedValue = curvedValue.map(2001, 4000, 1000, 4000)
+    //   curvedValue = curvedValue.map(2001, 4000, 1001, 4000)
     // } else {
-    //   curvedValue = curvedValue.map(4001, 7000, 4000, 7000)
+    //   curvedValue = curvedValue.map(4001, 7000, 4001, 7000)
     // }
 
     const param = this.audioParams[index];
     this.node[param.name].setValueAtTime(curvedValue, 0);
-    // this.node[param.name].value = curvedValue;
     this.audioParams[index].value = parseFloat(value);
   }
 
   setInnerNodeAudioParam(indexOrName, value) {
-    let index;
-    if (typeof (indexOrName) === 'number') index = indexOrName
-    else index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
+    let index = indexOrName
+    if (typeof (indexOrName) !== 'number') index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
 
     const innerNodeAudioParam = this.innerNodeAudioParams[index];
     innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
@@ -115,7 +111,7 @@ class Node {
   }
 
   setGain(value, time) {
-    const t = Node.context.currentTime
+    const t = time || Node.context.currentTime
     this.outputNode.gain.setValueAtTime(value, t)
     this.gain = value
   }
@@ -128,8 +124,9 @@ class Node {
 
   toggleMute() {
     this.muted = !this.muted
-    if (this.muted) this.outputNode.gain.setValueAtTime(0, 0)
-    else this.outputNode.gain.setValueAtTime(this.gain, 0)
+    this.setMute(this.muted)
+    // if (this.muted) this.outputNode.gain.setValueAtTime(0, 0)
+    // else this.outputNode.gain.setValueAtTime(this.gain, 0)
   }
 
   setType(type) {
@@ -140,8 +137,8 @@ class Node {
   getAudioParams(exludedKeys) {
     this.audioParams = []
     for (let key in this.node) {
-      if (this.node[key]) {
-        if (this.node[key].toString().includes("AudioParam") && !this.keyExcluded(exludedKeys, key)) {
+      if (this.node[key])
+        if (this.node[key].toString().includes("AudioParam") && !this.keyExcluded(exludedKeys, key))
           this.audioParams.push({
             name: key,
             step: 0.1,
@@ -150,17 +147,15 @@ class Node {
             value: this.node[key].value,
             defaultValue: this.node[key].defaultValue,
           })
-        }
-      }
     }
   }
 
   initParams(audioParamsConfig) {
     this.audioParams.forEach(ap => {
       const index = audioParamsConfig.findIndex(apc => apc.name === ap.name)
-      for (let key in ap) {
+      for (let key in ap)
         ap[key] = audioParamsConfig[index][key]
-      }
+
       ap.unit = audioParamsConfig[index].unit
       ap.displayName = audioParamsConfig[index].displayName
     })

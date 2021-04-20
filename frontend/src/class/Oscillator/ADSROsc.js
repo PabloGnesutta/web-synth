@@ -55,21 +55,24 @@ class ADSROsc extends Oscillator {
 
   stop() {
     const t = Node.context.currentTime
-
     this.ADSRGain.gain.cancelScheduledValues(t);
     this.ADSRGain.gain.setValueAtTime(this.ADSRGain.gain.value, t);
     this.ADSRGain.gain.linearRampToValueAtTime(0, t + this.R)
     // this.ADSRGain.gain.setTargetAtTime(0, t, this.R);
 
-    const stop = setInterval(() => {
-      if (this.ADSRGain.gain.value < 0.001) {
-        this.ADSRGain.disconnect()
-        this.node.disconnect()
-        this.node.stop(0)
-        this.status = "STOPPED"
-        clearInterval(stop);
-      }
-    }, 10);
+    this.node.stop(t + this.R)
+    this.mod.stop(t + this.R)
+    this.status = "STOPPED"
+
+    // const stop = setInterval(() => {
+    //   if (this.ADSRGain.gain.value < 0.001) {
+    //     this.ADSRGain.disconnect()
+    //     this.node.disconnect()
+    //     this.node.stop(0)
+    //     this.status = "STOPPED"
+    //     clearInterval(stop);
+    //   }
+    // }, 10);
   }
 
   // startWithOctaveTranspose(octave, transpose) {
