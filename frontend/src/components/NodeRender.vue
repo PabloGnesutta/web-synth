@@ -350,6 +350,7 @@ export default {
     return {
       loopStatus: "CLEARED",
       loopFileName: "",
+      muted: false,
     };
   },
 
@@ -405,6 +406,7 @@ export default {
     },
 
     toggleMute() {
+      this.muted = !this.muted;
       this.Node.toggleMute();
     },
 

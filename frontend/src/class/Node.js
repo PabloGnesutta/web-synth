@@ -112,8 +112,9 @@ class Node {
 
   setGain(value, time) {
     const t = time || Node.context.currentTime
-    this.outputNode.gain.setValueAtTime(value, t)
     this.gain = value
+    if (!this.muted)
+      this.outputNode.gain.setValueAtTime(value, t)
   }
 
   setMute(muted) {
