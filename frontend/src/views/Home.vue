@@ -10,6 +10,7 @@
         @createInstrument="createInstrument"
         @createModulator="createModulator"
         @createEffect="createEffect"
+        @createMic="createMic"
         @startRec="startRec"
         @stopRec="stopRec"
         @playExport="playExport"
@@ -116,6 +117,7 @@ const BiquadFilter = require("../class/Effects/BiquadFilter");
 const Mic = require("../class/Instruments/Mic");
 const Femod = require("../class/Instruments/Femod");
 const Carrier = require("../class/Instruments/Carrier");
+const Drumkit = require("../class/Instruments/Drumkit");
 const WhiteNoise = require("../class/Instruments/WhiteNoise");
 const Justinton = require("../class/Instruments/Justinton");
 
@@ -125,6 +127,7 @@ const instrumentsDict = new Map([
   ["Mic", Mic],
   ["Femod", Femod],
   ["Carrier", Carrier],
+  ["Drumkit", Drumkit],
   ["Justinton", Justinton],
   ["WhiteNoise", WhiteNoise],
 ]);
@@ -229,23 +232,6 @@ export default {
       window.addEventListener("keydown", this.onKeydown);
 
       this.createTrack(new Femod());
-
-      // this.getUserMedia();
-    },
-
-    getUserMedia() {
-      const that = this;
-      navigator.mediaDevices
-        .getUserMedia({ audio: true, video: false })
-        .then(function (stream) {
-          that.createTrack(new Mic(stream));
-        })
-        .catch(function (err) {
-          alert(
-            "Couldn't get user media, continuing without mic input. Error: " +
-              err
-          );
-        });
     },
 
     startRec() {
@@ -504,6 +490,20 @@ export default {
     createModulator() {
       const track = this.tracks[this.currentTrackIndex];
       track.modulators.push(new Modulator("sawtooth"));
+    },
+    createMic() {
+      const that = this;
+      navigator.mediaDevices
+        .getUserMedia({ audio: true, video: false })
+        .then(function (stream) {
+          that.createTrack(new Mic(stream));
+        })
+        .catch(function (err) {
+          alert(
+            "Couldn't get user media, continuing without mic input. Error: " +
+              err
+          );
+        });
     },
 
     trackClicked(t) {

@@ -1,4 +1,4 @@
-const drumKeys = [
+const noteKeys = [
   { key: "a", noteIndex: 0 },
   { key: "w", noteIndex: 1 },
   { key: "s", noteIndex: 2 },
@@ -17,4 +17,4 @@ const drumKeys = [
   { key: "p", noteIndex: 15 },
 ]
 
-module.exports = drumKeys
+module.exports = noteKeys

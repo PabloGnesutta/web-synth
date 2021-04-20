@@ -67,7 +67,7 @@ class Node {
   // }
 
   initGain(initialGain) {
-    this.gain = initialGain || 1
+    this.gain = initialGain != undefined ? initialGain : 1
 
     this.level = Node.context.createGain()
     this.level.gain.setValueAtTime(this.gain, 0)

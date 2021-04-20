@@ -27,9 +27,18 @@
           </div>
           <div
             class="btn btn-instrument dropdown-item"
+            @click="createInstrument('Drumkit')"
+          >
+            Drumkit
+          </div>
+          <div
+            class="btn btn-instrument dropdown-item"
             @click="createInstrument('WhiteNoise')"
           >
             Noise
+          </div>
+          <div class="btn btn-instrument dropdown-item" @click="createMic()">
+            Microphone
           </div>
         </div>
       </div>
@@ -135,6 +144,10 @@ export default {
 
     createInstrument(className) {
       this.$emit("createInstrument", className);
+      this.showInstrumentsMenu = false;
+    },
+    createMic() {
+      this.$emit("createMic");
       this.showInstrumentsMenu = false;
     },
     createEffect(className) {

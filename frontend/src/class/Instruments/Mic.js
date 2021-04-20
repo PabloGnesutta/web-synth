@@ -1,6 +1,6 @@
 const Node = require("../Node")
 
-const initialGain = 0.5
+const initialGain = 0
 
 const audioParamsConfig = [
   { name: 'threshold', displayName: 'treshold', unit: '' },
