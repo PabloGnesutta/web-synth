@@ -23,7 +23,7 @@
             class="btn btn-instrument dropdown-item"
             @click="createInstrument('Carrier')"
           >
-            Oscillator
+            Oscil
           </div>
           <div
             class="btn btn-instrument dropdown-item"
@@ -38,28 +38,31 @@
             Noise
           </div>
           <div class="btn btn-instrument dropdown-item" @click="createMic()">
-            Microphone
+            Mic
           </div>
         </div>
       </div>
-      <!-- Modulator -->
-      <br />
-      <div class="btn btn-modulator" @click="createModulator">Mod</div>
+
       <!-- Effects -->
-      <br />
       <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
         Filter
       </div>
-      <div class="btn btn-effect" @click="createEffect('Compressor')">Comp</div>
+      <div class="btn btn-effect" @click="createEffect('Reverb')">Reverb</div>
       <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
-      <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
       <div class="btn btn-effect" @click="createEffect('Looper')">Looper</div>
+      <div class="btn btn-effect" @click="createEffect('Compressor')">Comp</div>
+      <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
+
+      <!-- Modulator -->
+      <div class="btn btn-modulator" @click="createModulator">Mod</div>
+
       <!-- REC -->
-      <br />
       <div class="btn btn-2 rec" v-if="!recording" @click="startRec">REC</div>
       <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
         STOP
       </div>
+
+      <!-- PLAY/STOP -->
       <div class="play-stop" v-if="recordingsAvailable">
         <div v-if="!playing" @click="playExport" class="btn play-recs">
           Play REC
@@ -75,7 +78,8 @@
       >
         Download
       </div>
-      <!-- Saved Works -->
+
+      <!-- SAVES -->
       <div class="btn" @click="save">SAVE</div>
       <div
         v-if="this.saves && this.saves.length > 0"

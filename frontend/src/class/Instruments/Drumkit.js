@@ -1,8 +1,10 @@
 const Node = require("../Node")
 const drumSamples = require("../../data/drumSamples")
-const drumKeys = require("../../data/drumKeys")
+// const drumKeys = require("../../data/drumKeys")
 
-const initialGain = 0.5
+const ctx = Node.context
+const dirName = "/audio/samples/"
+const initialGain = 1.2
 
 class Drumkit extends Node {
   static drumkitCount = 0
@@ -23,13 +25,7 @@ class Drumkit extends Node {
 
   destroy() {
     super.destroy(true)
-    // this.scaleNodes.forEach(sn => {
-    //   sn.destroy()
-    //   sn.level.disconnect()
-    //   sn.level = null
-    //   sn = null;
-    // })
-    // this.scaleNodes = []
+    this.buffers = [s]
   }
 
   initGain() {
@@ -41,18 +37,14 @@ class Drumkit extends Node {
 
   initSamplers() {
     const that = this;
-
+    //hacer for común
     drumSamples.forEach((ds, i) => {
-      const request = new XMLHttpRequest();
-      request.open("GET", "/audio/samples/" + ds.sampleName);
-      request.responseType = "arraybuffer";
-
-      request.onload = function () {
-        Node.context.decodeAudioData(request.response, (audioBuffer) => {
-          that.buffers.push(audioBuffer)
-        });
-      };
-      request.send();
+      fetch(dirName + ds.sampleName).then(res => { return res.arrayBuffer() })
+        .then((arrayBuffer) => {
+          Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
+            that.buffers.push(audioBuffer)
+          });
+        })
     });
   }
 
@@ -66,9 +58,7 @@ class Drumkit extends Node {
     source.start(0);
   }
 
-  stopNote(i) {
-    // this.scaleNodes[i].stop();
-  }
+  stopNote(i) { }
 
   onOtherKeyup(key) { }
 }

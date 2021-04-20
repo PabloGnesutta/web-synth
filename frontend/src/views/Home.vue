@@ -110,6 +110,7 @@ const noteKeys = require("../data/noteKeys");
 const Node = require("../class/Node");
 const Gain = require("../class/Effects/Gain");
 const Delay = require("../class/Effects/Delay");
+const Reverb = require("../class/Effects/Reverb");
 const Looper = require("../class/Effects/Looper");
 const Compressor = require("../class/Effects/Compressor");
 const BiquadFilter = require("../class/Effects/BiquadFilter");
@@ -135,6 +136,7 @@ const instrumentsDict = new Map([
 const effectsDict = new Map([
   ["Gain", Gain],
   ["Delay", Delay],
+  ["Reverb", Reverb],
   ["Looper", Looper],
   ["Compressor", Compressor],
   ["BiquadFilter", BiquadFilter],
@@ -231,7 +233,7 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.createTrack(new Femod());
+      this.createTrack(new Drumkit());
     },
 
     startRec() {
@@ -777,7 +779,7 @@ export default {
 
 <style lang="scss">
 .Home {
-  min-height: 100vh;
+  min-height: 90vh;
 }
 
 .tracks {

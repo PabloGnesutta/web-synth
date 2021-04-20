@@ -83,6 +83,7 @@ class Delay extends Node {
     const setDryWet = (value) => {
       this.wetGain.gain.value = value
       this.dryGain.gain.value = value.map(0, 1, 1, 0)
+      
     }
 
     this.customParams = [
