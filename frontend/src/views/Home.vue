@@ -410,7 +410,9 @@ export default {
         trackName: this.currentTrack.name,
       });
 
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      this.$nextTick(() => {
+        window.scrollTo(0, document.body.scrollHeight);
+      });
     },
 
     deleteTrack(t) {

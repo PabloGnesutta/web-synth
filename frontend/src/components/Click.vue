@@ -32,9 +32,9 @@
       <input
         type="range"
         min="0"
-        max="1"
+        max="3"
         v-model="clickLevel"
-        step="0.01"
+        step="0.1"
         @input="setClickLevel"
       />
     </div>
@@ -64,7 +64,7 @@ export default {
       clickActive: false,
       clickComp: null,
       clickGain: null,
-      clickLevel: 0.8,
+      clickLevel: 1,
       muted: false,
       clickBuffer1: null,
       clickBuffer2: null,
@@ -261,7 +261,7 @@ export default {
 }
 
 .mute-unmute {
-  background: cyan;
+  background: #111;
   padding: 0.5em;
 }
 

@@ -885,13 +885,13 @@ export default {
   cursor: pointer;
   .mute,
   .unmute {
-    width: 20px;
-    height: 20px;
+    width: 30px;
+    padding: 0.2em;
     margin: 0 auto;
     text-align: center;
   }
   .mute {
-    background: green;
+    background: #111;
   }
   .unmute {
     background: red;

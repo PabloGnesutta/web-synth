@@ -196,6 +196,13 @@ class Femod extends Node {
     }
     this.modulationParams = [
       {
+        name: "type",
+        displayName: "mod type",
+        value: "triangle",
+        types: ['sine', 'triangle', 'sawtooth', 'square'],
+        set(v) { setModType(v) }
+      },
+      {
         name: "modLevel",
         displayName: "mod amt",
         unit: '',
@@ -205,13 +212,6 @@ class Femod extends Node {
         defaultValue: 100,
         step: 0.1,
         set(v) { setModLevel(v) }
-      },
-      {
-        name: "type",
-        displayName: "mod type",
-        value: "triangle",
-        types: ['sine', 'triangle', 'sawtooth', 'square'],
-        set(v) { setModType(v) }
       },
     ]
   }

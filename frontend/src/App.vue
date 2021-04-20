@@ -60,7 +60,6 @@ select:focus {
 
 .track-inner::-webkit-scrollbar-thumb {
   background: var(--color-2);
-  // background: #113e3e;
 }
 
 #app {
@@ -70,25 +69,12 @@ select:focus {
   text-align: center;
 }
 
-#nav {
-  padding: 30px;
-
-  a {
-    font-weight: bold;
-    color: #2c3e50;
-
-    &.router-link-exact-active {
-      color: #42b983;
-    }
-  }
-}
-
 .pointer {
   cursor: pointer;
 }
 
 .set-default-value {
-  color: green;
+  color: lightgreen;
   background: rgba(0, 128, 128, 0.05);
 }
 </style>
