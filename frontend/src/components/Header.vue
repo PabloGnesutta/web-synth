@@ -47,6 +47,7 @@
       <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
         Filter
       </div>
+      <div class="btn btn-effect" @click="createEffect('EQ3')">EQ3</div>
       <div class="btn btn-effect" @click="createEffect('Reverb')">Reverb</div>
       <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
       <div class="btn btn-effect" @click="createEffect('Looper')">Looper</div>

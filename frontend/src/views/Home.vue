@@ -104,11 +104,11 @@
 </template>
 
 <script>
-const notes = require("../data/notes");
 const noteKeys = require("../data/noteKeys");
 
 const Node = require("../class/Node");
 const Gain = require("../class/Effects/Gain");
+const EQ3 = require("../class/Effects/EQ3");
 const Delay = require("../class/Effects/Delay");
 const Reverb = require("../class/Effects/Reverb");
 const Looper = require("../class/Effects/Looper");
@@ -135,6 +135,7 @@ const instrumentsDict = new Map([
 
 const effectsDict = new Map([
   ["Gain", Gain],
+  ["EQ3", EQ3],
   ["Delay", Delay],
   ["Reverb", Reverb],
   ["Looper", Looper],

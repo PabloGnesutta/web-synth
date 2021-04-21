@@ -12,7 +12,7 @@ class Reverb extends Node {
     this.name = name || "Reverb " + ++Reverb.reverbCount
     this.nodeType = "Reverb"
     this.types = ['Five Columns', 'Bottle Hall', 'Deep Space', 'In The Silo', 'In The Other Silo', 'Chateau Outside', 'Damp Lg Room']
-    this.type = this.types[0]
+    this.type = type || 'In The Silo'
 
     this.node = Node.context.createGain()
     this.convolver = Node.context.createConvolver()
@@ -62,8 +62,8 @@ class Reverb extends Node {
         unit: '', //%
         minValue: 0,
         maxValue: 1,
-        defaultValue: 0.3,
-        value: 0,
+        defaultValue: 0.4,
+        value: 0.4,
         step: 0.01,
         set(v) { setDryWet(v) }
       },

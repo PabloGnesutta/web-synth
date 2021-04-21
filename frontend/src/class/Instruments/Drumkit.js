@@ -25,7 +25,7 @@ class Drumkit extends Node {
 
   destroy() {
     super.destroy(true)
-    this.buffers = [s]
+    this.buffers = []
   }
 
   initGain() {
@@ -35,17 +35,15 @@ class Drumkit extends Node {
     this.outputNode = this.level
   }
 
-  initSamplers() {
-    const that = this;
-    //hacer for común
-    drumSamples.forEach((ds, i) => {
-      fetch(dirName + ds.sampleName).then(res => { return res.arrayBuffer() })
-        .then((arrayBuffer) => {
-          Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-            that.buffers.push(audioBuffer)
-          });
-        })
-    });
+  async initSamplers() {
+    let i = 0
+    //hago for of para que se lean en orden
+    for (const ds of drumSamples) {
+      let response = await fetch(dirName + drumSamples[i++].sampleName)
+      let arrayBuffer = await response.arrayBuffer()
+      let audioBuffer = await Node.context.decodeAudioData(arrayBuffer)
+      this.buffers.push(audioBuffer)
+    }
   }
 
   playNote(i) {
