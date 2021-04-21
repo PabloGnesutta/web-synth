@@ -10,7 +10,7 @@ class Gain extends Node {
 
     this.name = name || "Gain " + ++Gain.gainCount
     this.nodeType = "Gain"
-    // this.minGain = -3  //phase inverter
+    this.minGain = -3  //phase inverter
     this.maxGain = 3
 
     this.node = Node.context.createGain()

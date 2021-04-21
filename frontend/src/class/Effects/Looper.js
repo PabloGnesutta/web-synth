@@ -26,6 +26,7 @@ class Looper extends Node {
   }
 
   playLoop(startAt) {
+    console.log('playloop')
     this.status = "PLAYING"
     this.source = Node.context.createBufferSource();
 
@@ -61,7 +62,7 @@ class Looper extends Node {
     this.stopLoop()
     this.status = "STARTING"
     this.nextBeatTime = nextBeatTime
-
+    console.log('nex', nextBeatTime)
     this.chunks = [];
 
     this.mediaDestination = Node.context.createMediaStreamDestination();
@@ -119,6 +120,7 @@ class Looper extends Node {
 
   stopRecording(nextBeatTime) {
     this.nextBeatTime = nextBeatTime;
+    console.log('stop', nextBeatTime)
     // const req = window.requestAnimationFrame(this.stopRecording.bind(this));
     // if (Node.context.currentTime >= this.nextBeatTime) {
     // window.cancelAnimationFrame(req)

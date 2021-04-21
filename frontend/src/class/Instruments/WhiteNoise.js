@@ -11,7 +11,7 @@ const audioParamsConfig = [
   },
   {
     name: 'Q', displayName: 'res', unit: '',
-    minValue: -QMax, maxValue: QMax, value: 2, defaultValue: 2, step: 0.01
+    minValue: -QMax, maxValue: QMax, value: 20, defaultValue: 20, step: 0.01
   },
 ]
 
@@ -35,26 +35,30 @@ class WhiteNoise extends Node {
     this.modGain = Node.context.createGain()
     this.mod.connect(this.modGain)
     this.modGain.gain.value = 500
-    // this.mod.frequency.value = 10
     this.mod.start()
     this.modGain.connect(this.node.frequency)
 
     super.getAudioParams(['gain', 'detune', 'frequency'])
     super.initParams(audioParamsConfig)
     this.initInnerNodeAudioParams()
+
     this.initGain(initialGain)
+    //for looper bug
+    this.keepOutputAlive = Node.context.createGain()
+    this.keepOutputAlive.connect(this.outputNode)
   }
 
   playNote(i) {
-    const filterFreq = i.map(15, 0, 500, frequencyMax);
     if (this.playing) return
+    const filterFreq = i.map(15, 0, 500, frequencyMax);
+    this.node.frequency.setValueAtTime(filterFreq, 0)
+
     this.whiteNoise = Node.context.createBufferSource();
     this.whiteNoise.buffer = this.noiseBuffer;
     this.whiteNoise.loop = true;
+
+    this.whiteNoise.start(0)
     this.whiteNoise.connect(this.node)
-    // this.node.frequency.setValueAtTime(this.node.frequency.value, 0)
-    this.node.frequency.setValueAtTime(filterFreq, 0)
-    this.whiteNoise.start()
     this.playing = true
   }
 
@@ -72,26 +76,16 @@ class WhiteNoise extends Node {
     this.innerNodeAudioParams = [
       {
         name: 'modFrequency', displayName: 'mod freq', unit: 'hz',
-        minValue: 0, maxValue: 500, value: 0, defaultValue: 0, step: 0.01,
+        minValue: 0, maxValue: 500, value: 8, defaultValue: 8, step: 0.01,
         node: this.mod, nodeAudioParam: 'frequency'
       },
       {
         name: 'modAmount', displayName: 'mod amt', unit: '', //%
-        minValue: 0, maxValue: 1000, value: 500, defaultValue: 500, step: 0.01,
+        minValue: 0, maxValue: 1000, value: 600, defaultValue: 600, step: 0.01,
         node: this.modGain, nodeAudioParam: 'gain'
       },
     ]
   }
-
-  // initGain(initialGain) {
-  //   this.gain = initialGain
-
-  //   this.level = Node.context.createGain()
-  //   this.level.gain.setValueAtTime(this.gain, 0)
-  //   this.outputNode = this.level
-
-  //   this.node.connect(this.outputNode)
-  // }
 
   createWhiteNoiseBuffer() {
     const bufferSize = 2 * Node.context.sampleRate;

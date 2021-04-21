@@ -24,29 +24,30 @@ class Reverb extends Node {
     this.convolver.connect(this.wetGain)
 
     this.initGain(initialGain)
-    this.dryGain.connect(this.outputNode)
-    this.wetGain.connect(this.outputNode)
 
     this.initCustomParams()
     this.initReverb(this.type)
   }
 
+  //se podrían cachear los buffers
   initReverb(type) {
     fetch(dirName + type + '.wav').then(res => { return res.arrayBuffer() })
       .then((arrayBuffer) => {
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
           this.convolver.buffer = audioBuffer
-          console.log(this.convolver.buffer)
         });
       })
   }
 
   initGain(initialGain) {
-    this.gain = initialGain != undefined ? initialGain : 1
+    this.gain = initialGain
 
     this.level = Node.context.createGain()
     this.level.gain.setValueAtTime(this.gain, 0)
     this.outputNode = this.level
+
+    this.dryGain.connect(this.outputNode)
+    this.wetGain.connect(this.outputNode)
   }
 
   initCustomParams() {

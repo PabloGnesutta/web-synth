@@ -688,7 +688,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  background: #0000003b;
+  background: #272727;
 }
 
 .param {
@@ -728,7 +728,7 @@ export default {
 }
 
 .Delay {
-  width: 160px;
+  width: 100px;
   .param {
     min-width: 78px;
   }

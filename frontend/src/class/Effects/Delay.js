@@ -28,7 +28,6 @@ class Delay extends Node {
     this.feedbackGain = Node.context.createGain();
     this.feedbackGain.gain.value = initialFeddback;
 
-    this.bypass = Node.context.createGain();
     this.wetGain = Node.context.createGain();
     this.dryGain = Node.context.createGain();
 
@@ -36,22 +35,15 @@ class Delay extends Node {
     this.feedbackGain.connect(this.delay);
 
     this.delay.connect(this.wetGain);
-    this.wetGain.connect(this.bypass);
 
     this.node = Node.context.createGain();
     this.node.connect(this.feedbackGain)
-
-    this.dryGain.connect(this.bypass)
 
     this.node.connect(this.dryGain)
 
     this.initGain(initialGain)
     this.initInnerNodeAudioParams()
     this.initCustomParams()
-
-    super.initParams(audioParamsConfig)
-
-    //audio source must connect to node and bypass
   }
 
   initGain(initialGain) {
@@ -61,7 +53,8 @@ class Delay extends Node {
     this.level.gain.setValueAtTime(this.gain, 0)
     this.outputNode = this.level
 
-    this.bypass.connect(this.outputNode);
+    this.dryGain.connect(this.outputNode)
+    this.wetGain.connect(this.outputNode);
   }
 
   initInnerNodeAudioParams() {
@@ -83,7 +76,6 @@ class Delay extends Node {
     const setDryWet = (value) => {
       this.wetGain.gain.value = value
       this.dryGain.gain.value = value.map(0, 1, 1, 0)
-      
     }
 
     this.customParams = [

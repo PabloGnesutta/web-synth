@@ -94,7 +94,7 @@ export default {
         { display: "2", value: 2 },
         { display: "3", value: 3 },
         { display: "4", value: 4 },
-        { display: "5", value: 5 },
+        // { display: "5", value: 5 },
         { display: "6", value: 6 },
       ],
       delayTimeKnobValue: 0,
@@ -121,10 +121,6 @@ export default {
       else this.setInnerNodeAudioParam("delayTime", this.delayTimeKnobValue);
     },
 
-    getCssNodeName(name) {
-      return name.replace(new RegExp(" ", "g"), "-");
-    },
-
     setCustomParam(cpIndex, value) {
       this.$emit("setCustomParam", { cpIndex, value });
     },
@@ -135,6 +131,10 @@ export default {
         this.delayTimeKnobValue = value;
       }
       this.$emit("setInnerNodeAudioParam", { inapIndex, value });
+    },
+
+    getCssNodeName(name) {
+      return name.replace(new RegExp(" ", "g"), "-");
     },
   },
 
@@ -152,6 +152,11 @@ export default {
 
 .sync.synced {
   background: green;
+}
+
+.sync-buttons {
+  margin: 0.2em 0;
+  background: #222;
 }
 
 .sync-button {

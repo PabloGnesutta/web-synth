@@ -16,11 +16,10 @@ class Drumkit extends Node {
     this.nodeType = "Drumkit"
     this.nodeRol = "Instrument"
 
-    this.scaleNodes = []
     this.buffers = []
 
-    this.initGain()
     this.initSamplers()
+    this.initGain()
   }
 
   destroy() {
@@ -33,6 +32,10 @@ class Drumkit extends Node {
     this.level = Node.context.createGain()
     this.level.gain.setValueAtTime(this.gain, 0)
     this.outputNode = this.level
+
+    //for looper bug
+    this.keepOutputAlive = Node.context.createGain()
+    this.keepOutputAlive.connect(this.outputNode)
   }
 
   async initSamplers() {
@@ -49,14 +52,17 @@ class Drumkit extends Node {
   playNote(i) {
     let noteIndex = i
 
-    const source = Node.context.createBufferSource();
-    source.buffer = this.buffers[noteIndex];
+    this.source = Node.context.createBufferSource();
+    this.source.buffer = this.buffers[noteIndex];
 
-    source.connect(this.outputNode);
-    source.start(0);
+    this.source.start(0);
+    this.source.connect(this.outputNode);
   }
 
-  stopNote(i) { }
+  stopNote(i) {
+    // this.source.disconnect();
+    // this.source.stop(0);
+  }
 
   onOtherKeyup(key) { }
 }

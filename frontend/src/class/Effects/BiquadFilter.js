@@ -1,14 +1,8 @@
 const Node = require("../Node");
 
 const initialGain = 1
+const freqMax = 7000
 const QMax = 30
-const frequencyMax = 7000
-
-const audioParamsConfig = [
-  { name: 'frequency', displayName: 'freq', unit: 'hz', minValue: 20, maxValue: frequencyMax, value: 0, defaultValue: 0, step: 1 },
-  { name: 'Q', displayName: 'res', unit: '', minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01 },
-  { name: 'gain', displayName: 'gain', unit: '', minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01 },
-]
 
 class BiquadFilter extends Node {
   static bqCount = 0
@@ -25,35 +19,44 @@ class BiquadFilter extends Node {
     this.node = Node.context.createBiquadFilter()
     this.node.type = this.type
 
-    super.getAudioParams(['detune', 'gain'])  //exclude params
-    this.initParams()
+    this.initAudioParams()
+    this.refreshParams()
     this.initGain(initialGain)
   }
 
-  initParams() {
-    this.setFrequencyInitialValue()
-    this.audioParams.forEach(ap => {
-      const index = audioParamsConfig.findIndex(mms => mms.name === ap.name)
-      for (let key in ap) {
-        ap[key] = audioParamsConfig[index][key]
-      }
-      ap.unit = audioParamsConfig[index].unit
-      ap.displayName = audioParamsConfig[index].displayName
-    })
-    this.node.frequency.setValueAtTime(audioParamsConfig[0].value, 0)
+  initAudioParams() {
+    this.audioParams = [
+      {
+        name: 'frequency', displayName: 'freq', unit: 'hz',
+        minValue: 20, maxValue: freqMax, value: freqMax, defaultValue: freqMax, step: 1
+      },
+      {
+        name: 'Q', displayName: 'res', unit: '',
+        minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01
+      },
+      {
+        name: 'gain', displayName: 'gain', unit: '',
+        minValue: -QMax, maxValue: QMax, value: 0, defaultValue: 0, step: 0.01
+      },
+    ]
+  }
+
+  refreshParams() {
+    this.setValuesAccordingToType()
+    this.node.frequency.setValueAtTime(this.audioParams[0].value, 0)
   }
 
   setType(type) {
     super.setType(type)
-    this.initParams()
+    this.refreshParams()
   }
 
-  setFrequencyInitialValue() {
+  setValuesAccordingToType() {
     let freq
     let q = {}
     switch (this.type) {
       case "lowpass":
-        freq = frequencyMax
+        freq = freqMax
         q.minValue = -30
         q.maxValue = 30
         q.value = 0
@@ -88,14 +91,14 @@ class BiquadFilter extends Node {
         q.step = 0.01
     }
     //freq
-    audioParamsConfig[0].value = freq
-    audioParamsConfig[0].defaultValue = freq
+    this.audioParams[0].value = freq
+    this.audioParams[0].defaultValue = freq
     //Q
-    audioParamsConfig[1].minValue = q.minValue
-    audioParamsConfig[1].maxValue = q.maxValue
-    audioParamsConfig[1].value = q.value
-    audioParamsConfig[1].defaultValue = q.value
-    audioParamsConfig[1].step = q.step
+    this.audioParams[1].minValue = q.minValue
+    this.audioParams[1].maxValue = q.maxValue
+    this.audioParams[1].value = q.value
+    this.audioParams[1].defaultValue = q.value
+    this.audioParams[1].step = q.step
   }
 
 }
