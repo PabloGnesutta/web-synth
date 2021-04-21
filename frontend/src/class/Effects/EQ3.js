@@ -46,7 +46,7 @@ class EQ3 extends Node {
     this.initGain(initialGain)
 
     this.initInnerNodeAudioParams()
-    this.initCustomParams()
+    // this.initCustomParams()
   }
 
   initGain(initialGain) {
@@ -64,65 +64,65 @@ class EQ3 extends Node {
     this.innerNodeAudioParams = [
       //low
       {
-        name: 'lowFreq', displayName: 'lowFreq', unit: 'hz',
+        name: 'lowFreq', displayName: '', unit: 'hz',
         minValue: 0, maxValue: 500, value: 320, defaultValue: 320, step: 1,
         node: this.low, nodeAudioParam: 'frequency'
       },
       {
-        name: 'lowGain', displayName: 'lowGain', unit: '',
+        name: 'lowGain', displayName: 'gain', unit: '',
         minValue: -30, maxValue: 30, value: 0, defaultValue: 0, step: 0.01,
         node: this.low, nodeAudioParam: 'gain'
       },
       //mid
       {
-        name: 'midFreq', displayName: 'midFreq', unit: 'hz',
+        name: 'midFreq', displayName: '', unit: 'hz',
         minValue: 800, maxValue: 1200, value: 1000, defaultValue: 1000, step: 1,
         node: this.mid, nodeAudioParam: 'frequency'
       },
       {
-        name: 'midGain', displayName: 'midGain', unit: '',
+        name: 'midGain', displayName: 'gain', unit: '',
         minValue: -30, maxValue: 30, value: -12, defaultValue: -12, step: 0.01,
         node: this.mid, nodeAudioParam: 'gain'
       },
       {
-        name: 'midQ', displayName: 'midQ', unit: '',
+        name: 'midQ', displayName: 'res', unit: '',
         minValue: -10, maxValue: 10, value: 0.5, defaultValue: 0.5, step: 0.01,
         node: this.mid, nodeAudioParam: 'Q'
       },
       //high
       {
-        name: 'highFreq', displayName: 'highFreq', unit: 'hz',
+        name: 'highFreq', displayName: '', unit: 'hz',
         minValue: 2000, maxValue: 4000, value: 3200, defaultValue: 3200, step: 1,
         node: this.high, nodeAudioParam: 'frequency'
       },
       {
-        name: 'highGain', displayName: 'highGain', unit: '',
+        name: 'highGain', displayName: 'gain', unit: '',
         minValue: -30, maxValue: 30, value: -12, defaultValue: -12, step: 0.01,
         node: this.high, nodeAudioParam: 'gain'
       },
     ]
   }
 
-  initCustomParams() {
-    const setDryWet = (value) => {
-      this.wetGain.gain.value = value
-      this.dryGain.gain.value = value.map(0, 1, 1, 0)
-    }
+  // initCustomParams() {
+  //   const setDryWet = (value) => {
+  //     this.wetGain.gain.value = value
+  //     this.dryGain.gain.value = value.map(0, 1, 1, 0)
+  //   }
 
-    this.customParams = [
-      {
-        name: "dry/wet",
-        displayName: "dry/wet",
-        unit: '', //%
-        minValue: 0,
-        maxValue: 1,
-        defaultValue: 0.3,
-        value: 1,
-        step: 0.01,
-        set(v) { setDryWet(v) }
-      },
-    ]
-  }
+  //   this.customParams = [
+  //     {
+  //       name: "dry-wet",
+  //       displayName: "dry/wet",
+  //       unit: '', //%
+  //       minValue: 0,
+  //       maxValue: 1,
+  //       defaultValue: 0.3,
+  //       value: 1,
+  //       step: 0.01,
+  //       set(v) { setDryWet(v) }
+  //     },
+  //   ]
+  // }
 }
 
 module.exports = EQ3

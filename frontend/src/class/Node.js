@@ -17,7 +17,7 @@ class Node {
     this.gain = 1
     this.gainStep = 0.01
 
-    this.audioParams = []
+    // this.audioParams = []
     this.outputs = []
   }
 

@@ -16,7 +16,6 @@ class Mic extends Node {
     this.mic = Node.context.createMediaStreamSource(stream);
     this.mic.connect(this.node);
 
-    super.getAudioParams()
     this.initAudioParams()
     this.initGain(initialGain)
   }

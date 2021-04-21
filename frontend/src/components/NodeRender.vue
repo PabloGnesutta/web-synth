@@ -45,18 +45,28 @@
       <!-- /node-header -->
 
       <div class="node-body">
-        <div v-if="Node.nodeType === 'Delay'" class="delay-wrapper">
+        <!-- Delay body -->
+        <div v-if="Node.nodeType === 'Delay'" class="delay-body-wrapper">
           <DelayBody
             :Node="Node"
             @setCustomParam="setCustomParamFromChild"
             @setInnerNodeAudioParam="setInnerNodeAudioParamFromChild"
           />
         </div>
-        <div v-else class="node-body-inner">
-          <div
-            class="audio-params params-container"
-            v-if="Node.audioParams"
-          >
+        <!-- EQ3 body -->
+        <div v-if="Node.nodeType === 'EQ3'" class="eq3-body-wrapper">
+          <EQ3Body
+            :Node="Node"
+            @setCustomParam="setCustomParamFromChild"
+            @setInnerNodeAudioParam="setInnerNodeAudioParamFromChild"
+          />
+        </div>
+        <!-- The rest -->
+        <div
+          v-if="Node.nodeType !== 'Delay' && Node.nodeType !== 'EQ3'"
+          class="node-body-inner"
+        >
+          <div class="audio-params params-container" v-if="Node.audioParams">
             <!-- Audio Params -->
             <div
               class="audio-param param"
@@ -345,6 +355,7 @@ import { mapGetters, mapMutations } from "vuex";
 import Knob from "./Knob";
 import AnalyserRender from "./AnalyserRender";
 import DelayBody from "./specifig-nodes/DelayBody";
+import EQ3Body from "./specifig-nodes/EQ3Body.vue";
 export default {
   data() {
     return {
@@ -599,6 +610,7 @@ export default {
 
   components: {
     Knob,
+    EQ3Body,
     DelayBody,
     AnalyserRender,
   },
@@ -613,7 +625,7 @@ export default {
 
 .node {
   border: 2px solid transparent;
-  padding-bottom: 0.5em;
+  padding-bottom: 0.1em;
   background: #333;
   color: #f3f3f3;
   position: relative;
@@ -621,7 +633,7 @@ export default {
   flex-direction: column;
   justify-content: space-between;
   transition: border-color 0.2s ease-out;
-  gap: 0.5em;
+  gap: 0em;
   .node-name {
     font-size: 1rem;
     text-align: left;
@@ -684,7 +696,7 @@ export default {
 // PARAMS
 
 .params-container {
-  padding-bottom: 0.2em;
+  // padding-bottom: 0.2em;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -727,6 +739,10 @@ export default {
   width: 100px;
 }
 
+.EQ3 {
+  width: 210px;
+}
+
 .Delay {
   width: 100px;
   .param {
@@ -743,7 +759,7 @@ export default {
 }
 
 .BiquadFilter {
-  width: 90px;
+  width: 140px;
 }
 
 .Track-Gain {

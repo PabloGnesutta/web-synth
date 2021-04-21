@@ -494,6 +494,7 @@ export default {
       const track = this.tracks[this.currentTrackIndex];
       track.modulators.push(new Modulator("sawtooth"));
     },
+
     createMic() {
       const that = this;
       navigator.mediaDevices
@@ -502,6 +503,7 @@ export default {
           that.createTrack(new Mic(stream));
         })
         .catch(function (err) {
+          console.log('err', err)
           alert(
             "Couldn't get user media, continuing without mic input. Error: " +
               err
