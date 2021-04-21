@@ -10,7 +10,7 @@ class Oscillator extends Node {
     this.frequency = frequency || '440'
     this.node = Node.context.createOscillator()
 
-    super.getAudioParams()
+    // super.getAudioParams()
   }
 
   start() {

@@ -4,7 +4,7 @@ class Node {
   static lastBeatTime = 0
 
   constructor(name) {
-    this.name = name || "Some Node"
+    this.name = name || "Unnamed Node"
     this.node = null
     this.nodeType = ""
 
@@ -21,15 +21,22 @@ class Node {
     this.outputs = []
   }
 
-  destroy(haventOwnNode) {
+  destroy() {
+    this.disconnect()
+
     this.outputNode.disconnect()
 
     this.outputs = null
     this.audioParams = null
 
-    if (!haventOwnNode) {
+    if (this.node) {
       this.node.disconnect()
       this.node = null
+    }
+
+    if (this.keepOutputAlive) {
+      this.keepOutputAlive.disconnect()
+      this.keepOutputAlive = null
     }
 
     this.outputNode = null
@@ -59,12 +66,6 @@ class Node {
     const index = this.outputs.findIndex(o => o.name === output.name)
     this.outputs.splice(index, 1)
   }
-
-  // disconnectNativeOutput(node) {
-  //   this.outputNode.disconnect(node)
-  //   const index = this.outputs.findIndex(o => o.name === output.name)
-  //   this.outputs.splice(index, 1)
-  // }
 
   initGain(initialGain) {
     this.gain = initialGain != undefined ? initialGain : 1
@@ -126,8 +127,6 @@ class Node {
   toggleMute() {
     this.muted = !this.muted
     this.setMute(this.muted)
-    // if (this.muted) this.outputNode.gain.setValueAtTime(0, 0)
-    // else this.outputNode.gain.setValueAtTime(this.gain, 0)
   }
 
   setType(type) {
@@ -135,39 +134,39 @@ class Node {
     this.type = type //test
   }
 
-  getAudioParams(exludedKeys) {
-    this.audioParams = []
-    for (let key in this.node) {
-      if (this.node[key])
-        if (this.node[key].toString().includes("AudioParam") && !this.keyExcluded(exludedKeys, key))
-          this.audioParams.push({
-            name: key,
-            step: 0.1,
-            minValue: this.node[key].minValue,
-            maxValue: this.node[key].maxValue,
-            value: this.node[key].value,
-            defaultValue: this.node[key].defaultValue,
-          })
-    }
-  }
+  // getAudioParams(exludedKeys) {
+  //   this.audioParams = []
+  //   for (let key in this.node) {
+  //     if (this.node[key])
+  //       if (this.node[key].toString().includes("AudioParam") && !this.keyExcluded(exludedKeys, key))
+  //         this.audioParams.push({
+  //           name: key,
+  //           step: 0.1,
+  //           minValue: this.node[key].minValue,
+  //           maxValue: this.node[key].maxValue,
+  //           value: this.node[key].value,
+  //           defaultValue: this.node[key].defaultValue,
+  //         })
+  //   }
+  // }
 
-  initParams(audioParamsConfig) {
-    this.audioParams.forEach(ap => {
-      const index = audioParamsConfig.findIndex(apc => apc.name === ap.name)
-      for (let key in ap)
-        ap[key] = audioParamsConfig[index][key]
+  // initParams(audioParamsConfig) {
+  //   this.audioParams.forEach(ap => {
+  //     const index = audioParamsConfig.findIndex(apc => apc.name === ap.name)
+  //     for (let key in ap)
+  //       ap[key] = audioParamsConfig[index][key]
 
-      ap.unit = audioParamsConfig[index].unit
-      ap.displayName = audioParamsConfig[index].displayName
-    })
-  }
+  //     ap.unit = audioParamsConfig[index].unit
+  //     ap.displayName = audioParamsConfig[index].displayName
+  //   })
+  // }
 
-  keyExcluded(excludedKeys, key) {
-    if (!excludedKeys) return false
-    const index = excludedKeys.findIndex(ek => ek === key)
-    if (index === -1) return false
-    else return true
-  }
+  // keyExcluded(excludedKeys, key) {
+  //   if (!excludedKeys) return false
+  //   const index = excludedKeys.findIndex(ek => ek === key)
+  //   if (index === -1) return false
+  //   else return true
+  // }
 }
 
 module.exports = Node

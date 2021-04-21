@@ -183,8 +183,9 @@ export default {
     processDisplayValue() {
       this.displayValue =
         this.emitValue >= 1000
-          ? (this.emitValue / 100).toFixed(1) + "k"
+          ? (this.emitValue / 1000).toFixed(2) + "k"
           : parseFloat(this.emitValue).toFixed(1);
+
       this.displayValue = this.displayValue + (this.unit || "");
     },
   },

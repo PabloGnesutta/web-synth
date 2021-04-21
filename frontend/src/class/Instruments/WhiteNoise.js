@@ -38,8 +38,7 @@ class WhiteNoise extends Node {
     this.mod.start()
     this.modGain.connect(this.node.frequency)
 
-    super.getAudioParams(['gain', 'detune', 'frequency'])
-    super.initParams(audioParamsConfig)
+    this.initAudioParams()
     this.initInnerNodeAudioParams()
 
     this.initGain(initialGain)
@@ -70,6 +69,19 @@ class WhiteNoise extends Node {
   }
 
   onOtherKeyup(key) {
+  }
+
+  initAudioParams() {
+    this.audioParams = [
+      // {
+      //   name: 'frequency', displayName: 'cutoff', unit: 'hz',
+      //   minValue: 20, maxValue: frequencyMax, value: frequencyMax, defaultValue: frequencyMax, step: 1
+      // },
+      {
+        name: 'Q', displayName: 'res', unit: '',
+        minValue: -QMax, maxValue: QMax, value: 20, defaultValue: 20, step: 0.01
+      },
+    ]
   }
 
   initInnerNodeAudioParams() {

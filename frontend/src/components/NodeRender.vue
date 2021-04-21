@@ -55,7 +55,7 @@
         <div v-else class="node-body-inner">
           <div
             class="audio-params params-container"
-            v-if="Node.audioParams.length > 0"
+            v-if="Node.audioParams"
           >
             <!-- Audio Params -->
             <div
