@@ -14,7 +14,6 @@ class Looper extends Node {
 
     this.status = "CLEARED"
     this.recording = false
-    this.playing = false
 
     this.loopAvailable = false
     this.looperBuffer = null
@@ -33,8 +32,7 @@ class Looper extends Node {
 
     this.source.buffer = this.looperBuffer;
 
-    // this.source.connect(this.outputNode);
-    this.source.connect(this.node);
+    this.source.connect(this.outputNode);
     this.source.start(startAt || 0);
     this.playing = true;
 
@@ -47,11 +45,9 @@ class Looper extends Node {
   stopLoop() {
     if (this.source) {
       this.source.disconnect()
-      this.source.stop()
-      this.source.onended = null
+      this.source.stop();
     }
     this.status = "STOPPED"
-    this.playing = false
   }
 
   clearLoop() {
@@ -91,7 +87,6 @@ class Looper extends Node {
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
           this.setAudioBuffer(audioBuffer)
           this.node.disconnect(this.mediaDestination)
-          if (this.playing) this.stopLoop()
           this.playLoop(this.nextBeatTime)
           // this.playLoop(0)
         });

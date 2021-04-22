@@ -61,6 +61,10 @@
             @setInnerNodeAudioParam="setInnerNodeAudioParamFromChild"
           />
         </div>
+        <!-- Looper body -->
+        <div v-if="Node.nodeType === 'Looper'" class="looper-body-wrapper">
+          <LooperBody :Node="Node" />
+        </div>
         <!-- The rest -->
         <div
           v-if="Node.nodeType !== 'Delay' && Node.nodeType !== 'EQ3'"
@@ -70,9 +74,17 @@
             <!-- Audio Params -->
             <div
               class="audio-param param"
-              v-for="(audioParam, apIndex) in Node.audioParams"
               :key="audioParam.name"
+              v-for="(audioParam, apIndex) in Node.audioParams"
               :class="[getCssNodeName(Node.name + ' ' + audioParam.name)]"
+              v-if="
+                !(Node.type === 'highshelf' && audioParam.name === 'Q') &&
+                !(Node.type === 'lowshelf' && audioParam.name === 'Q') &&
+                !(Node.type === 'notch' && audioParam.name === 'gain') &&
+                !(Node.type === 'lowpass' && audioParam.name === 'gain') &&
+                !(Node.type === 'bandpass' && audioParam.name === 'gain') &&
+                !(Node.type === 'highpass' && audioParam.name === 'gain')
+              "
             >
               <div
                 class="param-name connectable"
@@ -210,62 +222,8 @@
             </div>
           </div>
           <!-- /modulation-params -->
-
-          <!-- Looper -->
-          <div class="loop-controls" v-if="Node.nodeType === 'Looper'">
-            <div class="control-btns params-container">
-              <div
-                class="control-btn start-rec"
-                @click="scheduleLoopStartRecording"
-                v-if="Node.status === 'CLEARED'"
-              >
-                REC
-              </div>
-              <div
-                class="control-btn stop-rec"
-                @click="scheduleLoopStopRecording"
-                v-if="Node.status === 'RECORDING'"
-              >
-                LOOP
-              </div>
-              <div
-                class="control-btn pause-loop"
-                @click="stopLoop"
-                v-if="Node.status === 'PLAYING'"
-              >
-                STOP
-              </div>
-              <div
-                class="control-btn play-loop"
-                @click="playLoop"
-                v-if="Node.loopAvailable && Node.status === 'STOPPED'"
-              >
-                PLAY
-              </div>
-              <div class="control-btn" v-if="Node.status === 'STARTING'">
-                STARTING
-              </div>
-              <div
-                class="control-btn clear-loop"
-                @click="clearLoop"
-                v-if="Node.loopAvailable"
-              >
-                CLEAR
-              </div>
-            </div>
-            <!-- Upload -->
-
-            <div class="upload-loop">
-              <div class="label">{{ loopFileName || "Load Loop" }}</div>
-              <input type="file" @change="loadLoopBuffer" />
-            </div>
-            <div class="download-loop">
-              <span class="label" v-if="Node.looperBlob" @click="downloadLoop">
-                Download
-              </span>
-            </div>
-          </div>
         </div>
+        <!-- /node-body-inner -->
       </div>
       <!-- /node-body -->
 
@@ -301,10 +259,12 @@
         </div>
 
         <!-- Octave/Transpose -->
-        <div class="octave-transpose" v-if="Node.nodeRol === 'Instrument'">
-          <div class="octave" v-if="Node.octave">Octave: {{ Node.octave }}</div>
+        <div class="octave-transpose" v-if="Node.octave || Node.transpose">
+          <div class="octave" v-if="Node.octave">
+            Octave: <span class="value">{{ Node.octave }}</span>
+          </div>
           <div class="transpose" v-if="Node.transpose != undefined">
-            Transp.: {{ Node.transpose }}
+            Transp.: <span class="value"> {{ Node.transpose }}</span>
           </div>
         </div>
 
@@ -356,11 +316,12 @@ import Knob from "./Knob";
 import AnalyserRender from "./AnalyserRender";
 import DelayBody from "./specifig-nodes/DelayBody";
 import EQ3Body from "./specifig-nodes/EQ3Body.vue";
+import LooperBody from "./specifig-nodes/LooperBody.vue";
 export default {
   data() {
     return {
       loopStatus: "CLEARED",
-      loopFileName: "",
+
       muted: false,
     };
   },
@@ -368,23 +329,11 @@ export default {
   props: ["Node", "analyser", "recEnabled", "instrumentEnabled"],
 
   computed: {
-    ...mapGetters([
-      "context",
-      "totalBeats",
-      "currentBeat",
-      "nextBeatTime",
-      "secondsPerBeat",
-      "appConnecting",
-      "originNode",
-    ]),
+    ...mapGetters(["context", "appConnecting", "originNode"]),
   },
 
   mounted() {
-    if (this.Node.nodeType === "Looper") {
-      window.addEventListener("keyup", this.processLoopKeyup);
-    }
     console.log("NodeRender mounted", this.Node);
-    // this.type = this.Node.type;
   },
 
   methods: {
@@ -407,8 +356,10 @@ export default {
     setParamsConstraints(params) {
       params.forEach((p) => {
         const refName = this.Node.name + "-" + p.name;
-        const ref = this.$refs[refName][0];
-        ref.setParamContraints(p.minValue, p.maxValue, p.defaultValue);
+        const ref = this.$refs[refName];
+        if (ref)
+          if (ref[0])
+            ref[0].setParamContraints(p.minValue, p.maxValue, p.defaultValue);
       });
     },
 
@@ -452,79 +403,6 @@ export default {
     setModType(mpIndex, e) {
       e.target.blur();
       this.Node.setModulationParam(mpIndex, e.target.value);
-    },
-
-    //Looper
-    scheduleLoopStartRecording() {
-      const beatsRemainingTo1 = this.totalBeats - this.currentBeat;
-      const nextBeatTime =
-        this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
-
-      this.Node.startRecording(nextBeatTime);
-    },
-
-    scheduleLoopStopRecording() {
-      const beatsRemainingTo1 = this.totalBeats - this.currentBeat;
-      const nextBeatTime =
-        this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
-
-      // this.Node.nextBeatTime = nextBeatTime;
-      this.Node.stopRecording(nextBeatTime);
-    },
-
-    playLoop() {
-      this.Node.playLoop(this.nextBeatTime);
-    },
-    stopLoop() {
-      this.Node.stopLoop();
-    },
-    clearLoop() {
-      this.Node.clearLoop();
-    },
-
-    downloadLoop() {
-      const a = document.createElement("a");
-      let fileName = "websynth-loop-" + new Date().toLocaleString("es-AR");
-      fileName = prompt("Loop name: ", fileName);
-      if (!fileName) return;
-      a.setAttribute("href", URL.createObjectURL(this.Node.looperBlob));
-      a.setAttribute("download", fileName);
-      a.click();
-    },
-
-    loadLoopBuffer(e) {
-      const file = e.target.files[0];
-      this.loopFileName = file.name;
-
-      const fileReader = new FileReader();
-
-      fileReader.onloadend = () => {
-        const arrayBuffer = fileReader.result;
-
-        this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-          this.Node.setAudioBuffer(audioBuffer);
-        });
-      };
-
-      fileReader.readAsArrayBuffer(file);
-    },
-
-    processLoopKeyup(e) {
-      if (e.keyCode != 48) return; //0 key
-      switch (this.Node.status) {
-        case "CLEARED":
-          this.scheduleLoopStartRecording();
-          break;
-        case "RECORDING":
-          this.scheduleLoopStopRecording();
-          break;
-        case "PLAYING":
-          this.stopLoop();
-          break;
-        case "STOPPED":
-          this.clearLoop();
-          break;
-      }
     },
 
     // CONNECTIONS
@@ -612,6 +490,7 @@ export default {
     Knob,
     EQ3Body,
     DelayBody,
+    LooperBody,
     AnalyserRender,
   },
 };
@@ -750,6 +629,10 @@ export default {
   }
 }
 
+.Looper {
+  min-width: 140px;
+}
+
 .Compressor {
   width: 200px;
 }
@@ -786,6 +669,10 @@ export default {
 .octave-transpose {
   text-align: right;
   font-size: 0.9rem;
+  margin-right: .5em;
+  .value {
+    color: var(--color-2);
+  }
 }
 
 .start,
@@ -821,65 +708,6 @@ export default {
 .level.is-connection-destination {
   border: 2px solid white;
   background: var(--color-2);
-}
-
-// Looper
-
-.Looper {
-  min-width: 140px;
-}
-
-.control-btns {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5em;
-  min-height: 73px;
-}
-.control-btn {
-  padding: 0.4em;
-  min-width: 60px;
-  cursor: pointer;
-  background: var(--color-1);
-}
-.upload-loop {
-  margin-top: 0.5em;
-  width: 100%;
-  background: #111;
-  position: relative;
-  .label {
-    padding: 0.6em;
-    width: 200px;
-    overflow-x: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  input {
-    opacity: 0;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    // z-index: 10;
-  }
-}
-
-.upload-loop:hover {
-  background: var(--color-1);
-}
-
-.download-loop {
-  margin-top: 0.2em;
-  .label {
-    cursor: default;
-    user-select: none;
-    color: #bbb;
-    padding: 0.2em;
-  }
-  .label:hover {
-    color: var(--color-2);
-  }
 }
 
 // Track gain

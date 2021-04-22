@@ -181,12 +181,26 @@ export default {
     },
 
     processDisplayValue() {
+      // if (this.unit === "dB") {
+      //   const db = 20 * this.log10(this.emitValue);
+      //   console.log(db, this.emitValue);
+      //   if (db < 0) {
+      //     this.displayValue = "-" + db.toFixed(2) + "dB";
+      //   } else {
+      //     this.displayValue = db.toFixed(2) + "dB";
+      //   }
+      // } else {
       this.displayValue =
         this.emitValue >= 1000
           ? (this.emitValue / 1000).toFixed(2) + "k"
           : parseFloat(this.emitValue).toFixed(1);
 
       this.displayValue = this.displayValue + (this.unit || "");
+      // }
+    },
+
+    log10(x) {
+      return Math.log(Math.abs(x)) / Math.LN10;
     },
   },
 };

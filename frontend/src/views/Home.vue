@@ -234,7 +234,7 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.createTrack(new WhiteNoise());
+      this.createTrack(new Drumkit());
     },
 
     startRec() {
