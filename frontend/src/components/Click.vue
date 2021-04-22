@@ -1,18 +1,16 @@
 <template>
   <div class="Click">
-    <div class="section on-off" :class="{ 'click-on': clickActive }">
+    <div class="on-off" :class="{ 'click-on': clickActive }">
       <div class="on" v-if="clickActive" @click="turnOff">ON</div>
       <div class="off" v-if="!clickActive" @click="turnOn">OFF</div>
     </div>
 
-    <div class="section signature">
-      <div @click="substractFromTimeSignature" class="time-signature-control">
-        -
-      </div>
+    <div class="signature">
+      <div @click="substractFromTimeSignature" class="signature-control">-</div>
       <div class="current-signature">
         {{ totalBeats }}/{{ beatSubdivition }}
       </div>
-      <div @click="addToTimeSignature" class="time-signature-control">+</div>
+      <div @click="addToTimeSignature" class="signature-control">+</div>
     </div>
 
     <div class="slider-container">
@@ -51,23 +49,22 @@ import { mapGetters, mapMutations } from "vuex";
 export default {
   data() {
     return {
-      tempoKnobValue: 60.0,
       lookahead: 25.0,
       scheduleAheadTime: 0.1,
 
       nextBeat: 1,
-      beatSubdivition: 4,
       nextBeatTime: 0.0,
-
-      timerID: null,
+      beatSubdivition: 4,
+      tempoKnobValue: 120.0,
 
       clickActive: false,
-      clickComp: null,
-      clickGain: null,
-      clickLevel: 1,
       muted: false,
+
+      clickLevel: 1,
+      clickGain: null,
       clickBuffer1: null,
       clickBuffer2: null,
+      timerID: null,
     };
   },
 
@@ -77,13 +74,11 @@ export default {
 
   mounted() {
     this.clickGain = this.context.createGain();
-    this.clickGain.gain.setValueAtTime(this.clickLevel, 0);
     this.clickGain.connect(this.context.destination);
+    this.clickGain.gain.setValueAtTime(this.clickLevel, 0);
 
     this.loadClickSamples();
-    this.setTempoAndSecondsPerBeat();
-
-    if (this.clickActive) this.scheduler();
+    if (this.clickActive) this.turnOn();
   },
 
   methods: {
@@ -110,7 +105,7 @@ export default {
       this.nextBeatTime = this.context.currentTime;
       this.setCurrentBeat(this.nextBeat);
       this.setNextBeatTime(this.nextBeatTime);
-      this.setSecondsPerBeat(60.0 / this.tempo);
+      this.setTempoAndSecondsPerBeat();
       this.scheduler();
       this.clickActive = true;
     },
@@ -173,16 +168,16 @@ export default {
     loadClickSamples() {
       const that = this;
 
-      const request = new XMLHttpRequest();
-      request.open("GET", "/audio/click1.wav");
-      request.responseType = "arraybuffer";
+      const request1 = new XMLHttpRequest();
+      request1.open("GET", "/audio/click1.wav");
+      request1.responseType = "arraybuffer";
 
-      request.onload = function () {
-        that.context.decodeAudioData(request.response, (audioBuffer) => {
+      request1.onload = function () {
+        that.context.decodeAudioData(request1.response, (audioBuffer) => {
           that.clickBuffer1 = audioBuffer;
         });
       };
-      request.send();
+      request1.send();
 
       const request2 = new XMLHttpRequest();
       request2.open("GET", "/audio/click2.wav");
@@ -201,7 +196,6 @@ export default {
 
 <style lang="scss" scoped>
 .Click {
-  margin-top: 1em;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -233,7 +227,7 @@ export default {
   .current-signature {
     padding: 0.2em;
   }
-  .time-signature-control {
+  .signature-control {
     font-weight: bold;
     cursor: pointer;
     padding: 0.2em 0.4em;

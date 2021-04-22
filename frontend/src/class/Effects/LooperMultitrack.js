@@ -33,9 +33,9 @@ class Looper extends Node {
 
     this.source.buffer = this.looperBuffer;
 
-    // sobregraba
-    // this.source.connect(this.outputNode);
-    this.source.connect(this.node);
+    // multitrack
+    this.source.connect(this.outputNode);
+    // this.source.connect(this.node);
     this.source.start(startAt || 0);
     this.playing = true;
 

@@ -6,22 +6,29 @@
     </div>
 
     <div class="inited" v-if="inited">
-      <Header
-        @createInstrument="createInstrument"
-        @createModulator="createModulator"
-        @createEffect="createEffect"
-        @createMic="createMic"
-        @startRec="startRec"
-        @stopRec="stopRec"
-        @playExport="playExport"
-        @stopPlayingExport="stopPlayingExport"
-        @downloadExport="downloadExport"
-        @loadSave="loadSave"
-        :tracks="tracks"
-        :playing="playing"
-        :recording="recording"
-        :recordingsAvailable="recordingsAvailable"
-      />
+      <div class="top-section">
+        <div class="header-wrapper">
+          <Header
+            @createInstrument="createInstrument"
+            @createModulator="createModulator"
+            @createEffect="createEffect"
+            @createMic="createMic"
+            @startRec="startRec"
+            @stopRec="stopRec"
+            @playExport="playExport"
+            @stopPlayingExport="stopPlayingExport"
+            @downloadExport="downloadExport"
+            @loadSave="loadSave"
+            :tracks="tracks"
+            :playing="playing"
+            :recording="recording"
+            :recordingsAvailable="recordingsAvailable"
+          />
+        </div>
+        <div class="click-wrapper">
+          <Click ref="click" />
+        </div>
+      </div>
       <!-- TRACKS -->
       <div class="tracks" :class="{ mapping: mapping }">
         <div
@@ -95,10 +102,6 @@
           />
         </div>
       </div>
-
-      <div class="click">
-        <Click ref="click" />
-      </div>
     </div>
   </div>
 </template>
@@ -112,6 +115,7 @@ const EQ3 = require("../class/Effects/EQ3");
 const Delay = require("../class/Effects/Delay");
 const Reverb = require("../class/Effects/Reverb");
 const Looper = require("../class/Effects/Looper");
+const LooperMultitrack = require("../class/Effects/LooperMultitrack");
 const Compressor = require("../class/Effects/Compressor");
 const BiquadFilter = require("../class/Effects/BiquadFilter");
 
@@ -139,6 +143,7 @@ const effectsDict = new Map([
   ["Delay", Delay],
   ["Reverb", Reverb],
   ["Looper", Looper],
+  ["LooperMultitrack", LooperMultitrack],
   ["Compressor", Compressor],
   ["BiquadFilter", BiquadFilter],
 ]);
@@ -503,7 +508,7 @@ export default {
           that.createTrack(new Mic(stream));
         })
         .catch(function (err) {
-          console.log('err', err)
+          console.log("err", err);
           alert(
             "Couldn't get user media, continuing without mic input. Error: " +
               err
@@ -785,8 +790,28 @@ export default {
   min-height: 90vh;
 }
 
+.top-section {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1;
+}
+
+.header-wrapper {
+  position: relative;
+  top: 0;
+  z-index: 1;
+  widows: 100%;
+}
+
+.click-wrapper {
+  width: 100%;
+  border-bottom: 1px solid rgb(161, 161, 161);
+  border-top: 1px solid rgb(161, 161, 161);
+}
+
 .tracks {
-  margin: 3em 0 1em;
+  margin: 6em 0 1em;
   border: 3px solid transparent;
 }
 

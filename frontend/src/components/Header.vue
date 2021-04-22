@@ -1,6 +1,7 @@
 <template>
   <div class="header">
     <div class="buttons">
+      {{ saveName }}
       <!-- Instruments -->
       <!-- <div class="btn btn-instrument" @click="createInstrument('Justinton')">
         Justinton
@@ -21,12 +22,6 @@
           </div>
           <div
             class="btn btn-instrument dropdown-item"
-            @click="createInstrument('Carrier')"
-          >
-            Oscil
-          </div>
-          <div
-            class="btn btn-instrument dropdown-item"
             @click="createInstrument('Drumkit')"
           >
             Drumkit
@@ -36,6 +31,12 @@
             @click="createInstrument('WhiteNoise')"
           >
             Noise
+          </div>
+          <div
+            class="btn btn-instrument dropdown-item"
+            @click="createInstrument('Carrier')"
+          >
+            Oscil
           </div>
           <div class="btn btn-instrument dropdown-item" @click="createMic()">
             Mic
@@ -47,12 +48,15 @@
       <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
         Filter
       </div>
-      <div class="btn btn-effect" @click="createEffect('EQ3')">EQ3</div>
-      <div class="btn btn-effect" @click="createEffect('Reverb')">Reverb</div>
-      <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
-      <div class="btn btn-effect" @click="createEffect('Looper')">Looper</div>
       <div class="btn btn-effect" @click="createEffect('Compressor')">Comp</div>
-      <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div>
+      <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
+      <div class="btn btn-effect" @click="createEffect('EQ3')">EQ3</div>
+      <div class="btn btn-effect" @click="createEffect('Looper')">Looper</div>
+      <!-- <div class="btn btn-effect" @click="createEffect('LooperMultitrack')">
+        LooperMulti
+      </div> -->
+      <div class="btn btn-effect" @click="createEffect('Reverb')">Reverb</div>
+      <!-- <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div> -->
 
       <!-- Modulator -->
       <div class="btn btn-modulator" @click="createModulator">Mod</div>
@@ -81,7 +85,7 @@
       </div>
 
       <!-- SAVES -->
-      <div class="btn" @click="save">SAVE</div>
+      <div class="btn" @click="saveAs">SAVE AS</div>
       <div
         v-if="this.saves && this.saves.length > 0"
         class="btn load-work"
@@ -89,7 +93,7 @@
       >
         <div>LOAD</div>
         <div class="saved-works" :class="{ hidden: !showSavedWorks }">
-          <div :key="s" class="saved-work" v-for="(savedWork, s) in saves">
+          <div :key="s" class="saved-work" v-for="(savedWork, s) in saveNames">
             <div class="saved-work-name" @click="loadSave(s)">
               {{ savedWork.name }}
             </div>
@@ -130,6 +134,8 @@ export default {
       showConfigMenu: false,
       showSavedWorks: false,
       saves: [],
+      saveNames: [],
+      saveName: null,
     };
   },
 
@@ -142,6 +148,7 @@ export default {
   mounted() {
     //tener un array aparte en localstorage con sólo los nombres para no cargar en memoria al pedo
     this.saves = JSON.parse(localStorage.getItem("websynth-saves"));
+    this.saveNames = JSON.parse(localStorage.getItem("websynth-savenames"));
   },
 
   methods: {
@@ -179,28 +186,67 @@ export default {
       this.$emit("downloadExport");
     },
 
-    save() {
+    saveAs() {
       let count = localStorage.getItem("websynth-count");
       if (!count) localStorage.setItem("websynth-count", 0);
       localStorage.setItem("websynth-count", ++count);
 
-      const name = prompt("Saved work name", "My awesome work Nº" + count);
-      if (name) {
-        if (!this.saves) {
-          this.saves = [];
-          localStorage.setItem("websynth-saves", JSON.stringify([]));
-        }
-        this.saves.push({
-          name,
-          tempo: this.tempo,
-          totalBeats: this.totalBeats,
-          tracks: JSON.stringify(this.tracks),
-        });
-        localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
+      const name = prompt("Save Name", "Untitled " + count);
+      if (!name) return;
+
+      if (!this.saves) {
+        this.saves = [];
+        this.saveNames = [];
+
+        localStorage.setItem("websynth-saves", JSON.stringify([]));
+        localStorage.setItem("websynth-savenames", JSON.stringify([]));
+      }
+
+      const existingSaveIndex = this.nameExists(name);
+      if (existingSaveIndex !== -1) {
+        if (!confirm("That name already exists, wanna overwrite?")) return;
+        else this.overWrite(existingSaveIndex);
+      } else {
+        this.saveNew(count, name);
       }
     },
 
+    saveNew(count, name) {
+      this.saveNames.push({
+        id: count,
+        name,
+      });
+      this.saves.push({
+        id: count,
+        name,
+        tempo: this.tempo,
+        totalBeats: this.totalBeats,
+        tracks: JSON.stringify(this.tracks),
+      });
+      localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
+      localStorage.setItem(
+        "websynth-savenames",
+        JSON.stringify(this.saveNames)
+      );
+    },
+
+    overWrite(existingSaveIndex) {
+      console.log(this.saves, existingSaveIndex)
+      this.saves[existingSaveIndex].tempo = this.tempo;
+      this.saves[existingSaveIndex].totalBeats = this.totalBeats;
+      this.saves[existingSaveIndex].tracks = JSON.stringify(this.tracks);
+      localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
+    },
+
+    createSaveData() {},
+
+    nameExists(name) {
+      return this.saveNames.findIndex((sv) => sv.name === name);
+    },
+
     loadSave(s) {
+      // if (!confirm('Load ' + this.saveNames[s].name + '? Unsaved changes will be lost.')) return
+      this.saveName = this.saveNames[s].name;
       const tracks = JSON.parse(this.saves[s].tracks);
       this.$emit("loadSave", tracks);
       this.setTempo(this.saves[s].tempo);
@@ -211,7 +257,13 @@ export default {
       if (!confirm("Sure you want to delete " + this.saves[s].name + "?"))
         return;
       this.saves.splice(s, 1);
+      this.saveNames.splice(s, 1);
+      console.log("newsavenames", this.saveNames);
       localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
+      localStorage.setItem(
+        "websynth-savenames",
+        JSON.stringify(this.saveNames)
+      );
     },
   },
 };
@@ -219,9 +271,6 @@ export default {
 
 <style lang="scss" scoped>
 .header {
-  position: fixed;
-  top: 0;
-  z-index: 1;
   background: black;
   padding: 0.2em;
   width: 100%;

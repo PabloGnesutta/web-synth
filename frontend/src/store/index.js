@@ -16,7 +16,7 @@ export default new Vuex.Store({
     nextBeatTime: 0,
     currentBeat: 1,
     totalBeats: 4,
-    tempo: 60.0,
+    tempo: 120.0,
   },
 
   getters: {
