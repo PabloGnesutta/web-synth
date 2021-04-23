@@ -1,12 +1,12 @@
 const Node = require("../Node")
 
-const initialGain = 0
+const initialGain = 0.05
 
 class Mic extends Node {
   static micCount = 0
 
   constructor(stream) {
-    super()
+    super(initialGain)
 
     this.name = "Mic " + ++Mic.micCount;
     this.nodeType = "Mic"
@@ -15,9 +15,9 @@ class Mic extends Node {
     this.node = Node.context.createDynamicsCompressor()
     this.mic = Node.context.createMediaStreamSource(stream);
     this.mic.connect(this.node);
+    this.node.connect(this.outputNode)
 
     this.initAudioParams()
-    this.initGain(initialGain)
   }
 
   initAudioParams() {

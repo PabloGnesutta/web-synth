@@ -1,16 +1,13 @@
 const Node = require("../Node");
 
 class Oscillator extends Node {
-  constructor(type, frequency) {
-    super()
+  constructor(initialGain) {
+    super(initialGain)
     this.nodeType = "Oscillator"
     this.types = ['sine', 'triangle', 'sawtooth', 'square']
-    this.type = type || 'triangle'
-
-    this.frequency = frequency || '440'
+    this.type = 'triangle'
+    this.status = "STOPPED"
     this.node = Node.context.createOscillator()
-
-    // super.getAudioParams()
   }
 
   start() {

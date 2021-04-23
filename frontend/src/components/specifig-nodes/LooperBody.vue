@@ -1,42 +1,43 @@
 <template>
   <div class="LooperBody">
     <div class="loop-controls">
+      <div class="status">
+        {{ Node.status }}
+      </div>
       <div class="control-btns params-container">
         <div
-          class="control-btn start-rec"
+          class="control-btn rec-btn"
           @click="scheduleLoopStartRecording"
           v-if="!Node.recording"
         >
-          REC
+          <span v-if="Node.playing">OVERDUB</span>
+          <span v-else> REC </span>
         </div>
         <div
           class="control-btn stop-rec"
           @click="scheduleLoopStopRecording"
           v-if="Node.recording"
         >
-          LOOP
+          PLAY
         </div>
         <div
           class="control-btn pause-loop"
           @click="stopLoop"
-          v-if="Node.status === 'PLAYING'"
+          v-if="Node.status === 'PLAYING' && !Node.recording"
         >
-          STOP
+          PAUSE
         </div>
         <div
           class="control-btn play-loop"
           @click="playLoop"
-          v-if="Node.loopAvailable && Node.status === 'STOPPED'"
+          v-if="Node.loopAvailable && !Node.playing && !Node.recording"
         >
           PLAY
         </div>
-        <div class="control-btn" v-if="Node.status === 'STARTING'">
-          STARTING
-        </div>
         <div
-          class="control-btn clear-loop"
+          class="control-btn clear-btn"
           @click="clearLoop"
-          v-if="Node.loopAvailable"
+          v-if="Node.loopAvailable && Node.status === 'STOPPED'"
         >
           CLEAR
         </div>
@@ -48,9 +49,10 @@
         <input type="file" @change="loadLoopBuffer" />
       </div>
       <div class="download-loop">
-        <span class="label" v-if="Node.looperBlob" @click="downloadLoop">
+        <span class="label" v-if="Node.loopAvailable" @click="downloadLoop">
           Download
         </span>
+        <span v-else class="invisible">.</span>
       </div>
     </div>
   </div>
@@ -71,6 +73,7 @@ export default {
   computed: {
     ...mapGetters([
       "context",
+      "tempo",
       "totalBeats",
       "currentBeat",
       "nextBeatTime",
@@ -112,8 +115,8 @@ export default {
 
     downloadLoop() {
       const a = document.createElement("a");
-      let fileName = "websynth-loop-" + new Date().toLocaleString("es-AR");
-      fileName = prompt("Loop name: ", fileName);
+      let fileName = "New Loop - " + this.tempo + 'bpm'
+      fileName = prompt("File name: ", fileName);
       if (!fileName) return;
       a.setAttribute("href", URL.createObjectURL(this.Node.looperBlob));
       a.setAttribute("download", fileName);
@@ -150,7 +153,7 @@ export default {
           this.stopLoop();
           break;
         case "STOPPED":
-          this.clearLoop();
+          this.playLoop();
           break;
       }
     },
@@ -163,25 +166,39 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.status {
+  // background: #777;
+  // padding: .2em 0;
+  margin-bottom: 0.4em;
+  color: lightgreen;
+}
+
 .control-btns {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   gap: 0.5em;
-  min-height: 73px;
+  min-height: 108px;
 }
 .control-btn {
   padding: 0.4em;
   min-width: 60px;
   cursor: pointer;
   background: var(--color-1);
+  &.rec-btn {
+    background: crimson;
+  }
+  &.clear-btn {
+    background: black;
+  }
 }
 .upload-loop {
   margin-top: 0.5em;
   width: 100%;
-  background: #111;
+  background: #222;
   position: relative;
   .label {
-    padding: 0.6em;
+    padding: 0.3em;
     width: 200px;
     overflow-x: hidden;
     text-overflow: ellipsis;
@@ -194,8 +211,6 @@ export default {
     left: 0;
     width: 100%;
     height: 100%;
-
-    // z-index: 10;
   }
 }
 

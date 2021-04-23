@@ -6,7 +6,7 @@ class Looper extends Node {
   static looperCount = 0
 
   constructor(name) {
-    super()
+    super(initialGain)
 
     this.name = name || "Looper " + ++Looper.looperCount
     this.nodeType = "Looper"
@@ -22,20 +22,22 @@ class Looper extends Node {
     this.loopDuration = 0;
 
     this.nextBeatTime = 0;
+    this.source = Node.context.createBufferSource();
 
-    this.node = Node.context.createGain()
-    this.initGain(initialGain)
+    this.inputNode.connect(this.outputNode)
+
+    this.initInnerNodeAudioParams()
   }
 
   playLoop(startAt) {
     this.status = "PLAYING"
     this.source = Node.context.createBufferSource();
-
+    // this.initInnerNodeAudioParams()
     this.source.buffer = this.looperBuffer;
+    this.source.playbackRate.value = this.innerNodeAudioParams[0].value
 
-    // sobregraba
-    // this.source.connect(this.outputNode);
-    this.source.connect(this.node);
+    //sobregraba
+    this.source.connect(this.inputNode);
     this.source.start(startAt || 0);
     this.playing = true;
 
@@ -70,7 +72,7 @@ class Looper extends Node {
     this.chunks = [];
 
     this.mediaDestination = Node.context.createMediaStreamDestination();
-    this.node.connect(this.mediaDestination);
+    this.inputNode.connect(this.mediaDestination);
 
     this.mediaRecorder = new MediaRecorder(
       this.mediaDestination.stream
@@ -91,7 +93,7 @@ class Looper extends Node {
 
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
           this.setAudioBuffer(audioBuffer)
-          this.node.disconnect(this.mediaDestination)
+          this.inputNode.disconnect(this.mediaDestination)
           if (this.playing) this.stopLoop()
           this.playLoop(this.nextBeatTime)
           // this.playLoop(0)
@@ -135,6 +137,16 @@ class Looper extends Node {
     console.log('stopREcording')
     // this.nextBeatTime = 0
     // }
+  }
+
+  initInnerNodeAudioParams() {
+    this.innerNodeAudioParams = [
+      {
+        name: 'playbackRate', displayName: 'speed', unit: '', //%
+        minValue: 0, maxValue: 4, value: 1, defaultValue: 1, step: 0.01,
+        node: this.source, nodeAudioParam: 'playbackRate'
+      },
+    ]
   }
 }
 module.exports = Looper

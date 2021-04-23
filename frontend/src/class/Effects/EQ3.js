@@ -5,15 +5,13 @@ const initialGain = 1
 class EQ3 extends Node {
   static EQ3Count = 0
 
-  constructor(name) {
-    super(name)
+  constructor() {
+    super(initialGain)
 
     this.customParams = []
 
     this.name = name || "EQ3 " + ++EQ3.EQ3Count
     this.nodeType = "EQ3"
-
-    this.node = Node.context.createGain()
 
     this.high = Node.context.createBiquadFilter();
     this.mid = Node.context.createBiquadFilter();
@@ -21,9 +19,6 @@ class EQ3 extends Node {
 
     this.dryGain = Node.context.createGain()
     this.wetGain = Node.context.createGain()
-
-    this.node.connect(this.high);
-    this.node.connect(this.dryGain)
 
     //high
     this.high.type = "highshelf";
@@ -36,28 +31,21 @@ class EQ3 extends Node {
     this.mid.Q.value = 0.5;
     this.mid.gain.value = 0.0;
     this.mid.connect(this.low);
-    //low
+    //low (chain end)
     this.low.type = "lowshelf";
     this.low.frequency.value = 320.0;
     this.low.gain.value = 0.0;
 
     this.low.connect(this.wetGain);
-
-    this.initGain(initialGain)
-
-    this.initInnerNodeAudioParams()
-    // this.initCustomParams()
-  }
-
-  initGain(initialGain) {
-    this.gain = initialGain
-
-    this.level = Node.context.createGain()
-    this.level.gain.setValueAtTime(this.gain, 0)
-    this.outputNode = this.level
+    this.inputNode.connect(this.high);
+    this.inputNode.connect(this.dryGain)
 
     this.dryGain.connect(this.outputNode)
     this.wetGain.connect(this.outputNode)
+
+    this.inputNode.connect(this.high)
+
+    this.initInnerNodeAudioParams()
   }
 
   initInnerNodeAudioParams() {

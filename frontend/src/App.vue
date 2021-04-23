@@ -73,6 +73,10 @@ select:focus {
   cursor: pointer;
 }
 
+.invisible {
+  visibility: hidden;
+}
+
 .set-default-value {
   color: lightgreen;
   background: rgba(0, 128, 128, 0.05);

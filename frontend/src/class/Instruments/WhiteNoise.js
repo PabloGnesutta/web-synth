@@ -1,25 +1,13 @@
 const Node = require("../Node")
-
 const initialGain = 1
 const QMax = 30
 const frequencyMax = 7000
 
-const audioParamsConfig = [
-  {
-    name: 'frequency', displayName: 'cutoff', unit: 'hz',
-    minValue: 20, maxValue: frequencyMax, value: frequencyMax, defaultValue: frequencyMax, step: 1
-  },
-  {
-    name: 'Q', displayName: 'res', unit: '',
-    minValue: -QMax, maxValue: QMax, value: 20, defaultValue: 20, step: 0.01
-  },
-]
-
 class WhiteNoise extends Node {
   static noiseCount = 0
 
-  constructor(name) {
-    super(name)
+  constructor() {
+    super(initialGain)
 
     this.name = name || "Noise " + ++WhiteNoise.noiseCount
     this.nodeType = "WhiteNoise"
@@ -38,13 +26,11 @@ class WhiteNoise extends Node {
     this.mod.start()
     this.modGain.connect(this.node.frequency)
 
+    this.node.connect(this.outputNode)
+    this.inputNode.connect(this.outputNode)
+
     this.initAudioParams()
     this.initInnerNodeAudioParams()
-
-    this.initGain(initialGain)
-    //for looper bug
-    this.keepOutputAlive = Node.context.createGain()
-    this.keepOutputAlive.connect(this.outputNode)
   }
 
   playNote(i) {
@@ -73,10 +59,10 @@ class WhiteNoise extends Node {
 
   initAudioParams() {
     this.audioParams = [
-      // {
-      //   name: 'frequency', displayName: 'cutoff', unit: 'hz',
-      //   minValue: 20, maxValue: frequencyMax, value: frequencyMax, defaultValue: frequencyMax, step: 1
-      // },
+      {
+        name: 'frequency', displayName: 'cutoff', unit: 'hz',
+        minValue: 20, maxValue: frequencyMax, value: frequencyMax, defaultValue: frequencyMax, step: 1
+      },
       {
         name: 'Q', displayName: 'res', unit: '',
         minValue: -QMax, maxValue: QMax, value: 20, defaultValue: 20, step: 0.01

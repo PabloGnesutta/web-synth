@@ -8,8 +8,8 @@ const initFreq = 220
 class Carrier extends Oscillator {
   static carrierCount = 0
 
-  constructor(type, frequency) {
-    super(type, frequency || initFreq)
+  constructor() {
+    super(initialGain)
 
     this.name = "Osc " + ++Carrier.carrierCount
     this.nodeType = "Carrier"
@@ -20,12 +20,7 @@ class Carrier extends Oscillator {
     this.octave = 3
     this.transpose = 0
 
-    // this.lastNoteFreq = 220;
-
-    this.status = "STOPPED"
-
     this.initAudioParams()
-    this.initGain(initialGain)
   }
 
   initAudioParams() {
@@ -39,15 +34,11 @@ class Carrier extends Oscillator {
     let noteIndex = i + 12 * this.octave + this.transpose
     if (noteIndex < 0) noteIndex = 0
     if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
-    // this.lastNoteFreq = this.frequency
     this.frequency = notes[noteIndex].freq
     this.node.frequency.setValueAtTime(this.frequency, 0)
   }
 
-  stopNote(i) {
-    // this.node.frequency.setValueAtTime(this.lastNoteFreq, 0)
-    // this.lastNoteFreq = this.frequency
-  }
+  stopNote(i) { }
 
   onOtherKeyup(key) {
     if (key === "z" && this.octave > 1) this.octave--;

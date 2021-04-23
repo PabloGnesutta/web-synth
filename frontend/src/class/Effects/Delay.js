@@ -14,12 +14,12 @@ const audioParamsConfig = [
 class Delay extends Node {
   static delayCount = 0
 
-  constructor(name) {
-    super(name)
+  constructor() {
+    super(initialGain)
 
     this.customParams = []
 
-    this.name = name || "Delay " + ++Delay.delayCount
+    this.name = "Delay " + ++Delay.delayCount
     this.nodeType = "Delay"
 
     this.delay = Node.context.createDelay(maxDelayTime);
@@ -36,25 +36,14 @@ class Delay extends Node {
 
     this.delay.connect(this.wetGain);
 
-    this.node = Node.context.createGain();
-    this.node.connect(this.feedbackGain)
-
-    this.node.connect(this.dryGain)
-
-    this.initGain(initialGain)
-    this.initInnerNodeAudioParams()
-    this.initCustomParams()
-  }
-
-  initGain(initialGain) {
-    this.gain = initialGain
-
-    this.level = Node.context.createGain()
-    this.level.gain.setValueAtTime(this.gain, 0)
-    this.outputNode = this.level
+    this.inputNode.connect(this.feedbackGain)
+    this.inputNode.connect(this.dryGain)
 
     this.dryGain.connect(this.outputNode)
     this.wetGain.connect(this.outputNode);
+
+    this.initInnerNodeAudioParams()
+    this.initCustomParams()
   }
 
   initInnerNodeAudioParams() {

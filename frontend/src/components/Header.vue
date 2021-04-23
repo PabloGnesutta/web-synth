@@ -85,7 +85,7 @@
       </div>
 
       <!-- SAVES -->
-      <div class="btn" @click="saveAs">SAVE AS</div>
+      <div class="btn" @click="saveAs">Save as</div>
       <div
         v-if="this.saves && this.saves.length > 0"
         class="btn load-work"
@@ -231,14 +231,11 @@ export default {
     },
 
     overWrite(existingSaveIndex) {
-      console.log(this.saves, existingSaveIndex)
       this.saves[existingSaveIndex].tempo = this.tempo;
       this.saves[existingSaveIndex].totalBeats = this.totalBeats;
       this.saves[existingSaveIndex].tracks = JSON.stringify(this.tracks);
       localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
     },
-
-    createSaveData() {},
 
     nameExists(name) {
       return this.saveNames.findIndex((sv) => sv.name === name);
@@ -258,7 +255,6 @@ export default {
         return;
       this.saves.splice(s, 1);
       this.saveNames.splice(s, 1);
-      console.log("newsavenames", this.saveNames);
       localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
       localStorage.setItem(
         "websynth-savenames",
@@ -282,9 +278,10 @@ export default {
   }
 
   .btn {
-    padding: 0.5em 1em;
+    padding: 0.4em 1em;
     background: gray;
     cursor: pointer;
+    border-radius: 5PX;
   }
 
   .btn-modulator {
@@ -307,6 +304,7 @@ export default {
 
   .dropdown {
     position: absolute;
+    z-index: 10;
     min-width: 150px;
   }
 

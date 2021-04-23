@@ -6,15 +6,15 @@ class Gain extends Node {
   static gainCount = 0
 
   constructor(name) {
-    super()
+    super(initialGain)
 
     this.name = name || "Gain " + ++Gain.gainCount
     this.nodeType = "Gain"
-    this.minGain = -3  //phase inverter
-    this.maxGain = 3
 
-    this.node = Node.context.createGain()
-    this.initGain(initialGain)
+    // this.node = Node.context.createGain()
+    // this.node.connect(this.outputNode)
+    
+    this.inputNode.connect(this.outputNode)
   }
 }
 module.exports = Gain

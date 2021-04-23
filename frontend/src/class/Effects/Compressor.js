@@ -1,19 +1,21 @@
 const Node = require("../Node");
-
 const initialGain = 1
 
 class Compressor extends Node {
   static compressorCount = 0
-  constructor(name) {
-    super(name)
+  constructor() {
+    super(initialGain)
 
-    this.name = name || "Comp " + ++Compressor.compressorCount
+    this.name = "Comp " + ++Compressor.compressorCount
     this.nodeType = "Compressor"
 
     this.node = Node.context.createDynamicsCompressor()
+    this.node.connect(this.outputNode)
+
+    //nest step
+    this.inputNode.connect(this.node)
 
     this.initAudioParams()
-    this.initGain(initialGain)
   }
 
   initAudioParams() {

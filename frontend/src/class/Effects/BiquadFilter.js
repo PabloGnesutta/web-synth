@@ -7,21 +7,24 @@ const QMax = 30
 class BiquadFilter extends Node {
   static bqCount = 0
 
-  constructor(type, name) {
-    super(name)
+  constructor() {
+    super(initialGain)
 
-    this.name = name || "Filter " + ++BiquadFilter.bqCount
+    this.name = "Filter " + ++BiquadFilter.bqCount
     this.nodeType = "BiquadFilter"
 
+    this.type = 'lowpass'
     this.types = ['lowpass', 'highpass', 'bandpass', 'notch', 'lowshelf', 'highshelf', 'peaking']
-    this.type = type || this.types[0]
 
     this.node = Node.context.createBiquadFilter()
     this.node.type = this.type
+    this.node.connect(this.outputNode)
+
+    //next step
+    this.inputNode.connect(this.node)
 
     this.initAudioParams()
     this.refreshParams()
-    this.initGain(initialGain)
   }
 
   initAudioParams() {
@@ -44,6 +47,8 @@ class BiquadFilter extends Node {
   refreshParams() {
     this.setValuesAccordingToType()
     this.node.frequency.setValueAtTime(this.audioParams[0].value, 0)
+    // this.node.Q.setValueAtTime(this.audioParams[1].value, 0) //por qué comentado anda?
+    // this.node.gain.setValueAtTime(this.audioParams[2].value, 0)
   }
 
   setType(type) {
@@ -99,6 +104,7 @@ class BiquadFilter extends Node {
     this.audioParams[1].value = q.value
     this.audioParams[1].defaultValue = q.value
     this.audioParams[1].step = q.step
+    //gain
   }
 
 }

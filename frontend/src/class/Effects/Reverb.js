@@ -6,24 +6,24 @@ const initialGain = 1
 class Reverb extends Node {
   static reverbCount = 0
 
-  constructor(type, name) {
-    super(name)
+  constructor() {
+    super(initialGain)
 
-    this.name = name || "Reverb " + ++Reverb.reverbCount
+    this.name = "Reverb " + ++Reverb.reverbCount
     this.nodeType = "Reverb"
     this.types = ['Five Columns', 'Bottle Hall', 'Deep Space', 'In The Silo', 'In The Other Silo', 'Chateau Outside', 'Damp Lg Room']
-    this.type = type || 'In The Silo'
+    this.type = 'In The Silo'
 
-    this.node = Node.context.createGain()
     this.convolver = Node.context.createConvolver()
     this.dryGain = Node.context.createGain()
     this.wetGain = Node.context.createGain()
 
-    this.node.connect(this.convolver)
-    this.node.connect(this.dryGain)
+    this.inputNode.connect(this.convolver)
+    this.inputNode.connect(this.dryGain)
     this.convolver.connect(this.wetGain)
 
-    this.initGain(initialGain)
+    this.dryGain.connect(this.outputNode)
+    this.wetGain.connect(this.outputNode)
 
     this.initCustomParams()
     this.initReverb(this.type)
@@ -37,17 +37,6 @@ class Reverb extends Node {
           this.convolver.buffer = audioBuffer
         });
       })
-  }
-
-  initGain(initialGain) {
-    this.gain = initialGain
-
-    this.level = Node.context.createGain()
-    this.level.gain.setValueAtTime(this.gain, 0)
-    this.outputNode = this.level
-
-    this.dryGain.connect(this.outputNode)
-    this.wetGain.connect(this.outputNode)
   }
 
   initCustomParams() {

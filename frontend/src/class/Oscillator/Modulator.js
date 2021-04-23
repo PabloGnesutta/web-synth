@@ -10,18 +10,19 @@ const initialFrequency = 3
 class Modulator extends Oscillator {
   static modCount = 0
 
-  constructor(type) {
-    super(type, initialFrequency)
+  constructor() {
+    super(initialGain)
 
     this.name = "Mod " + ++Modulator.modCount
     this.nodeType = "Modulator"
+    this.type = "triangle"
+    this.frequency = initialFrequency
 
     this.maxGain = maxGain
     this.gainStep = gainStep
 
     this.status = "STARTED"
 
-    this.initGain(initialGain)
     this.initAudioParams()
     this.start()
   }
@@ -56,7 +57,6 @@ class Modulator extends Oscillator {
     this.outputs.push({ name: Node.name + ' Level', node: Node.outputNode })
   }
 
-  //puede ser un nodo o el level (outputNode.gain) de un nodo
   disconnectOutput(output) {
     if (output.node.gain) this.outputNode.disconnect(output.node.gain)
     else this.outputNode.disconnect(output.node)

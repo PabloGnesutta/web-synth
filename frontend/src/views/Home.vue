@@ -16,8 +16,8 @@
             @startRec="startRec"
             @stopRec="stopRec"
             @playExport="playExport"
-            @stopPlayingExport="stopPlayingExport"
             @downloadExport="downloadExport"
+            @stopPlayingExport="stopPlayingExport"
             @loadSave="loadSave"
             :tracks="tracks"
             :playing="playing"
@@ -115,7 +115,6 @@ const EQ3 = require("../class/Effects/EQ3");
 const Delay = require("../class/Effects/Delay");
 const Reverb = require("../class/Effects/Reverb");
 const Looper = require("../class/Effects/Looper");
-const LooperMultitrack = require("../class/Effects/LooperMultitrack");
 const Compressor = require("../class/Effects/Compressor");
 const BiquadFilter = require("../class/Effects/BiquadFilter");
 
@@ -143,7 +142,6 @@ const effectsDict = new Map([
   ["Delay", Delay],
   ["Reverb", Reverb],
   ["Looper", Looper],
-  ["LooperMultitrack", LooperMultitrack],
   ["Compressor", Compressor],
   ["BiquadFilter", BiquadFilter],
 ]);

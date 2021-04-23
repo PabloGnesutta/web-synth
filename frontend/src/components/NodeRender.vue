@@ -19,15 +19,9 @@
           </div>
           <div class="placeholder" v-else></div>
         </div>
-        <div class="top-right">
-          <div class="fold-unfold" @click="toggleFold">_</div>
-          <div
-            class="delete"
-            @click="deleteNode()"
-            v-if="Node.name !== 'Track Gain'"
-          >
-            X
-          </div>
+        <div class="top-right" v-if="Node.name !== 'Track Gain'">
+          <!-- <div class="fold-unfold" @click="toggleFold">_</div> -->
+          <div class="delete" @click="deleteNode()">X</div>
         </div>
       </div>
 
@@ -282,7 +276,6 @@
         <!-- Level -->
         <div
           class="level"
-          v-if="Node.level"
           @click="levelClicked"
           :class="getCssNodeName(Node.name + ' Level')"
         >
@@ -430,7 +423,8 @@ export default {
     },
 
     nodeClicked() {
-      if (this.Node.nodeType !== "Modulator") return;
+      console.log("nodeclicked", this.Node);
+      if (this.Node.nodeType !== "Modulator") return this.toggleFold();
       if (!this.appConnecting) return this.startConnect();
 
       if (this.Node.name === this.originNode.name)
@@ -531,9 +525,13 @@ export default {
   .node-name {
     font-size: 1rem;
     text-align: left;
-    padding: 0.5em;
-    cursor: default;
+    padding: 0.5em 0;
+    display: inline-block;
     user-select: none;
+    text-align: center;
+    margin-bottom: .2em;
+    cursor: pointer;
+    position: relative;
   }
 }
 
@@ -561,7 +559,6 @@ export default {
       cursor: pointer;
       user-select: none;
       letter-spacing: 1px;
-      // text-align: center;
     }
   }
   .delete,
@@ -586,13 +583,12 @@ export default {
   height: 20px;
   display: flex;
   justify-content: space-between;
-  z-index: 2;
 }
 
 .instrument-enabler {
   cursor: pointer;
-  top: 0;
-  left: 0;
+  // position: relative;
+  z-index: 1;
   .instrument-enabler-inner {
     width: 15px;
     height: 15px;
@@ -604,21 +600,16 @@ export default {
   }
 }
 
-.top-right {
-  display: flex;
-  gap: 0.5em;
-}
-
-.fold-unfold {
-  cursor: pointer;
-  background: #444;
-}
-
 .delete {
   cursor: pointer;
   background: #444;
+  padding: 0 0.2em;
+  z-index: 1;
 }
 
+.node-header {
+  text-align: center;
+}
 .types {
   margin-bottom: 0.2em;
 }
@@ -629,9 +620,9 @@ export default {
 .Femod,
 .Delay {
   .node-header {
-    display: flex;
-    align-items: center;
-    padding: 0.5em 0.5em 0;
+    // display: flex;
+    // align-items: center;
+    // padding: 0.5em 0.5em 0;
   }
 }
 
@@ -673,8 +664,9 @@ export default {
 
 .Carrier,
 .Modulator,
-.WhiteNoise {
-  min-width: 160px;
+.WhiteNoise,
+.Drumkit {
+  width: 160px;
 }
 
 .BufferSource {
@@ -686,7 +678,7 @@ export default {
 }
 
 .Delay {
-  width: 100px;
+  width: 160px;
   .param {
     min-width: 78px;
   }
