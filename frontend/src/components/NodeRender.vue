@@ -2,26 +2,37 @@
   <div class="container">
     <div
       class="node"
-      :class="[Node.nodeType, getCssNodeName(Node.name)]"
+      :class="[Node.nodeType, getCssNodeName(Node.name), { folded: folded }]"
       :ref="Node.name"
     >
-      <div
-        class="delete"
-        @click="deleteNode()"
-        v-if="Node.name !== 'Track Gain'"
-      >
-        X
+      <div class="top-bar">
+        <div class="top-left">
+          <div
+            class="instrument-enabler"
+            @click="toggleInstrumentEnabled"
+            v-if="Node.nodeRol === 'Instrument'"
+          >
+            <div
+              class="instrument-enabler-inner"
+              :class="{ enabled: instrumentEnabled }"
+            ></div>
+          </div>
+          <div class="placeholder" v-else></div>
+        </div>
+        <div class="top-right">
+          <div class="fold-unfold" @click="toggleFold">_</div>
+          <div
+            class="delete"
+            @click="deleteNode()"
+            v-if="Node.name !== 'Track Gain'"
+          >
+            X
+          </div>
+        </div>
       </div>
 
-      <div
-        class="instrument-enabler"
-        @click="toggleInstrumentEnabled"
-        v-if="Node.nodeRol === 'Instrument'"
-      >
-        <div
-          class="instrument-enabler-inner"
-          :class="{ enabled: instrumentEnabled }"
-        ></div>
+      <div class="backdrop" v-if="folded" @click="toggleFold">
+        <div class="folded-name">{{ Node.name }}</div>
       </div>
 
       <!-- Node Name -->
@@ -321,7 +332,7 @@ export default {
   data() {
     return {
       loopStatus: "CLEARED",
-
+      folded: false,
       muted: false,
     };
   },
@@ -341,6 +352,10 @@ export default {
 
     toggleRecEnabled() {
       this.$emit("toggleRecEnabled");
+    },
+
+    toggleFold() {
+      this.folded = !this.folded;
     },
 
     setType(e) {
@@ -522,6 +537,39 @@ export default {
   }
 }
 
+.node.folded {
+  width: 34px;
+  max-height: 340px;
+  overflow: hidden;
+  .node-header {
+    display: none;
+  }
+  .backdrop {
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1;
+    cursor: pointer;
+    .folded-name {
+      transform: rotate(-90deg) translateX(-100%);
+      position: inherit;
+      bottom: 50%;
+      width: 100%;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      letter-spacing: 1px;
+      // text-align: center;
+    }
+  }
+  .delete,
+  .fold-unfold {
+    display: none;
+  }
+}
+
 .Modulator .node-name {
   cursor: pointer;
 }
@@ -532,17 +580,17 @@ export default {
   min-height: 257px;
 }
 
-.delete {
-  cursor: pointer;
+.top-bar {
   position: absolute;
-  top: 0;
-  right: 0;
-  background: #444;
+  width: 100%;
+  height: 20px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 2;
 }
 
 .instrument-enabler {
   cursor: pointer;
-  position: absolute;
   top: 0;
   left: 0;
   .instrument-enabler-inner {
@@ -554,6 +602,21 @@ export default {
   .instrument-enabler-inner.enabled {
     background: green;
   }
+}
+
+.top-right {
+  display: flex;
+  gap: 0.5em;
+}
+
+.fold-unfold {
+  cursor: pointer;
+  background: #444;
+}
+
+.delete {
+  cursor: pointer;
+  background: #444;
 }
 
 .types {
@@ -669,7 +732,7 @@ export default {
 .octave-transpose {
   text-align: right;
   font-size: 0.9rem;
-  margin-right: .5em;
+  margin-right: 0.5em;
   .value {
     color: var(--color-2);
   }
