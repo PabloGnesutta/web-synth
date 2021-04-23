@@ -273,6 +273,23 @@
           </div>
         </div>
 
+        <!-- Dry/Wet -->
+        <div class="dry-wet" v-if="Node.dryWet" :class="getCssNodeName(Node.name + ' dry-wet')">
+          <div class="param-name connectable">dry/wet</div>
+          <div
+            class="knob-wrapper"
+            @click="knobClicked(Node.name + '-dry-wet')"
+          >
+            <Knob
+              :ref="Node.name + '-dry-wet'"
+              :initVal="Node.dryWet.defaultValue"
+              :minVal="Node.dryWet.minValue"
+              :maxVal="Node.dryWet.maxValue"
+              @knobTurned="setDryWet($event)"
+            />
+          </div>
+        </div>
+
         <!-- Level -->
         <div
           class="level"
@@ -456,6 +473,10 @@ export default {
       console.log(msg);
     },
 
+    setDryWet(value) {
+      this.Node.setDryWet(parseFloat(value))
+    },
+
     //level
 
     setNodeGain(value) {
@@ -529,7 +550,7 @@ export default {
     display: inline-block;
     user-select: none;
     text-align: center;
-    margin-bottom: .2em;
+    margin-bottom: 0.2em;
     cursor: pointer;
     position: relative;
   }

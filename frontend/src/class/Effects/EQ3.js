@@ -42,10 +42,13 @@ class EQ3 extends Node {
 
     this.dryGain.connect(this.outputNode)
     this.wetGain.connect(this.outputNode)
+    this.low.connect(this.wetGain)
 
-    this.inputNode.connect(this.high)
+    this.dryGain.connect(this.outputNode)
+    this.wetGain.connect(this.outputNode)
 
     this.initInnerNodeAudioParams()
+    this.initDryWet()
   }
 
   initInnerNodeAudioParams() {
@@ -91,26 +94,23 @@ class EQ3 extends Node {
     ]
   }
 
-  // initCustomParams() {
-  //   const setDryWet = (value) => {
-  //     this.wetGain.gain.value = value
-  //     this.dryGain.gain.value = value.map(0, 1, 1, 0)
-  //   }
+  initDryWet() {
+    this.dryWet = {
+      name: "dry/wet",
+      displayName: "dry/wet",
+      unit: '', //%
+      minValue: 0,
+      maxValue: 1,
+      defaultValue: 1,
+      value: 1,
+      step: 0.01
+    }
+  }
 
-  //   this.customParams = [
-  //     {
-  //       name: "dry-wet",
-  //       displayName: "dry/wet",
-  //       unit: '', //%
-  //       minValue: 0,
-  //       maxValue: 1,
-  //       defaultValue: 0.3,
-  //       value: 1,
-  //       step: 0.01,
-  //       set(v) { setDryWet(v) }
-  //     },
-  //   ]
-  // }
+  setDryWet(value) {
+    this.wetGain.gain.value = value
+    this.dryGain.gain.value = value - 1
+  }
 }
 
 module.exports = EQ3

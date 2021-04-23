@@ -5,12 +5,12 @@ const freqMax = 7000
 const QMax = 30
 
 class BiquadFilter extends Node {
-  static bqCount = 0
+  static filterCount = 0
 
   constructor() {
     super(initialGain)
 
-    this.name = "Filter " + ++BiquadFilter.bqCount
+    this.name = "Filter " + ++BiquadFilter.filterCount
     this.nodeType = "BiquadFilter"
 
     this.type = 'lowpass'
@@ -18,13 +18,21 @@ class BiquadFilter extends Node {
 
     this.node = Node.context.createBiquadFilter()
     this.node.type = this.type
-    this.node.connect(this.outputNode)
+    // this.node.connect(this.outputNode)
 
-    //next step
+    this.dryGain = Node.context.createGain()
+    this.wetGain= Node.context.createGain()
+
     this.inputNode.connect(this.node)
+    this.inputNode.connect(this.dryGain)
+    this.node.connect(this.wetGain)
+
+    this.dryGain.connect(this.outputNode)
+    this.wetGain.connect(this.outputNode)
 
     this.initAudioParams()
     this.refreshParams()
+    this.initDryWet()
   }
 
   initAudioParams() {
@@ -105,6 +113,24 @@ class BiquadFilter extends Node {
     this.audioParams[1].defaultValue = q.value
     this.audioParams[1].step = q.step
     //gain
+  }
+
+  initDryWet() {
+    this.dryWet = {
+      name: "dry/wet",
+      displayName: "dry/wet",
+      unit: '', //%
+      minValue: 0,
+      maxValue: 1,
+      defaultValue: 1,
+      value: 1,
+      step: 0.01
+    }
+  }
+
+  setDryWet(value) {
+    this.wetGain.gain.value = value
+    this.dryGain.gain.value = value - 1
   }
 
 }

@@ -25,7 +25,7 @@ class Reverb extends Node {
     this.dryGain.connect(this.outputNode)
     this.wetGain.connect(this.outputNode)
 
-    this.initCustomParams()
+    this.initDryWet()
     this.initReverb(this.type)
   }
 
@@ -39,29 +39,22 @@ class Reverb extends Node {
       })
   }
 
-  initCustomParams() {
-    const setDryWet = (value) => {
-      this.wetGain.gain.value = value
-      this.dryGain.gain.value = value.map(0, 1, 1, 0)
+  initDryWet() {
+    this.dryWet = {
+      name: "dry/wet",
+      displayName: "dry/wet",
+      unit: '', //%
+      minValue: 0,
+      maxValue: 1,
+      defaultValue: 0.3,
+      value: 0,
+      step: 0.01
     }
-
-    this.customParams = [
-      {
-        name: "dry/wet",
-        displayName: "dry/wet",
-        unit: '', //%
-        minValue: 0,
-        maxValue: 1,
-        defaultValue: 0.4,
-        value: 0.4,
-        step: 0.01,
-        set(v) { setDryWet(v) }
-      },
-    ]
   }
 
-  setType(type) {
-    this.initReverb(type)
+  setDryWet(value) {
+    this.wetGain.gain.value = value
+    this.dryGain.gain.value = value - 1
   }
 
 }

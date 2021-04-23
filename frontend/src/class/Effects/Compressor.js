@@ -10,12 +10,18 @@ class Compressor extends Node {
     this.nodeType = "Compressor"
 
     this.node = Node.context.createDynamicsCompressor()
-    this.node.connect(this.outputNode)
+    this.dryGain = Node.context.createGain()
+    this.wetGain = Node.context.createGain()
 
-    //nest step
     this.inputNode.connect(this.node)
+    this.inputNode.connect(this.dryGain)
+    this.node.connect(this.wetGain)
+
+    this.dryGain.connect(this.outputNode)
+    this.wetGain.connect(this.outputNode)
 
     this.initAudioParams()
+    this.initDryWet()
   }
 
   initAudioParams() {
@@ -41,6 +47,24 @@ class Compressor extends Node {
         minValue: 0, maxValue: 1, value: 0.3, defaultValue: 0.3, step: 0.01
       },
     ]
+  }
+
+  initDryWet() {
+    this.dryWet = {
+      name: "dry/wet",
+      displayName: "dry/wet",
+      unit: '', //%
+      minValue: 0,
+      maxValue: 1,
+      defaultValue: 1,
+      value: 1,
+      step: 0.01
+    }
+  }
+
+  setDryWet(value) {
+    this.wetGain.gain.value = value
+    this.dryGain.gain.value = value - 1
   }
 }
 
