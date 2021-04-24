@@ -17,8 +17,6 @@ class Delay extends Node {
   constructor() {
     super(initialGain)
 
-    this.customParams = []
-
     this.name = "Delay " + ++Delay.delayCount
     this.nodeType = "Delay"
 

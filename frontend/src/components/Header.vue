@@ -1,7 +1,9 @@
 <template>
   <div class="header">
     <div class="buttons">
-      {{ saveName }}
+      <div v-if="currentSave">
+        {{ currentSave.name }}
+      </div>
       <!-- Instruments -->
       <!-- <div class="btn btn-instrument" @click="createInstrument('Justinton')">
         Justinton
@@ -85,6 +87,7 @@
       </div>
 
       <!-- SAVES -->
+      <div class="btn" v-if="currentSave" @click="save">Save</div>
       <div class="btn" @click="saveAs">Save as</div>
       <div
         v-if="this.saves && this.saves.length > 0"
@@ -135,7 +138,7 @@ export default {
       showSavedWorks: false,
       saves: [],
       saveNames: [],
-      saveName: null,
+      currentSave: undefined,
     };
   },
 
@@ -146,7 +149,6 @@ export default {
   },
 
   mounted() {
-    //tener un array aparte en localstorage con sólo los nombres para no cargar en memoria al pedo
     this.saves = JSON.parse(localStorage.getItem("websynth-saves"));
     this.saveNames = JSON.parse(localStorage.getItem("websynth-savenames"));
   },
@@ -184,6 +186,10 @@ export default {
     },
     downloadExport() {
       this.$emit("downloadExport");
+    },
+
+    save() {
+      this.overWrite(this.currentSaveIndex);
     },
 
     saveAs() {
@@ -228,6 +234,10 @@ export default {
         "websynth-savenames",
         JSON.stringify(this.saveNames)
       );
+
+      this.currentSaveIndex = this.saveNames.length - 1;
+      this.currentSave = this.saveNames[this.currentSaveIndex];
+      alert("New work saved");
     },
 
     overWrite(existingSaveIndex) {
@@ -235,6 +245,12 @@ export default {
       this.saves[existingSaveIndex].totalBeats = this.totalBeats;
       this.saves[existingSaveIndex].tracks = JSON.stringify(this.tracks);
       localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
+
+      if (this.currentSaveIndex === existingSaveIndex) alert("Work saved");
+      else alert("Work overwritten");
+
+      this.currentSaveIndex = existingSaveIndex;
+      this.currentSave = this.saves[existingSaveIndex];
     },
 
     nameExists(name) {
@@ -243,11 +259,12 @@ export default {
 
     loadSave(s) {
       // if (!confirm('Load ' + this.saveNames[s].name + '? Unsaved changes will be lost.')) return
-      this.saveName = this.saveNames[s].name;
       const tracks = JSON.parse(this.saves[s].tracks);
       this.$emit("loadSave", tracks);
       this.setTempo(this.saves[s].tempo);
       this.setTotalBeats(this.saves[s].totalBeats);
+      this.currentSaveIndex = s;
+      this.currentSave = this.saveNames[s];
     },
 
     deleteSave(s) {
@@ -281,7 +298,7 @@ export default {
     padding: 0.4em 1em;
     background: gray;
     cursor: pointer;
-    border-radius: 5PX;
+    border-radius: 5px;
   }
 
   .btn-modulator {

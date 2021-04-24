@@ -8,8 +8,6 @@ class EQ3 extends Node {
   constructor() {
     super(initialGain)
 
-    this.customParams = []
-
     this.name = name || "EQ3 " + ++EQ3.EQ3Count
     this.nodeType = "EQ3"
 
