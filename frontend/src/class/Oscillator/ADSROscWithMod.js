@@ -6,17 +6,19 @@ const initialGain = 1
 class ADSROscWithMod extends Oscillator {
   static ADSRWithModCount = 0
 
-  constructor(type, frequency) {
+  constructor(type) {
     super(initialGain)
 
-    this.name = "ADSRWithMod " + ++ADSROscWithMod.ADSRWithModCount
-    this.nodeType = "ADSROscillator"
+    this.name = "ADSROscWithMod " + ++ADSROscWithMod.ADSRWithModCount
+    this.nodeType = "ADSROscWithMod"
     this.type = type
     this.peak = 1
     this.detuneValue = 0
     this.status = "STOPPED"
 
     this.ADSRGain = Node.context.createGain()
+    this.modLevel = Node.context.createGain()
+    this.mod = Node.context.createOscillator()
 
     // this.mods = [
     //   {
@@ -27,19 +29,16 @@ class ADSROscWithMod extends Oscillator {
     //   },
     // ]
 
-    // FM
     this.modLevelValue = 1000
     this.modType = "triangle"
-    this.modLevel = Node.context.createGain()
-    this.mod = Node.context.createOscillator()
-
-    this.initGain(initialGain)
+    // this.inputNode.connect(this.outputNode)
   }
 
   startWithFrequency(frequency) {
     this.start(frequency)
   }
 
+  //need to start ADSRGain each time to prevent conflict with release times
   start(frequency) {
     const t = Node.context.currentTime
     this.ADSRGain = Node.context.createGain()

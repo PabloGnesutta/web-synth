@@ -70,9 +70,12 @@
         <div v-if="Node.nodeType === 'Looper'" class="looper-body-wrapper">
           <LooperBody :Node="Node" />
         </div>
+        <div v-if="Node.nodeType === 'Duette'" class="looper-body-wrapper">
+          <DuetteBody :Node="Node" />
+        </div>
         <!-- The rest -->
         <div
-          v-if="Node.nodeType !== 'Delay' && Node.nodeType !== 'EQ3'"
+          v-if="Node.nodeType !== 'Delay' && Node.nodeType !== 'EQ3' && Node.nodeType !== 'Duette'"
           class="node-body-inner"
         >
           <div class="audio-params params-container" v-if="Node.audioParams">
@@ -173,7 +176,7 @@
                     :minVal="customParam.minValue"
                     :maxVal="customParam.maxValue"
                     :initVal="customParam.value"
-                    @knobTurned="setCustomParam(cpIndex, $event)"
+                    @knobTurned="setCustomParam(cpIndex, $event, customParam)"
                   />
                 </div>
               </div>
@@ -342,6 +345,7 @@ import AnalyserRender from "./AnalyserRender";
 import DelayBody from "./specifig-nodes/DelayBody";
 import EQ3Body from "./specifig-nodes/EQ3Body.vue";
 import LooperBody from "./specifig-nodes/LooperBody.vue";
+import DuetteBody from "./specifig-nodes/DuetteBody.vue";
 export default {
   data() {
     return {
@@ -523,6 +527,7 @@ export default {
     EQ3Body,
     DelayBody,
     LooperBody,
+    DuetteBody,
     AnalyserRender,
   },
 };
@@ -637,18 +642,6 @@ export default {
   margin-bottom: 0.2em;
 }
 
-.Justinton,
-.Modulator,
-.Carrier,
-.Femod,
-.Delay {
-  .node-header {
-    // display: flex;
-    // align-items: center;
-    // padding: 0.5em 0.5em 0;
-  }
-}
-
 // PARAMS
 
 .params-container {
@@ -680,9 +673,14 @@ export default {
 
 // Specific Node Styles:
 
-.Justinton,
+
 .Femod {
   width: 205px;
+}
+
+.Justinton {
+  width: 350px;
+  // padding: 0 .2em;
 }
 
 .Carrier,

@@ -24,24 +24,14 @@ class Node {
   destroy() {
     this.disconnect()
 
-    this.outputNode.disconnect()
+    if (this.audioParams) this.audioParams = null
+    if (this.customParams) this.customParams = null
+    if (this.modulationParams) this.modulationParams = null
+    if (this.innerNodeAudioParams) this.innerNodeAudioParams = null
 
-    this.outputs = null
-    this.audioParams = null
+    if (this.node) this.node = null
 
-    this.inputNode.disconnect()
     this.inputNode = null
-
-    if (this.node) {
-      this.node.disconnect()
-      this.node = null
-    }
-
-    if (this.keepOutputAlive) {
-      this.keepOutputAlive.disconnect()
-      this.keepOutputAlive = null
-    }
-
     this.outputNode = null
   }
 
@@ -58,9 +48,14 @@ class Node {
   }
 
   disconnect() {
+    this.inputNode.disconnect()
+
+    if (this.node) this.node.disconnect()
+
     this.outputs.forEach(o => {
       this.outputNode.disconnect(o.inputNode)
     })
+    this.outputNode.disconnect()
     this.outputs = []
     return this
   }

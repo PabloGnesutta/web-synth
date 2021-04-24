@@ -1,7 +1,7 @@
 const Node = require("../Node")
+const dirName = "/audio/samples/"
 const drumSamples = require("../../data/drumSamples")
 
-const dirName = "/audio/samples/"
 const initialGain = 1.2
 
 class Drumkit extends Node {
@@ -23,7 +23,7 @@ class Drumkit extends Node {
   async initSamplers() {
     let i = 0
     for (const ds of drumSamples) {
-      let response = await fetch(dirName + drumSamples[i++].sampleName)
+      let response = await fetch(dirName + drumSamples[i++])
       let arrayBuffer = await response.arrayBuffer()
       let audioBuffer = await Node.context.decodeAudioData(arrayBuffer)
       this.buffers.push(audioBuffer)

@@ -1,6 +1,8 @@
 const Oscillator = require("../Oscillator/Oscillator")
 const notes = require("../../data/notes")
 
+const noteFreqIndex = 1
+
 const initialGain = 0.5
 const detuneMax = 100
 const initFreq = 220
@@ -34,7 +36,7 @@ class Carrier extends Oscillator {
     let noteIndex = i + 12 * this.octave + this.transpose
     if (noteIndex < 0) noteIndex = 0
     if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
-    this.frequency = notes[noteIndex].freq
+    this.frequency = notes[noteIndex][noteFreqIndex]
     this.node.frequency.setValueAtTime(this.frequency, 0)
   }
 

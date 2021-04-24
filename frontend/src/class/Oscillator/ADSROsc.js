@@ -6,20 +6,17 @@ const initialGain = 1
 class ADSROsc extends Oscillator {
   static ADSRCount = 0
 
-  constructor(type, frequency) {
-    super(type, frequency)
+  constructor(type) {
+    super(initialGain)
 
     this.name = "ADSR " + ++ADSROsc.ADSRCount
     this.nodeType = "ADSROsc"
-
+    this.peak = 1
+    this.type = type
     this.detuneValue = 0;
+    this.status = "STOPPED"
 
     this.ADSRGain = Node.context.createGain()
-
-    this.peak = 1
-
-    this.status = "STOPPED"
-    this.initGain(initialGain)
   }
 
   startWithFrequency(frequency) {
@@ -31,7 +28,7 @@ class ADSROsc extends Oscillator {
     this.ADSRGain.connect(this.outputNode)
 
     this.node = Node.context.createOscillator()
-    this.node.type = this.oscType
+    this.node.type = this.type
     this.node.connect(this.ADSRGain)
 
     this.node.frequency.setValueAtTime(frequency, 0)
@@ -61,7 +58,6 @@ class ADSROsc extends Oscillator {
     // this.ADSRGain.gain.setTargetAtTime(0, t, this.R);
 
     this.node.stop(t + this.R)
-    this.mod.stop(t + this.R)
     this.status = "STOPPED"
 
     // const stop = setInterval(() => {

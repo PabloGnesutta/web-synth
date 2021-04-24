@@ -18,10 +18,17 @@
         <div class="dropdown" :class="{ hidden: !showInstrumentsMenu }">
           <div
             class="btn btn-instrument dropdown-item"
+            @click="createInstrument('Justinton')"
+          >
+            Duette
+          </div>
+          <div
+            class="btn btn-instrument dropdown-item"
             @click="createInstrument('Femod')"
           >
             Femod
           </div>
+
           <div
             class="btn btn-instrument dropdown-item"
             @click="createInstrument('Drumkit')"
@@ -122,15 +129,21 @@
             m + (1..9): <span>Mute track 1 to 9</span>
           </div>
           <div class="dropdown-item">
-            0 (zero): <span>Trigger all Loopers</span>
-          </div>
-          <div class="dropdown-item">
             ctrl + q: <span>Delete current track</span>
           </div>
           <div class="dropdown-item">z: <span>Octave down</span></div>
           <div class="dropdown-item">x: <span>Octave up</span></div>
           <div class="dropdown-item">c: <span>Transpose down</span></div>
           <div class="dropdown-item">v: <span>Transpose up</span></div>
+          <div class="dropdown-item">
+            0 (zero): <span>Trigger all Loopers</span>
+          </div>
+          <div class="dropdown-item">
+            Play notes with: <span> AWSEDFTGYHUJKOLP</span>
+          </div>
+          <div class="dropdown-item">
+            Play Drumkit with: <span>numpad keys</span>
+          </div>
         </div>
       </div>
     </div>

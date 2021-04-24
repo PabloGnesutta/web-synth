@@ -238,7 +238,7 @@ export default {
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.createTrack(new Drumkit());
+      this.createTrack(new Justinton());
     },
 
     startRec() {
@@ -551,23 +551,27 @@ export default {
       if (!this.keyEnabled[e.keyCode]) return;
       this.keyEnabled[e.keyCode] = false;
 
-      const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk.key);
-      if (noteKeyIndex != -1) {
+      const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk[0]);
+      if (noteKeyIndex !== -1) {
         this.keypressListeners.forEach((scaleInterface) => {
           scaleInterface.instrument.playNote(noteKeyIndex);
         });
-      } else this.onOtherDown(e);
+      } else {
+        this.onOtherDown(e);
+      }
     },
 
     onKeyup(e) {
       this.keyEnabled[e.keyCode] = true;
-      const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk.key);
+      const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk[0]);
 
-      if (noteKeyIndex != -1) {
+      if (noteKeyIndex !== -1) {
         this.keypressListeners.forEach((scaleInterface) => {
           scaleInterface.instrument.stopNote(noteKeyIndex);
         });
-      } else this.onOtherKeyup(e);
+      } else {
+        this.onOtherKeyup(e);
+      }
     },
 
     onOtherDown({ key, keyCode }) {

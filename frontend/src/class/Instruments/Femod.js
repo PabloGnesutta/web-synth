@@ -1,14 +1,15 @@
 const Node = require("../Node")
 const ADSROscWithMod = require("../Oscillator/ADSROscWithMod")
-const notes = require("../../data/notes")
 const noteKeys = require("../../data/noteKeys")
+const notes = require("../../data/notes")
+
+const noteFreqIndex = 1
 
 const initialGain = 0.5
-const initialA = 0
-const initialD = 0
-const initialS = 1
-const initialR = 0.1
-const initialDetune = 0;
+const A = 0
+const D = 0
+const S = 1
+const R = 0.1
 
 class Femod extends Node {
   static femodCount = 0
@@ -38,26 +39,28 @@ class Femod extends Node {
   destroy() {
     super.destroy(true)
     this.scaleNodes.forEach(sn => {
-      sn.destroy()
       sn.ADSRGain.disconnect()
       sn.ADSRGain = null
-      sn.level.disconnect()
-      sn.level = null
+      sn.modLevel.disconnect()
+      sn.mod.disconnect()
+      sn.modLevel = null
+      sn.mod = null
+      sn.destroy()
       sn = null;
     })
     this.scaleNodes = []
   }
 
   initOscillators() {
-    noteKeys.forEach((nk) => {
+    for (let i = 0; i < noteKeys.length; i++) {
       const osc = new ADSROscWithMod(this.type);
-      osc.A = initialA
-      osc.D = initialD
-      osc.S = initialS
-      osc.R = initialR
+      osc.A = A
+      osc.D = D
+      osc.S = S
+      osc.R = R
       osc.connectNativeNode(this.outputNode);
       this.scaleNodes.push(osc);
-    });
+    }
   }
 
   setType(value) {
@@ -68,20 +71,12 @@ class Femod extends Node {
     })
   }
 
-  // setModType(value) {
-  //   this.type = value
-  //   this.scaleNodes.forEach(sn => {
-  //     sn.oscType = value
-  //     sn.node.type = value
-  //   })
-  // }
-
   playNote(i) {
     let noteIndex = i + 12 * this.octave + this.transpose
     if (noteIndex < 0) noteIndex = 0
     if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
 
-    this.scaleNodes[i].startWithFrequency(notes[noteIndex].freq); //.waveLength probar
+    this.scaleNodes[i].startWithFrequency(notes[noteIndex][noteFreqIndex]); //.waveLength probar
   }
 
   stopNote(i) {
@@ -116,8 +111,8 @@ class Femod extends Node {
         unit: 's',
         minValue: 0,
         maxValue: 5,
-        value: initialA,
-        defaultValue: initialA,
+        value: A,
+        defaultValue: A,
         step: 0.01,
         set(v) { setScaleNodeProperty("A", v) }
       },
@@ -127,8 +122,8 @@ class Femod extends Node {
         unit: 's',
         minValue: 0.01,
         maxValue: 3,
-        value: initialD,
-        defaultValue: initialD,
+        value: D,
+        defaultValue: D,
         step: 0.01,
         set(v) { setScaleNodeProperty("D", v) }
       },
@@ -138,8 +133,8 @@ class Femod extends Node {
         unit: '',
         minValue: 0,
         maxValue: 1,
-        value: initialS,
-        defaultValue: initialS,
+        value: S,
+        defaultValue: S,
         step: 0.01,
         set(v) { setScaleNodeProperty("S", v) }
       },
@@ -149,8 +144,8 @@ class Femod extends Node {
         unit: 's',
         minValue: 0.001,
         maxValue: 5,
-        value: initialR,
-        defaultValue: initialR,
+        value: R,
+        defaultValue: R,
         step: 0.001,
         set(v) { setScaleNodeProperty("R", v) }
       },
@@ -160,8 +155,8 @@ class Femod extends Node {
         unit: '%',
         minValue: -100,
         maxValue: 100,
-        value: initialDetune,
-        defaultValue: initialDetune,
+        value: 0,
+        defaultValue: 0,
         step: 0.1,
         set(v) { setDetune(v) }
       },
