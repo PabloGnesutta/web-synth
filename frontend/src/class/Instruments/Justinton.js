@@ -4,36 +4,35 @@ const notes = require("../../data/notes")
 const noteKeys = require("../../data/noteKeys")
 
 const initialGain = 0.5
-const initialA = 0
-const initialD = 0
-const initialS = 1
-const initialR = 0.1
+const A = 0
+const D = 0
+const S = 1
+const R = 0.1
 const initialDetune = 0;
 
 class Justinton extends Node {
   static JustintonCount = 0
 
-  constructor(tpye, name) {
-    super(name)
+  constructor() {
+    super(initialGain)
 
-    this.name = name || "Justinton " + ++Justinton.JustintonCount
+    this.name = "Justinton " + ++Justinton.JustintonCount
     this.nodeType = "Justinton"
     this.nodeRol = "Instrument"
 
     this.types = ["sine", "triangle", "sawtooth", "square"]
-    this.type = tpye || "sawtooth"
 
     this.octave = 3
     this.transpose = 0
 
-    this.A = initialA
-    this.D = initialD
-    this.S = initialS
-    this.R = initialR
-
+    this.oscillators = [
+      { A, D, S, R, type: 'sine', detuneValue: 0, },
+      { A, D, S, R, type: 'sawtooth', detuneValue: 0, },
+      { A, D, S, R, type: 'triangle', detuneValue: 0, },
+      { A, D, S, R, type: 'square', detuneValue: 0, },
+    ]
     this.scaleNodes = []
 
-    this.initGain()
     this.initCustomParams()
     this.initOscillators()
   }
@@ -60,7 +59,7 @@ class Justinton extends Node {
 
   initOscillators() {
     noteKeys.forEach((nk) => {
-      const osc = new ADSROsc(this.type, notes[nk.noteIndex].freq);
+      const osc = new ADSROsc(this.type);
       osc.A = initialA
       osc.D = initialD
       osc.S = initialS
@@ -113,7 +112,6 @@ class Justinton extends Node {
     }
 
     this.customParams = [
-
       {
         name: "attack",
         displayName: "attack",

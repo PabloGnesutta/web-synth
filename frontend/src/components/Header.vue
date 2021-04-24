@@ -1,9 +1,9 @@
 <template>
   <div class="header">
+    <div v-if="currentSave" class="current-save-name">
+      {{ currentSave.name }}
+    </div>
     <div class="buttons">
-      <div v-if="currentSave">
-        {{ currentSave.name }}
-      </div>
       <!-- Instruments -->
       <!-- <div class="btn btn-instrument" @click="createInstrument('Justinton')">
         Justinton
@@ -88,13 +88,16 @@
 
       <!-- SAVES -->
       <div class="btn" v-if="currentSave" @click="save">Save</div>
-      <div class="btn" @click="saveAs">Save as</div>
+      <div class="btn" @click="saveAs">
+        <span v-if="currentSave">Save as</span>
+        <span v-else>Save</span>
+      </div>
       <div
         v-if="this.saves && this.saves.length > 0"
         class="btn load-work"
         @click="showSavedWorks = !showSavedWorks"
       >
-        <div>LOAD</div>
+        <div>Load</div>
         <div class="saved-works" :class="{ hidden: !showSavedWorks }">
           <div :key="s" class="saved-work" v-for="(savedWork, s) in saveNames">
             <div class="saved-work-name" @click="loadSave(s)">
@@ -108,16 +111,22 @@
       <!-- Config -->
       <div class="menu config">
         <div class="btn label" @click="showConfigMenu = !showConfigMenu">
-          Config
+          INFO
         </div>
         <div class="dropdown" :class="{ hidden: !showConfigMenu }">
           <div class="keystrokes-label">Keystrokes:</div>
-          <div class="dropdown-item">Ctrl + m: <span>Mute current</span></div>
           <div class="dropdown-item">
-            m + (1..9): <span>Mute track 1-9</span>
+            Ctrl + m: <span>Mute current track</span>
           </div>
-          <div class="dropdown-item">0 (zero): <span>Trigger Looper</span></div>
-          <div class="dropdown-item">ctrl + q: <span>Delete current</span></div>
+          <div class="dropdown-item">
+            m + (1..9): <span>Mute track 1 to 9</span>
+          </div>
+          <div class="dropdown-item">
+            0 (zero): <span>Trigger all Loopers</span>
+          </div>
+          <div class="dropdown-item">
+            ctrl + q: <span>Delete current track</span>
+          </div>
           <div class="dropdown-item">z: <span>Octave down</span></div>
           <div class="dropdown-item">x: <span>Octave up</span></div>
           <div class="dropdown-item">c: <span>Transpose down</span></div>
@@ -222,14 +231,15 @@ export default {
         id: count,
         name,
       });
-      this.saves.push({
+      const saves = this.getSaves();
+      saves.push({
         id: count,
         name,
         tempo: this.tempo,
         totalBeats: this.totalBeats,
         tracks: JSON.stringify(this.tracks),
       });
-      localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
+      this.updateSaves(saves);
       localStorage.setItem(
         "websynth-savenames",
         JSON.stringify(this.saveNames)
@@ -241,20 +251,24 @@ export default {
     },
 
     overWrite(existingSaveIndex) {
-      this.saves[existingSaveIndex].tempo = this.tempo;
-      this.saves[existingSaveIndex].totalBeats = this.totalBeats;
-      this.saves[existingSaveIndex].tracks = JSON.stringify(this.tracks);
-      localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
+      const saves = this.getSaves();
+      saves[existingSaveIndex].tempo = this.tempo;
+      saves[existingSaveIndex].totalBeats = this.totalBeats;
+      saves[existingSaveIndex].tracks = JSON.stringify(this.tracks);
+      this.updateSaves(saves);
 
       if (this.currentSaveIndex === existingSaveIndex) alert("Work saved");
       else alert("Work overwritten");
 
       this.currentSaveIndex = existingSaveIndex;
-      this.currentSave = this.saves[existingSaveIndex];
+      this.currentSave = saves[existingSaveIndex];
     },
 
-    nameExists(name) {
-      return this.saveNames.findIndex((sv) => sv.name === name);
+    getSaves() {
+      return JSON.parse(localStorage.getItem("websynth-saves"));
+    },
+    updateSaves(saves) {
+      localStorage.setItem("websynth-saves", JSON.stringify(saves));
     },
 
     loadSave(s) {
@@ -278,15 +292,23 @@ export default {
         JSON.stringify(this.saveNames)
       );
     },
+
+    nameExists(name) {
+      return this.saveNames.findIndex((sv) => sv.name === name);
+    },
   },
 };
 </script>
 
 <style lang="scss" scoped>
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: black;
   padding: 0.2em;
   width: 100%;
+  gap: 0.5em;
 
   .buttons {
     display: flex;
@@ -356,14 +378,14 @@ export default {
       right: 0;
       bottom: 0;
       transform: translateY(calc(100% + 5px));
-      min-width: 200px;
+      min-width: 250px;
       background: rgb(255, 83, 83);
       .keystrokes-label {
         padding: 0.5em;
         font-weight: bold;
       }
       span {
-        color: black;
+        color: #333;
       }
     }
   }

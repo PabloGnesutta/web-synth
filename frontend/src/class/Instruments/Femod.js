@@ -13,24 +13,25 @@ const initialDetune = 0;
 class Femod extends Node {
   static femodCount = 0
 
-  constructor(tpye, name) {
-    super(name)
+  constructor() {
+    super(initialGain)
 
-    this.name = name || "Femod " + ++Femod.femodCount
+    this.name = "Femod " + ++Femod.femodCount
     this.nodeType = "Femod"
     this.nodeRol = "Instrument"
 
     this.types = ["sine", "triangle", "sawtooth", "square"]
-    this.type = tpye || "sawtooth"
+    this.type = "sawtooth"
 
     this.octave = 3
     this.transpose = 0
 
     this.scaleNodes = []
 
-    this.initGain()
-    this.initCustomParams()
+    this.inputNode.connect(this.outputNode)
+
     this.initModulationParams()
+    this.initCustomParams()
     this.initOscillators()
   }
 
@@ -47,16 +48,9 @@ class Femod extends Node {
     this.scaleNodes = []
   }
 
-  initGain() {
-    this.gain = initialGain
-    this.level = Node.context.createGain()
-    this.level.gain.setValueAtTime(this.gain, 0)
-    this.outputNode = this.level
-  }
-
   initOscillators() {
     noteKeys.forEach((nk) => {
-      const osc = new ADSROscWithMod(this.type, notes[nk.noteIndex].freq);
+      const osc = new ADSROscWithMod(this.type);
       osc.A = initialA
       osc.D = initialD
       osc.S = initialS
@@ -64,13 +58,6 @@ class Femod extends Node {
       osc.connectNativeNode(this.outputNode);
       this.scaleNodes.push(osc);
     });
-  }
-
-  initModulators() {
-    this.scaleNodes.forEach(sn => {
-      sn.oscType = value
-      sn.node.type = value
-    })
   }
 
   setType(value) {

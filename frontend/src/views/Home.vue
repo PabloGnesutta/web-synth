@@ -171,6 +171,7 @@ export default {
 
       keyEnabled: [],
       keypressListeners: [],
+      numpadListeners: [],
 
       //MIDI
       maps: [],
@@ -402,6 +403,12 @@ export default {
         trackName: this.currentTrack.name,
       });
 
+      if (instrument.nodeType === "Drumkit")
+        this.numpadListeners.push({
+          instrument,
+          trackName: this.currentTrack.name,
+        });
+
       this.$nextTick(() => {
         window.scrollTo(0, document.body.scrollHeight);
       });
@@ -411,10 +418,15 @@ export default {
       let track = this.tracks[t];
 
       //remove from keypressListeners
-      const kplIndex = this.keypressListeners.findIndex(
-        (kpl) => kpl.trackName === track.name
+      let index = this.keypressListeners.findIndex(
+        (listener) => listener.trackName === track.name
       );
-      if (kplIndex !== -1) this.keypressListeners.splice(kplIndex, 1);
+      if (index !== -1) this.keypressListeners.splice(index, 1);
+      //remove from numpadListeners
+      index = this.numpadListeners.findIndex(
+        (listener) => listener.trackName === track.name
+      );
+      if (index !== -1) this.numpadListeners.splice(index, 1);
 
       //remove track
       track.instrument.destroy();
@@ -561,10 +573,17 @@ export default {
     onOtherDown({ key, keyCode }) {
       if (keyCode === 77) this.m_pressed = true;
       if (keyCode === 17) this.ctrl_pressed = true;
+
+      //1 a 9 numpad
+      if (keyCode >= 97 && keyCode <= 105) {
+        this.numpadListeners.forEach((scaleInterface) => {
+          scaleInterface.instrument.playNote(parseInt(key));
+        });
+      }
     },
 
     onOtherKeyup({ key, keyCode }) {
-      console.log(keyCode, key);
+      // console.log(keyCode, key);
       //1 a 9
       if (keyCode >= 49 && keyCode <= 57)
         if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
@@ -748,6 +767,8 @@ export default {
             ef.customParams.forEach((ef_cp, i) => {
               effect.setCustomParam(i, ef_cp.value);
             });
+
+          //set dry/wet
 
           this.insertEffect(effect);
         });

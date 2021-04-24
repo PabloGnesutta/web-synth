@@ -7,11 +7,11 @@ class ADSROscWithMod extends Oscillator {
   static ADSRWithModCount = 0
 
   constructor(type, frequency) {
-    super(type, frequency)
+    super(initialGain)
 
     this.name = "ADSRWithMod " + ++ADSROscWithMod.ADSRWithModCount
     this.nodeType = "ADSROscillator"
-
+    this.type = type
     this.peak = 1
     this.detuneValue = 0
     this.status = "STOPPED"

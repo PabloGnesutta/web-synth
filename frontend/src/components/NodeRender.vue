@@ -274,7 +274,11 @@
         </div>
 
         <!-- Dry/Wet -->
-        <div class="dry-wet" v-if="Node.dryWet" :class="getCssNodeName(Node.name + ' dry-wet')">
+        <div
+          class="dry-wet"
+          v-if="Node.dryWet"
+          :class="getCssNodeName(Node.name + ' dry-wet')"
+        >
           <div class="param-name connectable">dry/wet</div>
           <div
             class="knob-wrapper"
@@ -372,10 +376,8 @@ export default {
       this.Node.setType(e.target.value);
       e.target.blur();
       if (this.Node.nodeType === "Carrier") return;
-      if (this.Node.audioParams.length > 0)
+      if (this.Node.audioParams)
         this.setParamsConstraints(this.Node.audioParams);
-      // if (this.Node.customParams) //no seteo los custom params para no cambiar el ADSR seteado
-      //   this.setParamsConstraints(this.Node.customParams);
     },
 
     setParamsConstraints(params) {
@@ -474,7 +476,7 @@ export default {
     },
 
     setDryWet(value) {
-      this.Node.setDryWet(parseFloat(value))
+      this.Node.setDryWet(parseFloat(value));
     },
 
     //level
