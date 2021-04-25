@@ -35,37 +35,10 @@
         </div>
       </div>
     </div>
-
-    <!-- <div class="custom-params params-container" v-if="Node.customParams">
-      <div
-        class="custom-param param"
-        v-for="(customParam, cpIndex) in Node.customParams"
-        :key="customParam.name"
-        :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
-      >
-        <div class="param-name">
-          {{ customParam.displayName }}
-        </div>
-
-        <div class="knob-wrapper">
-          <div class="knob-wrapper">
-            <Knob
-              :ref="Node.name + '-' + customParam.name"
-              :unit="customParam.unit"
-              :minVal="customParam.minValue"
-              :maxVal="customParam.maxValue"
-              :initVal="customParam.value"
-              @knobTurned="setCustomParam(cpIndex, $event)"
-            />
-          </div>
-        </div>
-      </div>
-    </div> -->
   </div>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
 import Knob from "../Knob";
 export default {
   data() {
@@ -75,16 +48,8 @@ export default {
   props: ["Node"],
 
   methods: {
-    setCustomParam(cpIndex, value) {
-      this.$emit("setCustomParam", { cpIndex, value });
-    },
-
-    setInnerNodeAudioParam(inapIndex, value, callerIsSetSync) {
-      if (inapIndex === 0 && !callerIsSetSync) {
-        //delayTime
-        this.delayTimeKnobValue = value;
-      }
-      this.$emit("setInnerNodeAudioParam", { inapIndex, value });
+    setInnerNodeAudioParam(inapIndex, value) {
+      this.Node.setInnerNodeAudioParam(inapIndex, value);
     },
 
     getCssNodeName(name) {

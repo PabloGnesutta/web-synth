@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="DuetteBody">
     <div class="oscillator" v-for="(osc, o) in Node.oscillatorValues" :key="o">
       <div class="oscillator-inner">
         <div class="top">
@@ -44,7 +44,6 @@
                   @knobTurned="setCustomParam(o, cpIndex, $event)"
                 />
               </div>
-              <!-- :initVal="osc[customParam.name]" -->
             </div>
           </div>
         </div>

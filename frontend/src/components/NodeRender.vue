@@ -49,32 +49,30 @@
       <!-- /node-header -->
 
       <div class="node-body">
-        <!-- Delay body -->
         <div v-if="Node.nodeType === 'Delay'" class="delay-body-wrapper">
-          <DelayBody
-            :Node="Node"
-            @setCustomParam="setCustomParamFromChild"
-            @setInnerNodeAudioParam="setInnerNodeAudioParamFromChild"
-          />
+          <DelayBody :Node="Node" />
         </div>
-        <!-- EQ3 body -->
         <div v-if="Node.nodeType === 'EQ3'" class="eq3-body-wrapper">
-          <EQ3Body
-            :Node="Node"
-            @setCustomParam="setCustomParamFromChild"
-            @setInnerNodeAudioParam="setInnerNodeAudioParamFromChild"
-          />
+          <EQ3Body :Node="Node" />
         </div>
-        <!-- Looper body -->
         <div v-if="Node.nodeType === 'Looper'" class="looper-body-wrapper">
           <LooperBody :Node="Node" />
         </div>
         <div v-if="Node.nodeType === 'Duette'" class="looper-body-wrapper">
           <DuetteBody :Node="Node" />
         </div>
+        <div v-if="Node.nodeType === 'Femod'" class="looper-body-wrapper">
+          <FemodBody :Node="Node" />
+        </div>
+
         <!-- The rest -->
         <div
-          v-if="Node.nodeType !== 'Delay' && Node.nodeType !== 'EQ3' && Node.nodeType !== 'Duette'"
+          v-if="
+            Node.nodeType !== 'Delay' &&
+            Node.nodeType !== 'EQ3' &&
+            Node.nodeType !== 'Femod' &&
+            Node.nodeType !== 'Duette'
+          "
           class="node-body-inner"
         >
           <div class="audio-params params-container" v-if="Node.audioParams">
@@ -181,54 +179,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Modulation Params -->
-          <div
-            class="modulation-params params-container"
-            v-if="Node.modulationParams"
-          >
-            <div
-              class="modulation-param param"
-              :key="motulationParam.name"
-              v-for="(motulationParam, mpIndex) in Node.modulationParams"
-              :class="[getCssNodeName(Node.name + ' ' + motulationParam.name)]"
-            >
-              <div class="param-name">
-                {{ motulationParam.displayName }}
-              </div>
-
-              <div
-                class="knob-wrapper"
-                @click="knobClicked(Node.name + '-' + motulationParam.name)"
-              >
-                <div
-                  class="knob-wrapper"
-                  v-if="motulationParam.name !== 'type'"
-                >
-                  <Knob
-                    :ref="Node.name + '-' + motulationParam.name"
-                    :unit="motulationParam.unit"
-                    :minVal="motulationParam.minValue"
-                    :maxVal="motulationParam.maxValue"
-                    :initVal="motulationParam.value"
-                    @knobTurned="setModulationParam(mpIndex, $event)"
-                  />
-                </div>
-                <div class="select-wrapper" v-else>
-                  <select @input="setModType(mpIndex, $event)">
-                    <option
-                      :key="type"
-                      v-for="type in motulationParam.types"
-                      :selected="type === motulationParam.value"
-                    >
-                      {{ type }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- /modulation-params -->
         </div>
         <!-- /node-body-inner -->
       </div>
@@ -345,6 +295,7 @@ import DelayBody from "./specifig-nodes/DelayBody";
 import EQ3Body from "./specifig-nodes/EQ3Body.vue";
 import LooperBody from "./specifig-nodes/LooperBody.vue";
 import DuetteBody from "./specifig-nodes/DuetteBody.vue";
+import FemodBody from "./specifig-nodes/FemodBody.vue";
 export default {
   data() {
     return {
@@ -426,15 +377,6 @@ export default {
       this.setCustomParam(cpIndex, value);
     },
 
-    setModulationParam(mpIndex, value) {
-      this.Node.setModulationParam(mpIndex, value);
-    },
-
-    setModType(mpIndex, e) {
-      e.target.blur();
-      this.Node.setModulationParam(mpIndex, e.target.value);
-    },
-
     // CONNECTIONS
 
     startConnect() {
@@ -486,7 +428,7 @@ export default {
 
     setNodeGain(value) {
       // this.Node.setGain(value);
-      this.Node.outputNode.gain.value=value
+      this.Node.outputNode.gain.value = value;
     },
 
     knobClicked(knobName) {},
@@ -528,6 +470,7 @@ export default {
     DelayBody,
     LooperBody,
     DuetteBody,
+    FemodBody,
     AnalyserRender,
   },
 };
@@ -672,7 +615,6 @@ export default {
 }
 
 // Specific Node Styles:
-
 
 .Femod {
   width: 205px;

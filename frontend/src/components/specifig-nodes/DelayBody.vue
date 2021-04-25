@@ -122,7 +122,7 @@ export default {
     },
 
     setCustomParam(cpIndex, value) {
-      this.$emit("setCustomParam", { cpIndex, value });
+      this.Node.setCustomParam(cpIndex, value);
     },
 
     setInnerNodeAudioParam(inapIndex, value, callerIsSetSync) {
@@ -130,7 +130,7 @@ export default {
         //delayTime
         this.delayTimeKnobValue = value;
       }
-      this.$emit("setInnerNodeAudioParam", { inapIndex, value });
+      this.Node.setInnerNodeAudioParam(inapIndex, value);
     },
 
     getCssNodeName(name) {
