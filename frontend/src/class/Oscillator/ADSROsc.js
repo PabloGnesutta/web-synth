@@ -2,20 +2,13 @@ const Node = require("../Node")
 const Oscillator = require("./Oscillator")
 
 const initialGain = 1
+const peak = 1
 
 class ADSROsc extends Oscillator {
-  static ADSRCount = 0
-
   constructor(type) {
     super(initialGain)
-
-    this.name = "ADSR " + ++ADSROsc.ADSRCount
-    this.nodeType = "ADSROsc"
-    this.peak = 1
     this.type = type
     this.detuneValue = 0;
-    this.status = "STOPPED"
-
     this.ADSRGain = Node.context.createGain()
   }
 
@@ -42,12 +35,10 @@ class ADSROsc extends Oscillator {
     const t1 = t0 + this.A
 
     this.node.start(t0)
-    this.status = "STARTED"
 
     this.ADSRGain.gain.setValueAtTime(0, t0)
-    this.ADSRGain.gain.linearRampToValueAtTime(this.peak, t1)
+    this.ADSRGain.gain.linearRampToValueAtTime(peak, t1)
     this.ADSRGain.gain.linearRampToValueAtTime(this.S, t1 + this.D)
-    // this.ADSRGain.gain.setTargetAtTime(this.S, t1, this.D)
   }
 
   stop() {
@@ -55,35 +46,9 @@ class ADSROsc extends Oscillator {
     this.ADSRGain.gain.cancelScheduledValues(t);
     this.ADSRGain.gain.setValueAtTime(this.ADSRGain.gain.value, t);
     this.ADSRGain.gain.linearRampToValueAtTime(0, t + this.R)
-    // this.ADSRGain.gain.setTargetAtTime(0, t, this.R);
 
     this.node.stop(t + this.R)
-    this.status = "STOPPED"
-
-    // const stop = setInterval(() => {
-    //   if (this.ADSRGain.gain.value < 0.001) {
-    //     this.ADSRGain.disconnect()
-    //     this.node.disconnect()
-    //     this.node.stop(0)
-    //     this.status = "STOPPED"
-    //     clearInterval(stop);
-    //   }
-    // }, 10);
   }
-
-  // startWithOctaveTranspose(octave, transpose) {
-  //   let transposeValue;
-  //   if (!transpose) transposeValue = 0
-  //   else {
-  //     transposeValue = this.frequency * transpose
-  //   }
-
-  //   let octaveValue = 1;
-  //   if (octave) octaveValue = Math.pow(2, octave)
-
-  //   const frequency = this.frequency * octaveValue + transposeValue
-  //   this.start(frequency)
-  // }
 }
 
 module.exports = ADSROsc

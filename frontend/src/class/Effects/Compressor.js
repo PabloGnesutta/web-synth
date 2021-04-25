@@ -49,6 +49,17 @@ class Compressor extends Node {
     ]
   }
 
+  setAudioParam(indexOrName, value) {
+    let index = indexOrName
+    if (typeof (indexOrName) !== 'number') index = this.audioParams.findIndex(ap => ap.name === indexOrName)
+
+    let curvedValue = parseFloat(value)
+
+    const param = this.audioParams[index];
+    this.node[param.name].setValueAtTime(curvedValue, 0);
+    this.audioParams[index].value = parseFloat(value);
+  }
+
   initDryWet() {
     this.dryWet = {
       name: "dry/wet",

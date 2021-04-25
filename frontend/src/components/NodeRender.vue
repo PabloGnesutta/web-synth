@@ -20,7 +20,6 @@
           <div class="placeholder" v-else></div>
         </div>
         <div class="top-right" v-if="Node.name !== 'Track Gain'">
-          <!-- <div class="fold-unfold" @click="toggleFold">_</div> -->
           <div class="delete" @click="deleteNode()">X</div>
         </div>
       </div>
@@ -486,7 +485,8 @@ export default {
     //level
 
     setNodeGain(value) {
-      this.Node.setGain(value);
+      // this.Node.setGain(value);
+      this.Node.outputNode.gain.value=value
     },
 
     knobClicked(knobName) {},
@@ -508,12 +508,12 @@ export default {
     },
 
     onMouseEnterOutput(output) {
-      const el = document.querySelector("." + this.getCssNodeName(output.name));
+      var el = document.querySelector("." + this.getCssNodeName(output.name));
       el.classList.add("is-connection-destination");
     },
 
     onMouseLeaveOutput(output) {
-      const el = document.querySelector("." + this.getCssNodeName(output.name));
+      var el = document.querySelector("." + this.getCssNodeName(output.name));
       el.classList.remove("is-connection-destination");
     },
 
@@ -678,7 +678,7 @@ export default {
   width: 205px;
 }
 
-.Justinton {
+.Duette {
   width: 350px;
   // padding: 0 .2em;
 }
@@ -706,7 +706,7 @@ export default {
 }
 
 .Looper {
-  min-width: 140px;
+  width: 140px;
 }
 
 .Compressor {

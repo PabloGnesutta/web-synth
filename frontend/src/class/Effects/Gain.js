@@ -11,10 +11,13 @@ class Gain extends Node {
     this.name = name || "Gain " + ++Gain.gainCount
     this.nodeType = "Gain"
 
-    // this.node = Node.context.createGain()
-    // this.node.connect(this.outputNode)
-    
     this.inputNode.connect(this.outputNode)
+  }
+
+  connectNativeNode(node, name) {
+    this.outputNode.connect(node)
+    this.outputs.push({ node, name: name || "Some Native Node" })
+    return node
   }
 }
 module.exports = Gain

@@ -10,6 +10,7 @@ const A = 0
 const D = 0
 const S = 1
 const R = 0.1
+let oscillatorsPerNote = 3
 
 class Duette extends Node {
   static DuetteCount = 0
@@ -28,26 +29,34 @@ class Duette extends Node {
 
     this.scaleNodes = []
 
-    this.inputNode.connect(this.outputNode)
-
-    this.oscillatorArray = [
-      { A, D, S, R, gain: 1, type: 'triangle' },
-      { A, D, S, R, gain: 1, type: 'sawtooth' }
+    this.oscillatorValues = [
+      { A: 0.1, D: 0.5, S: 0.8, R: 0.3, detune: 0, gain: 0.5, type: 'triangle', muted: false },
+      { A: 1.9, D, S, R, detune: 10, gain: 0.2, type: 'sawtooth', muted: false },
+      { A: 0, D: 0.1, S: 0, R: 0.1, detune: -10, gain: 0.7, type: 'sine', muted: false },
     ]
 
     this.initCustomParams()
     this.initOscillators()
   }
 
+  destroy() {
+    super.destroy()
+    this.scaleNodes.forEach(sn => {
+      for (let i = 0; i < oscillatorsPerNote; i++) {
+        sn[i].ADSRGain.disconnect()
+        sn[i].ADSRGain = null
+        sn[i].destroy()
+        sn[i] = null;
+      }
+    })
+    this.scaleNodes = []
+  }
+
   initOscillators() {
     for (let i = 0; i < noteKeys.length; i++) {
       let oscillators = []
-      this.oscillatorArray.forEach(o => {
+      this.oscillatorValues.forEach(o => {
         const osc = new ADSROsc(o.type);
-        osc.A = A
-        osc.D = D
-        osc.S = S
-        osc.R = R
         osc.connectNativeNode(this.outputNode);
         oscillators.push(osc)
       })
@@ -60,13 +69,13 @@ class Duette extends Node {
     if (noteIndex < 0) noteIndex = 0
     if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
 
-    for (let o = 0; o < this.oscillatorArray.length; o++) {
+    for (let o = 0; o < oscillatorsPerNote; o++) {
       this.scaleNodes[i][o].startWithFrequency(notes[noteIndex][noteFreqIndex]); //.waveLength probar
     }
   }
 
   stopNote(i) {
-    for (let o = 0; o < this.oscillatorArray.length; o++) {
+    for (let o = 0; o < oscillatorsPerNote; o++) {
       this.scaleNodes[i][o].stop();
     }
   }
@@ -82,12 +91,22 @@ class Duette extends Node {
     this.scaleNodes.forEach(sn => {
       sn[index].type = value
       sn[index].node.type = value
+
     })
+    this.oscillatorValues[index].type = value
+  }
+
+  //en vez de mutear todos los osciladores debería haber una ganancia para cada grupo de oscilladores 
+  //(oscillatorValues.length) y mutear esa ganancia en su lugar
+  toggleMute(index) {
+    this.scaleNodes.forEach(sn => {
+      sn[index].toggleMute()
+    })
+    this.oscillatorValues[index].muted = !this.oscillatorValues[index].muted
   }
 
   setCustomParam(oscIndex, cpIndex, value) {
     const customParam = this.customParams[cpIndex];
-    customParam.value = value
     customParam.set(oscIndex, parseFloat(value))
   }
 
@@ -96,6 +115,7 @@ class Duette extends Node {
       this.scaleNodes.forEach(sn => {
         sn[index][prop] = value
       })
+      this.oscillatorValues[index][prop] = value
     }
 
     const setDetune = (index, value) => {
@@ -103,56 +123,55 @@ class Duette extends Node {
         sn[index].detuneValue = value
         sn[index].node.detune.setValueAtTime(value, 0)
       })
+      this.oscillatorValues[index].detune = value
     }
 
     const setGain = (index, value) => {
       this.scaleNodes.forEach(sn => {
         sn[index].outputNode.gain.value = value
+        sn[index].gain = value
       })
+      this.oscillatorValues[index].gain = value
     }
 
     this.customParams = [
       {
-        name: "attack",
+        name: "A",
         displayName: "attack",
         unit: 's',
         minValue: 0,
         maxValue: 5,
         value: A,
-        defaultValue: A,
         step: 0.01,
         set(i, v) { setScaleNodeProperty(i, "A", v) }
       },
       {
-        name: "decay",
+        name: "D",
         displayName: "decay",
         unit: 's',
         minValue: 0.01,
         maxValue: 3,
         value: D,
-        defaultValue: D,
         step: 0.01,
         set(i, v) { setScaleNodeProperty(i, "D", v) }
       },
       {
-        name: "sustain",
+        name: "S",
         displayName: "sustain",
         unit: '',
         minValue: 0,
         maxValue: 1,
         value: S,
-        defaultValue: S,
         step: 0.01,
         set(i, v) { setScaleNodeProperty(i, "S", v) }
       },
       {
-        name: "release",
+        name: "R",
         displayName: "release",
         unit: 's',
         minValue: 0.001,
         maxValue: 5,
         value: R,
-        defaultValue: R,
         step: 0.001,
         set(i, v) { setScaleNodeProperty(i, "R", v) }
       },
@@ -163,7 +182,6 @@ class Duette extends Node {
         minValue: -100,
         maxValue: 100,
         value: 0,
-        defaultValue: 0,
         step: 0.1,
         set(i, v) { setDetune(i, v) }
       },
@@ -174,22 +192,12 @@ class Duette extends Node {
         minValue: 0,
         maxValue: 1,
         value: 0.7,
-        defaultValue: 0.7,
         set(i, v) { setGain(i, v) }
       },
     ]
   }
 
-  destroy() {
-    super.destroy(true)
-    this.scaleNodes.forEach(sn => {
-      sn.ADSRGain.disconnect()
-      sn.ADSRGain = null
-      sn.destroy()
-      sn = null;
-    })
-    this.scaleNodes = []
-  }
+
 }
 
 module.exports = Duette

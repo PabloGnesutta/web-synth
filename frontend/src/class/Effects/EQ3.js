@@ -92,6 +92,15 @@ class EQ3 extends Node {
     ]
   }
 
+  setInnerNodeAudioParam(indexOrName, value) {
+    let index = indexOrName
+    if (typeof (indexOrName) !== 'number') index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
+
+    const innerNodeAudioParam = this.innerNodeAudioParams[index];
+    innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
+    this.innerNodeAudioParams[index].value = parseFloat(value);
+  }
+
   initDryWet() {
     this.dryWet = {
       name: "dry/wet",

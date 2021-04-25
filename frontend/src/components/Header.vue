@@ -5,9 +5,6 @@
     </div>
     <div class="buttons">
       <!-- Instruments -->
-      <!-- <div class="btn btn-instrument" @click="createInstrument('Justinton')">
-        Justinton
-      </div> -->
       <div class="menu instruments">
         <div
           class="btn label"
@@ -18,7 +15,7 @@
         <div class="dropdown" :class="{ hidden: !showInstrumentsMenu }">
           <div
             class="btn btn-instrument dropdown-item"
-            @click="createInstrument('Justinton')"
+            @click="createInstrument('Duette')"
           >
             Duette
           </div>

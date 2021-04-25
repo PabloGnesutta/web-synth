@@ -9,16 +9,16 @@ class Node {
     this.outputNode = Node.context.createGain()
     this.outputs = []
 
-    this.minGain = 0
-    this.maxGain = 3
-    this.gainStep = 0.01
-
     this.initGain(initialGain)
   }
 
   initGain(initialGain) {
     this.gain = initialGain
     this.outputNode.gain.value = initialGain
+
+    this.minGain = 0
+    this.maxGain = 3
+    this.gainStep = 0.01
   }
 
   destroy() {
@@ -41,49 +41,13 @@ class Node {
     return Node
   }
 
-  connectNativeNode(node, name) {
-    this.outputNode.connect(node)
-    this.outputs.push({ node, name: name || "Some Native Node" })
-    return node
-  }
-
   disconnect() {
-    this.inputNode.disconnect()
-
-    if (this.node) this.node.disconnect()
-
     this.outputs.forEach(o => {
       this.outputNode.disconnect(o.inputNode)
     })
     this.outputNode.disconnect()
     this.outputs = []
     return this
-  }
-
-  setAudioParam(indexOrName, value) {
-    let index = indexOrName
-    if (typeof (indexOrName) !== 'number') index = this.audioParams.findIndex(ap => ap.name === indexOrName)
-
-    let curvedValue = parseFloat(value)
-
-    const param = this.audioParams[index];
-    this.node[param.name].setValueAtTime(curvedValue, 0);
-    this.audioParams[index].value = parseFloat(value);
-  }
-
-  setInnerNodeAudioParam(indexOrName, value) {
-    let index = indexOrName
-    if (typeof (indexOrName) !== 'number') index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
-
-    const innerNodeAudioParam = this.innerNodeAudioParams[index];
-    innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
-    this.innerNodeAudioParams[index].value = parseFloat(value);
-  }
-
-  setCustomParam(index, value) {
-    const customParam = this.customParams[index];
-    customParam.value = value
-    customParam.set(parseFloat(value))
   }
 
   setGain(value) {
@@ -101,11 +65,6 @@ class Node {
   toggleMute() {
     this.muted = !this.muted
     this.setMute(this.muted)
-  }
-
-  setType(type) {
-    this.node.type = type
-    this.type = type
   }
 }
 

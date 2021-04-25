@@ -18,10 +18,9 @@ class BiquadFilter extends Node {
 
     this.node = Node.context.createBiquadFilter()
     this.node.type = this.type
-    // this.node.connect(this.outputNode)
 
     this.dryGain = Node.context.createGain()
-    this.wetGain= Node.context.createGain()
+    this.wetGain = Node.context.createGain()
 
     this.inputNode.connect(this.node)
     this.inputNode.connect(this.dryGain)
@@ -52,15 +51,22 @@ class BiquadFilter extends Node {
     ]
   }
 
+  setAudioParam(index, value) {
+    let curvedValue = parseFloat(value)
+
+    const param = this.audioParams[index];
+    this.node[param.name].setValueAtTime(curvedValue, 0);
+    this.audioParams[index].value = parseFloat(value);
+  }
+
   refreshParams() {
     this.setValuesAccordingToType()
     this.node.frequency.setValueAtTime(this.audioParams[0].value, 0)
-    // this.node.Q.setValueAtTime(this.audioParams[1].value, 0) //por qué comentado anda?
-    // this.node.gain.setValueAtTime(this.audioParams[2].value, 0)
   }
 
   setType(type) {
-    super.setType(type)
+    this.type = type
+    this.node.type = type
     this.refreshParams()
   }
 
@@ -117,7 +123,7 @@ class BiquadFilter extends Node {
 
   initDryWet() {
     this.dryWet = {
-      name: "dry/wet",
+      // name: "dry/wet",
       displayName: "dry/wet",
       unit: '', //%
       minValue: 0,

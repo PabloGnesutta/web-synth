@@ -123,7 +123,7 @@ const Femod = require("../class/Instruments/Femod");
 const Carrier = require("../class/Instruments/Carrier");
 const Drumkit = require("../class/Instruments/Drumkit");
 const WhiteNoise = require("../class/Instruments/WhiteNoise");
-const Justinton = require("../class/Instruments/Justinton");
+const Duette = require("../class/Instruments/Duette");
 
 const Modulator = require("../class/Oscillator/Modulator");
 
@@ -132,7 +132,7 @@ const instrumentsDict = new Map([
   ["Femod", Femod],
   ["Carrier", Carrier],
   ["Drumkit", Drumkit],
-  ["Justinton", Justinton],
+  ["Duette", Duette],
   ["WhiteNoise", WhiteNoise],
 ]);
 
@@ -226,19 +226,18 @@ export default {
     },
 
     init() {
-      this.inited = true;
+      this.addConfirmLeaveHandler();
       document.querySelector(".Home").removeEventListener("click", this.init);
-      this.addLeaveListener();
       this.setContext(new (window.AudioContext || window.webkitAudioContext)());
       Node.context = this.context;
-      // this.scheduler();
 
       this.createMainGain();
+      this.createTrack(new Duette());
 
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
 
-      this.createTrack(new Justinton());
+      this.inited = true;
     },
 
     startRec() {
@@ -373,7 +372,6 @@ export default {
     createTrack(instrument) {
       //track gain
       const trackGain = new Gain("Track Gain");
-      trackGain.setGain(1);
       trackGain.connectNativeNode(this.mixerGain, "Mixer Gain");
 
       const trackGainAnalyser = this.context.createAnalyser();
@@ -783,7 +781,7 @@ export default {
       return name.replace(new RegExp(" ", "g"), "-");
     },
 
-    addLeaveListener() {
+    addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {
         e = e || window.event;
         if (e) e.returnValue = "Sure?";

@@ -163,6 +163,12 @@ class Femod extends Node {
     ]
   }
 
+  setCustomParam(index, value) {
+    const customParam = this.customParams[index];
+    customParam.value = value
+    customParam.set(parseFloat(value))
+  }
+
   initModulationParams() {
     const setModLevel = (value) => {
       this.scaleNodes.forEach(sn => {

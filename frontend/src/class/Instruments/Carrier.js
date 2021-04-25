@@ -1,3 +1,4 @@
+const Node = require("../Node")
 const Oscillator = require("../Oscillator/Oscillator")
 const notes = require("../../data/notes")
 
@@ -16,6 +17,7 @@ class Carrier extends Oscillator {
     this.name = "Osc " + ++Carrier.carrierCount
     this.nodeType = "Carrier"
     this.nodeRol = "Instrument"
+    this.status = "STOPPED"
 
     this.frequency = initFreq
 
@@ -27,9 +29,16 @@ class Carrier extends Oscillator {
 
   initAudioParams() {
     this.audioParams = [
-      { name: 'frequency', displayName: 'freq', unit: 'hz', minValue: 20, maxValue: 8000, value: initFreq, defaultValue: initFreq, step: 1 },
       { name: 'detune', displayName: 'fine', unit: 'hz', minValue: -detuneMax, maxValue: detuneMax, value: 0, defaultValue: 0, step: 0.1 },
     ]
+  }
+
+  setAudioParam(index, value) {
+    let curvedValue = parseFloat(value)
+
+    const param = this.audioParams[index];
+    this.node[param.name].setValueAtTime(curvedValue, 0);
+    this.audioParams[index].value = parseFloat(value);
   }
 
   playNote(i) {
@@ -48,6 +57,23 @@ class Carrier extends Oscillator {
     if (key === "c") this.transpose = this.transpose <= -12 ? -12 : this.transpose - 1;
     if (key === "v") this.transpose = this.transpose < 12 ? this.transpose + 1 : this.transpose;
   }
+
+  start() {
+    this.node = Node.context.createOscillator()
+    this.node.type = this.type
+    this.node.connect(this.outputNode)
+
+    this.node.frequency.setValueAtTime(this.frequency, 0)
+    this.node.start(0)
+    this.status = "STARTED"
+  }
+
+  stop() {
+    this.node.stop(0)
+    this.node.disconnect()
+    this.status = "STOPPED"
+  }
+
 }
 
 module.exports = Carrier

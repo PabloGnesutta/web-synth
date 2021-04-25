@@ -8,10 +8,16 @@
         <div
           class="control-btn rec-btn"
           @click="scheduleLoopStartRecording"
-          v-if="!Node.recording"
+          v-if="!Node.recording && Node.playing"
         >
-          <span v-if="Node.playing">OVERDUB</span>
-          <span v-else> REC </span>
+          OVERDUB
+        </div>
+        <div
+          class="control-btn rec-btn"
+          @click="scheduleLoopStartRecording"
+          v-if="!Node.recording && !Node.playing && !Node.loopAvailable"
+        >
+          REC
         </div>
         <div
           class="control-btn stop-rec"
@@ -115,7 +121,7 @@ export default {
 
     downloadLoop() {
       const a = document.createElement("a");
-      let fileName = "New Loop - " + this.tempo + 'bpm'
+      let fileName = "New Loop - " + this.tempo + "bpm";
       fileName = prompt("File name: ", fileName);
       if (!fileName) return;
       a.setAttribute("href", URL.createObjectURL(this.Node.looperBlob));
@@ -178,7 +184,7 @@ export default {
   flex-direction: column;
   justify-content: flex-start;
   gap: 0.5em;
-  min-height: 108px;
+  min-height: 70px;
 }
 .control-btn {
   padding: 0.4em;
@@ -199,7 +205,7 @@ export default {
   position: relative;
   .label {
     padding: 0.3em;
-    width: 200px;
+    // width: 200px;
     overflow-x: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

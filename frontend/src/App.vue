@@ -41,13 +41,12 @@ body {
 }
 
 select {
-  background: gray;
+  background: #272727;
   color: #f3f3f3;
 }
 
 select:focus {
   outline: none;
-  border: none;
 }
 
 .track-inner::-webkit-scrollbar {

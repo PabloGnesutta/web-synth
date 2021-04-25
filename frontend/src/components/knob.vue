@@ -108,11 +108,10 @@ export default {
         translation > 0 ? this.knobValue + amount : this.knobValue - amount;
 
       if (knobValue < this.minKnobVal) knobValue = this.minKnobVal;
-      if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
+      else if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
 
       this.setKnobValueAndPosition(knobValue);
       this.emitAndSetEmitValueWithKnobValue(knobValue);
-      // this.emitAndSetEmitValueWithRawValue(knobValue);
     },
 
     startMapping() {
@@ -132,34 +131,6 @@ export default {
       if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
 
       this.setKnobValueAndPosition(knobValue);
-    },
-
-    onMouseDown(e) {
-      this.startY = e.clientY;
-      this.lastYPos = e.clientY;
-      window.addEventListener("mousemove", this.moveKnob);
-      window.addEventListener("mouseup", this.onMouseUp);
-      window.addEventListener("keydown", this.onKeydown);
-      window.addEventListener("keyup", this.onKeyup);
-    },
-
-    onMouseUp() {
-      window.removeEventListener("mousemove", this.moveKnob);
-      window.removeEventListener("mouseup", this.onMouseUp);
-      window.removeEventListener("keydown", this.onKeydown);
-      window.removeEventListener("keyup", this.onKeyup);
-      this.ctrlPressed = false;
-      this.shiftPressed = false;
-    },
-
-    onKeydown(e) {
-      if (e.key === "Control") this.ctrlPressed = true;
-      if (e.key === "Shift") this.shiftPressed = true;
-    },
-
-    onKeyup(e) {
-      if (e.key === "Control") this.ctrlPressed = false;
-      if (e.key === "Shift") this.shiftPressed = false;
     },
 
     setParamContraints(minVal, maxVal, initValue) {
@@ -201,6 +172,34 @@ export default {
 
     log10(x) {
       return Math.log(Math.abs(x)) / Math.LN10;
+    },
+
+    onMouseDown(e) {
+      this.startY = e.clientY;
+      this.lastYPos = e.clientY;
+      window.addEventListener("mousemove", this.moveKnob);
+      window.addEventListener("mouseup", this.onMouseUp);
+      window.addEventListener("keydown", this.onKeydown);
+      window.addEventListener("keyup", this.onKeyup);
+    },
+
+    onMouseUp() {
+      window.removeEventListener("mousemove", this.moveKnob);
+      window.removeEventListener("mouseup", this.onMouseUp);
+      window.removeEventListener("keydown", this.onKeydown);
+      window.removeEventListener("keyup", this.onKeyup);
+      this.ctrlPressed = false;
+      this.shiftPressed = false;
+    },
+
+    onKeydown(e) {
+      if (e.key === "Control") this.ctrlPressed = true;
+      if (e.key === "Shift") this.shiftPressed = true;
+    },
+
+    onKeyup(e) {
+      if (e.key === "Control") this.ctrlPressed = false;
+      if (e.key === "Shift") this.shiftPressed = false;
     },
   },
 };
