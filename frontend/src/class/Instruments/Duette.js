@@ -177,8 +177,8 @@ class Duette extends Node {
       },
       {
         name: "detune",
-        displayName: "fine",
-        unit: '%',
+        displayName: "detune",
+        unit: '',
         minValue: -100,
         maxValue: 100,
         value: 0,
@@ -187,7 +187,7 @@ class Duette extends Node {
       },
       {
         name: "gain",
-        displayName: "gain",
+        displayName: "level",
         unit: '',
         minValue: 0,
         maxValue: 1,

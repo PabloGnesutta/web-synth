@@ -88,6 +88,9 @@ export default {
   .oscillator-inner {
     width: 100%;
     background: #272727;
+    .node-name {
+      margin: 0;
+    }
     .top {
       display: flex;
       align-items: center;
@@ -95,10 +98,13 @@ export default {
     }
     .types {
       text-align: left;
+      margin: 0;
     }
     .mute-unmute {
-      background: gray;
-      padding: 0 .2em;
+      align-self: flex-start;
+      font-size: 0.9rem;
+      background: #444;
+      padding: 0 0.2em;
       &.muted {
         background: crimson;
       }
@@ -107,9 +113,17 @@ export default {
   margin-bottom: 0.3em;
 }
 
+.oscillator:last-child {
+  margin-bottom: 0;
+}
+
 .params-container {
   .param {
     min-width: 50px;
+  }
+  .param-name {
+    padding: 0 0 0.3em 0;
+    font-size: 0.8rem;
   }
 }
 </style>
