@@ -5,12 +5,12 @@ const notes = require("../../data/notes")
 
 const noteFreqIndex = 1
 
-const initialGain = 0.5
+const initialGain = 0.7
 const A = 0
 const D = 0
 const S = 1
 const R = 0.1
-let oscillatorsPerNote = 3
+
 
 class Duette extends Node {
   static DuetteCount = 0
@@ -29,13 +29,14 @@ class Duette extends Node {
 
     this.scaleNodes = []
 
-    this.oscillatorValues = [
-      { A: 0.1, D: 0.5, S: 0.8, R: 0.3, detune: 0, gain: 0.5, type: 'triangle', muted: false },
-      { A: 1.9, D, S, R, detune: 10, gain: 0.2, type: 'sawtooth', muted: false },
-      { A: 0, D: 0.1, S: 0, R: 0.1, detune: -10, gain: 0.7, type: 'sine', muted: false },
+    this.oscillatorsState = [
+      { A: 0.1, D: 0.5, S: 0.8, R: 0.3, detune: 0, gain: 0.6, type: 'triangle', muted: false },
+      { A: 1.9, D, S, R, detune: 10, gain: 0.3, type: 'sawtooth', muted: false },
+      { A: 0, D: 0.1, S: 0, R: 0.1, detune: -10, gain: 0.8, type: 'sine', muted: false },
     ]
+    this.oscillatorsPerNote = this.oscillatorsState.length
 
-    this.initCustomParams()
+    this.initDuetteParams()
     this.initOscillators()
   }
 
@@ -55,7 +56,7 @@ class Duette extends Node {
   initOscillators() {
     for (let i = 0; i < noteKeys.length; i++) {
       let oscillators = []
-      this.oscillatorValues.forEach(o => {
+      this.oscillatorsState.forEach(o => {
         const osc = new ADSROsc(o.type);
         osc.connectNativeNode(this.outputNode);
         oscillators.push(osc)
@@ -69,13 +70,13 @@ class Duette extends Node {
     if (noteIndex < 0) noteIndex = 0
     if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
 
-    for (let o = 0; o < oscillatorsPerNote; o++) {
+    for (let o = 0; o < this.oscillatorsPerNote; o++) {
       this.scaleNodes[i][o].startWithFrequency(notes[noteIndex][noteFreqIndex]); //.waveLength probar
     }
   }
 
   stopNote(i) {
-    for (let o = 0; o < oscillatorsPerNote; o++) {
+    for (let o = 0; o < this.oscillatorsPerNote; o++) {
       this.scaleNodes[i][o].stop();
     }
   }
@@ -87,35 +88,35 @@ class Duette extends Node {
     if (key === "v") this.transpose = this.transpose < 12 ? this.transpose + 1 : this.transpose;
   }
 
+  //en vez de mutear todos los osciladores debería haber una ganancia para cada grupo de oscilladores 
+  //(oscillatorsState.length) y mutear esa ganancia en su lugar
+  toggleMute(index) {
+    this.scaleNodes.forEach(sn => {
+      sn[index].toggleMute()
+    })
+    this.oscillatorsState[index].muted = !this.oscillatorsState[index].muted
+  }
+
   setType(index, value) {
     this.scaleNodes.forEach(sn => {
       sn[index].type = value
       sn[index].node.type = value
 
     })
-    this.oscillatorValues[index].type = value
+    this.oscillatorsState[index].type = value
   }
 
-  //en vez de mutear todos los osciladores debería haber una ganancia para cada grupo de oscilladores 
-  //(oscillatorValues.length) y mutear esa ganancia en su lugar
-  toggleMute(index) {
-    this.scaleNodes.forEach(sn => {
-      sn[index].toggleMute()
-    })
-    this.oscillatorValues[index].muted = !this.oscillatorValues[index].muted
-  }
-
-  setCustomParam(oscIndex, cpIndex, value) {
-    const customParam = this.customParams[cpIndex];
+  setDuetteParam(oscIndex, paramIndex, value) {
+    const customParam = this.duetteParams[paramIndex];
     customParam.set(oscIndex, parseFloat(value))
   }
 
-  initCustomParams() {
+  initDuetteParams() {
     const setScaleNodeProperty = (index, prop, value) => {
       this.scaleNodes.forEach(sn => {
         sn[index][prop] = value
       })
-      this.oscillatorValues[index][prop] = value
+      this.oscillatorsState[index][prop] = value
     }
 
     const setDetune = (index, value) => {
@@ -123,7 +124,7 @@ class Duette extends Node {
         sn[index].detuneValue = value
         sn[index].node.detune.setValueAtTime(value, 0)
       })
-      this.oscillatorValues[index].detune = value
+      this.oscillatorsState[index].detune = value
     }
 
     const setGain = (index, value) => {
@@ -131,10 +132,10 @@ class Duette extends Node {
         sn[index].outputNode.gain.value = value
         sn[index].gain = value
       })
-      this.oscillatorValues[index].gain = value
+      this.oscillatorsState[index].gain = value
     }
 
-    this.customParams = [
+    this.duetteParams = [
       {
         name: "A",
         displayName: "attack",

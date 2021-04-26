@@ -750,6 +750,22 @@ export default {
             instrument.setModulationParam(i, ins_mp.value);
           });
 
+        if (t.instrument.duetteParams) {
+          for (let o = 0; o < t.instrument.oscillatorsPerNote; o++) {
+            const state = t.instrument.oscillatorsState[o];
+            instrument.setDuetteParam(o, 0, state.A);
+            instrument.setDuetteParam(o, 1, state.D);
+            instrument.setDuetteParam(o, 2, state.S);
+            instrument.setDuetteParam(o, 3, state.R);
+            instrument.setDuetteParam(o, 4, state.detune);
+            instrument.setDuetteParam(o, 5, state.gain);
+            instrument.setType(o, state.type);
+            // t.instrument.setDuetteParam(o, p)
+          }
+        }
+
+        // return;
+
         //setting effects
 
         t.effects.forEach((ef) => {

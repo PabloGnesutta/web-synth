@@ -1,6 +1,6 @@
 <template>
   <div class="DuetteBody">
-    <div class="oscillator" v-for="(osc, o) in Node.oscillatorValues" :key="o">
+    <div class="oscillator" v-for="(osc, o) in Node.oscillatorsState" :key="o">
       <div class="oscillator-inner">
         <div class="top">
           <div class="types">
@@ -25,7 +25,7 @@
         <div class="custom-params params-container">
           <div
             class="custom-param param"
-            v-for="(customParam, cpIndex) in Node.customParams"
+            v-for="(customParam, paramIndex) in Node.duetteParams"
             :key="customParam.name"
             :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
           >
@@ -41,7 +41,7 @@
                   :minVal="customParam.minValue"
                   :maxVal="customParam.maxValue"
                   :initVal="osc[customParam.name]"
-                  @knobTurned="setCustomParam(o, cpIndex, $event)"
+                  @knobTurned="setDuetteParam(o, paramIndex, $event)"
                 />
               </div>
             </div>
@@ -66,8 +66,8 @@ export default {
       this.Node.setType(index, event.target.value);
     },
 
-    setCustomParam(oscIndex, cpIndex, value) {
-      this.Node.setCustomParam(oscIndex, cpIndex, value);
+    setDuetteParam(oscIndex, paramIndex, value) {
+      this.Node.setDuetteParam(oscIndex, paramIndex, value);
     },
 
     getCssNodeName(name) {
