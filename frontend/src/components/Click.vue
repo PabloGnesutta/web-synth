@@ -57,7 +57,7 @@ export default {
       beatSubdivition: 4,
       tempoKnobValue: 120.0,
 
-      clickActive: false,
+      clickActive: true,
       muted: false,
 
       clickLevel: 1,

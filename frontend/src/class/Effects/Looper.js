@@ -12,9 +12,9 @@ class Looper extends Node {
     this.nodeType = "Looper"
     this.nodeRol = "Effect"
 
-    this.status = "CLEARED"
-    this.recording = false
     this.playing = false
+    this.recording = false
+    this.status = "CLEARED"
 
     this.loopAvailable = false
     this.looperBuffer = null
@@ -22,37 +22,92 @@ class Looper extends Node {
     this.loopDuration = 0;
 
     this.nextBeatTime = 0;
+    this.feedback = Node.context.createGain()
     this.source = Node.context.createBufferSource();
 
+    this.feedback.connect(this.inputNode)
     this.inputNode.connect(this.outputNode)
 
     this.initInnerNodeAudioParams()
   }
 
-  playLoop(startAt) {
+  startLoop(startAt) {
     this.status = "PLAYING"
-    this.source = Node.context.createBufferSource();
-    // this.initInnerNodeAudioParams()
-    this.source.buffer = this.looperBuffer;
-    this.source.playbackRate.value = this.innerNodeAudioParams[0].value
-
-    //sobregraba
-    this.source.connect(this.inputNode);
-    this.source.start(startAt || 0);
     this.playing = true;
+    this.continueLoop(startAt)
+  }
+
+  // this.source.start(when, offset, duration)
+  continueLoop(nextBeatTime) {
+    this.source = Node.context.createBufferSource();
+    this.source.buffer = this.looperBuffer;
+
+    this.source.connect(this.inputNode);
+    this.source.start(nextBeatTime);
 
     this.source.onended = () => {
-      if (this.status !== 'STOPPED' && this.status !== 'CLEARED')
-        this.playLoop(Node.nextBeatTime)
+      this.continueLoop(Node.nextBeatTime)
     };
   }
 
+  startMediaRecorder() {
+    this.inputNode.connect(this.mediaDestination);
+    this.mediaRecorder.start();
+  }
+
+  async finishRecordingAndPlay(arrayBuffer) {
+    await this.setAudioBuffer(arrayBuffer)
+
+    this.inputNode.disconnect(this.mediaDestination)
+
+    if (this.playing) this.stopLoop()
+
+    this.startLoop(this.nextBeatTime)
+  }
+
+  startRecording(nextBeatTime) {
+    this.mediaDestination = Node.context.createMediaStreamDestination();
+    this.nextBeatTime = nextBeatTime
+    this.chunks = [];
+
+    this.mediaRecorder = new MediaRecorder(
+      this.mediaDestination.stream
+    );
+
+    this.mediaRecorder.ondataavailable = (evt) => {
+      this.chunks.push(evt.data);
+    };
+
+    this.mediaRecorder.onstop = () => {
+      this.processBlob()
+    };
+
+    this.scheduleMediaRecorderStart()
+    this.status = "STARTING"
+  }
+
+  scheduleMediaRecorderStart() {
+    const req = window.requestAnimationFrame(this.scheduleMediaRecorderStart.bind(this));
+    if (Node.context.currentTime < this.nextBeatTime) return
+    this.startMediaRecorder()
+
+    window.cancelAnimationFrame(req)
+    this.recording = true
+    this.status = "RECORDING"
+    this.nextBeatTime = 0
+  }
+
+  stopRecording(nextBeatTime) {
+    this.nextBeatTime = nextBeatTime;
+    this.mediaRecorder.stop();
+    this.recording = false
+    this.status = "STOPPED"
+  }
+
   stopLoop() {
-    if (this.source) {
-      this.source.disconnect()
-      this.source.stop()
-      this.source.onended = null
-    }
+    this.source.disconnect()
+    this.source.stop()
+    this.source.onended = null
     this.status = "STOPPED"
     this.playing = false
   }
@@ -65,86 +120,42 @@ class Looper extends Node {
     this.status = "CLEARED"
   }
 
-  startRecording(nextBeatTime) {
-    // this.stopLoop()
-    this.status = "STARTING"
-    this.nextBeatTime = nextBeatTime
-    this.chunks = [];
+  processBlob() {
+    this.looperBlob = new Blob(this.chunks, {
+      type: "audio/ogg; codecs=opus",
+    });
 
-    this.mediaDestination = Node.context.createMediaStreamDestination();
-    this.inputNode.connect(this.mediaDestination);
-
-    this.mediaRecorder = new MediaRecorder(
-      this.mediaDestination.stream
-    );
-
-    this.mediaRecorder.ondataavailable = (evt) => {
-      this.chunks.push(evt.data);
+    const fileReader = new FileReader();
+    fileReader.onloadend = () => {
+      this.finishRecordingAndPlay(fileReader.result)
     };
-
-    this.mediaRecorder.onstop = () => {
-      this.looperBlob = new Blob(this.chunks, {
-        type: "audio/ogg; codecs=opus",
-      });
-      const fileReader = new FileReader();
-
-      fileReader.onloadend = () => {
-        const arrayBuffer = fileReader.result;
-
-        Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-          this.setAudioBuffer(audioBuffer)
-          this.inputNode.disconnect(this.mediaDestination)
-          if (this.playing) this.stopLoop()
-          this.playLoop(this.nextBeatTime)
-          // this.playLoop(0)
-        });
-      };
-
-      fileReader.readAsArrayBuffer(this.looperBlob);
-    };
-
-    this.startMediaRecorder()
-
+    fileReader.readAsArrayBuffer(this.looperBlob);
   }
 
-  startMediaRecorder() {
-    const req = window.requestAnimationFrame(this.startMediaRecorder.bind(this));
-    if (Node.context.currentTime >= this.nextBeatTime) {
-      this.mediaRecorder.start();
-      window.cancelAnimationFrame(req)
-      this.recording = true
-      this.status = "RECORDING"
-      console.log('startRecording')
-      this.nextBeatTime = 0
-    }
-  }
-
-  setAudioBuffer(audioBuffer) {
+  async setAudioBuffer(arrayBuffer) {
+    let audioBuffer = await Node.context.decodeAudioData(arrayBuffer)
     this.looperBuffer = audioBuffer
     this.loopDuration = audioBuffer.duration
     this.loopAvailable = true
     this.status = "STOPPED"
   }
 
-  stopRecording(nextBeatTime) {
-    this.nextBeatTime = nextBeatTime;
-    // const req = window.requestAnimationFrame(this.stopRecording.bind(this));
-    // if (Node.context.currentTime >= this.nextBeatTime) {
-    // window.cancelAnimationFrame(req)
-    this.mediaRecorder.stop();
-    this.recording = false
-    this.status = "STOPPED"
-    console.log('stopREcording')
-    // this.nextBeatTime = 0
-    // }
-  }
-
   initInnerNodeAudioParams() {
     this.innerNodeAudioParams = [
+      // {
+      //   name: 'playbackRate', displayName: 'speed', unit: 'x', //%
+      //   minValue: 0, maxValue: 4, value: 1, defaultValue: 1, step: 0.01,
+      //   node: this.source, nodeAudioParam: 'playbackRate'
+      // },
+      // {
+      //   name: 'detune', displayName: 'detune', unit: '', //%
+      //   minValue: -500, maxValue: 500, value: 0, defaultValue: 0, step: 0.01,
+      //   node: this.source, nodeAudioParam: 'detune'
+      // },
       {
-        name: 'playbackRate', displayName: 'speed', unit: '', //%
-        minValue: 0, maxValue: 4, value: 1, defaultValue: 1, step: 0.01,
-        node: this.source, nodeAudioParam: 'playbackRate'
+        name: 'feedback', displayName: 'feedback', unit: '', //%
+        minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.01,
+        node: this.feedback, nodeAudioParam: 'gain'
       },
     ]
   }

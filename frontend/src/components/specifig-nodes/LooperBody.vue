@@ -35,7 +35,7 @@
         </div>
         <div
           class="control-btn play-loop"
-          @click="playLoop"
+          @click="startLoop"
           v-if="Node.loopAvailable && !Node.playing && !Node.recording"
         >
           PLAY
@@ -109,8 +109,8 @@ export default {
       this.Node.stopRecording(nextBeatTime);
     },
 
-    playLoop() {
-      this.Node.playLoop(this.nextBeatTime);
+    startLoop() {
+      this.Node.startLoop(this.nextBeatTime);
     },
     stopLoop() {
       this.Node.stopLoop();
@@ -159,7 +159,7 @@ export default {
           this.stopLoop();
           break;
         case "STOPPED":
-          this.playLoop();
+          this.startLoop();
           break;
       }
     },

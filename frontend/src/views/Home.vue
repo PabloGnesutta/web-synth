@@ -232,7 +232,8 @@ export default {
       Node.context = this.context;
 
       this.createMainGain();
-      this.createTrack(new Duette());
+      this.createTrack(new Drumkit());
+      this.insertEffect(new Looper());
 
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
