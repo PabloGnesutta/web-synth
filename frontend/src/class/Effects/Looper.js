@@ -25,8 +25,9 @@ class Looper extends Node {
     this.feedback = Node.context.createGain()
     this.source = Node.context.createBufferSource();
 
-    this.feedback.connect(this.inputNode)
-    this.inputNode.connect(this.outputNode)
+    this.feedback.connect(this.outputNode)
+    // this.inputNode.connect(this.outputNode)
+    this.inputNode.connect(this.feedback)
 
     this.initInnerNodeAudioParams()
   }
@@ -42,7 +43,7 @@ class Looper extends Node {
     this.source = Node.context.createBufferSource();
     this.source.buffer = this.looperBuffer;
 
-    this.source.connect(this.inputNode);
+    this.source.connect(this.feedback);
     this.source.start(nextBeatTime);
 
     this.source.onended = () => {
@@ -51,14 +52,17 @@ class Looper extends Node {
   }
 
   startMediaRecorder() {
-    this.inputNode.connect(this.mediaDestination);
+    // this.inputNode.connect(this.mediaDestination);
+    this.inputNode.connect(this.feedback)
+    this.feedback.connect(this.mediaDestination)
     this.mediaRecorder.start();
   }
 
   async finishRecordingAndPlay(arrayBuffer) {
     await this.setAudioBuffer(arrayBuffer)
 
-    this.inputNode.disconnect(this.mediaDestination)
+    // this.inputNode.disconnect(this.mediaDestination)
+    this.inputNode.disconnect(this.feedback)
 
     if (this.playing) this.stopLoop()
 
