@@ -180,13 +180,16 @@ export default {
       mapping: false,
       refBeignMapped: null,
 
+      //REC
       mediaRecorders: [],
+      scene: [],
+      recordingCount: 0,
       recordings: [],
       recording: false,
       blobs: [],
       exportDestination: null,
-      exportBuffer: null,
-      exporting: false,
+      exportBlobs: [],
+      exports: [],
       chunks: [],
 
       //canvas
@@ -233,7 +236,7 @@ export default {
 
       this.createMainGain();
       this.createTrack(new Drumkit());
-      this.insertEffect(new Looper());
+      this.createTrack(new Femod());
 
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
@@ -241,14 +244,16 @@ export default {
       this.inited = true;
     },
 
+    //REC
+
     startRec() {
       const recordingTracks = this.tracks.filter((t) => t.recEnabled);
       const total = recordingTracks.length;
       let c = 0;
 
+      this.recordingCount++;
       this.recording = true;
       this.renderFinished = false;
-      this.showRecordWaveforms = false;
 
       // record entire mix
 
@@ -265,29 +270,29 @@ export default {
       };
 
       this.exportMediaRecorder.onstop = () => {
-        this.exportBlob = new Blob(this.chunks, {
+        const blob = new Blob(this.chunks, {
           type: "audio/ogg; codecs=opus",
         });
+
+        this.exportBlobs.push(blob);
+
         const exportFileReader = new FileReader();
 
         exportFileReader.onloadend = () => {
           const arrayBuffer = exportFileReader.result;
 
           this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-            this.exportBuffer = audioBuffer;
-            this.exporting = false;
+            this.exports.push({ id: this.recordingCount, audioBuffer });
           });
         };
 
-        exportFileReader.readAsArrayBuffer(this.exportBlob);
+        exportFileReader.readAsArrayBuffer(blob);
       };
 
       this.exportMediaRecorder.start();
-      console.log("export rec start");
+      console.log("rec start");
 
       //record each track
-
-      this.recordings = [];
 
       recordingTracks.forEach((t, i) => {
         let chunks = [];
@@ -304,6 +309,7 @@ export default {
         mediaRecorder.onstop = (evt) => {
           const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
           this.blobs.push(blob);
+          chunks = null;
 
           const fileReader = new FileReader();
 
@@ -311,7 +317,9 @@ export default {
             const arrayBuffer = fileReader.result;
 
             this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-              this.recordings.push({ audioBuffer, track: t });
+              this.scene.push({ audioBuffer, trackId: t.id });
+              // t.trackGain.disconnectNativeNode(dest)
+              dest = null;
               if (++c === total) this.recordingsReady();
             });
           };
@@ -320,39 +328,79 @@ export default {
         };
 
         mediaRecorder.start();
-        console.log("track " + i + 1 + " rec start");
       });
     },
 
     stopRec() {
+      this.mainGain.disconnect(this.exportDestination);
+      this.exportDestination = null;
+      this.exportMediaRecorder.stop();
+      this.exportMediaRecorder = null;
       this.mediaRecorders.forEach((mr) => {
         mr.stop();
       });
-      this.exportMediaRecorder.stop();
-      this.exportMediaRecorder = null;
       this.mediaRecorders = [];
       this.recording = false;
     },
 
     recordingsReady() {
-      console.log("recordings ready");
+      const name = prompt(
+        "Recording Name",
+        "Recording Nº " + this.recordingCount
+      );
+      this.recordings.push({
+        id: this.recordingCount,
+        name,
+        scene: this.scene,
+      });
       this.recordingsAvailable = true;
+      this.scene = [];
     },
 
     downloadExport() {
+      let index = prompt(
+        "Which recording do you want to download? Choose number: 1 to " +
+          this.recordings.length,
+        1
+      );
+      index = parseInt(index);
+
+      if (!index)
+        return alert("Only numers from 1 to " + this.recordings.length);
+
+      if (index > this.recordings.length || index < 1)
+        return alert("There is no such recording!");
+
+      index--;
+
       let fileName = "websynth-export-" + new Date().toLocaleString("es-AR");
       fileName = prompt("Export name: ", fileName);
       if (!fileName) return;
 
       const a = document.createElement("a");
-      a.setAttribute("href", URL.createObjectURL(this.exportBlob));
+      a.setAttribute("href", URL.createObjectURL(this.exportBlobs[index]));
       a.setAttribute("download", fileName);
       a.click();
     },
 
     playExport() {
+      let index = prompt(
+        "Which recording do you want to play? Choose number: 1 to " +
+          this.recordings.length,
+        1
+      );
+      index = parseInt(index);
+
+      if (!index)
+        return alert("Only numers from 1 to " + this.recordings.length);
+
+      if (index > this.recordings.length || index < 1)
+        return alert("There is no such recording!");
+
+      index--;
+      // this.playAllTracks(index);
       this.exportSource = this.context.createBufferSource();
-      this.exportSource.buffer = this.exportBuffer;
+      this.exportSource.buffer = this.exports[index].audioBuffer;
 
       this.exportSource.connect(this.context.destination);
       this.exportSource.start();
@@ -361,8 +409,15 @@ export default {
       this.exportSource.onended = () => {
         this.playing = false;
       };
+    },
 
-      console.log("export download url:", URL.createObjectURL(this.exportBlob));
+    playAllTracks(scene) {
+      this.recordings[0].scene.forEach((s) => {
+        const source = this.context.createBufferSource();
+        source.buffer = s.audioBuffer;
+        source.connect(this.mainGain);
+        source.start();
+      });
     },
 
     stopPlayingExport() {
@@ -383,7 +438,8 @@ export default {
 
       //track
       this.tracks.push({
-        name: "Track " + ++this.trackCount,
+        id: ++this.trackCount,
+        name: "Track " + this.trackCount,
         displayName: "Track " + this.trackCount,
         instrument,
         modulators: [],
@@ -839,7 +895,6 @@ export default {
   position: relative;
   top: 0;
   z-index: 1;
-  widows: 100%;
 }
 
 .click-wrapper {

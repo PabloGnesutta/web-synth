@@ -1,5 +1,6 @@
 <template>
   <div class="Click">
+    Click
     <div class="on-off" :class="{ 'click-on': clickActive }">
       <div class="on" v-if="clickActive" @click="turnOff">ON</div>
       <div class="off" v-if="!clickActive" @click="turnOn">OFF</div>
@@ -57,7 +58,7 @@ export default {
       beatSubdivition: 4,
       tempoKnobValue: 120.0,
 
-      clickActive: true,
+      clickActive: false,
       muted: false,
 
       clickLevel: 1,
@@ -201,6 +202,7 @@ export default {
   justify-content: center;
   gap: 1em;
   background: #333;
+  padding: .3em;
 }
 
 .on-off {

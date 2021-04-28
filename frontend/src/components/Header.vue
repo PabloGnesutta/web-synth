@@ -1,145 +1,172 @@
 <template>
-  <div class="header">
-    <div v-if="currentSave" class="current-save-name">
-      {{ currentSave.name }}
-    </div>
-    <div class="buttons">
-      <!-- Instruments -->
-      <div class="menu instruments">
-        <div
-          class="btn label"
-          @click="showInstrumentsMenu = !showInstrumentsMenu"
-        >
-          Instruments
-        </div>
-        <div class="dropdown" :class="{ hidden: !showInstrumentsMenu }">
-          <div
-            class="btn btn-instrument dropdown-item"
-            @click="createInstrument('Duette')"
-          >
-            Duette
-          </div>
-          <div
-            class="btn btn-instrument dropdown-item"
-            @click="createInstrument('Femod')"
-          >
-            Femod
-          </div>
-
-          <div
-            class="btn btn-instrument dropdown-item"
-            @click="createInstrument('Drumkit')"
-          >
-            Drumkit
-          </div>
-          <div
-            class="btn btn-instrument dropdown-item"
-            @click="createInstrument('WhiteNoise')"
-          >
-            Noise
-          </div>
-          <div
-            class="btn btn-instrument dropdown-item"
-            @click="createInstrument('Carrier')"
-          >
-            Oscil
-          </div>
-          <div class="btn btn-instrument dropdown-item" @click="createMic()">
-            Mic
-          </div>
-        </div>
+  <div class="Header">
+    <div class="header" :class="{ recording }">
+      <div v-if="currentSave" class="current-save-name">
+        {{ currentSave.name }}
       </div>
+      <div class="buttons">
+        <!-- Instruments -->
+        <div class="menu instruments" v-if="!recording">
+          <div
+            class="btn label"
+            @click="showInstrumentsMenu = !showInstrumentsMenu"
+          >
+            Instruments
+          </div>
+          <div class="dropdown" :class="{ hidden: !showInstrumentsMenu }">
+            <div
+              class="btn btn-instrument dropdown-item"
+              @click="createInstrument('Duette')"
+            >
+              Duette
+            </div>
+            <div
+              class="btn btn-instrument dropdown-item"
+              @click="createInstrument('Femod')"
+            >
+              Femod
+            </div>
 
-      <!-- Effects -->
-      <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
-        Filter
-      </div>
-      <div class="btn btn-effect" @click="createEffect('Compressor')">Comp</div>
-      <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
-      <div class="btn btn-effect" @click="createEffect('EQ3')">EQ3</div>
-      <div class="btn btn-effect" @click="createEffect('Looper')">Looper</div>
-      <!-- <div class="btn btn-effect" @click="createEffect('LooperMultitrack')">
-        LooperMulti
-      </div> -->
-      <div class="btn btn-effect" @click="createEffect('Reverb')">Reverb</div>
-      <!-- <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div> -->
-
-      <!-- Modulator -->
-      <div class="btn btn-modulator" @click="createModulator">Mod</div>
-
-      <!-- REC -->
-      <div class="btn btn-2 rec" v-if="!recording" @click="startRec">REC</div>
-      <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
-        STOP
-      </div>
-
-      <!-- PLAY/STOP -->
-      <div class="play-stop" v-if="recordingsAvailable">
-        <div v-if="!playing" @click="playExport" class="btn play-recs">
-          Play REC
+            <div
+              class="btn btn-instrument dropdown-item"
+              @click="createInstrument('Drumkit')"
+            >
+              Drumkit
+            </div>
+            <div
+              class="btn btn-instrument dropdown-item"
+              @click="createInstrument('WhiteNoise')"
+            >
+              Noise
+            </div>
+            <div
+              class="btn btn-instrument dropdown-item"
+              @click="createInstrument('Carrier')"
+            >
+              Oscil
+            </div>
+            <div class="btn btn-instrument dropdown-item" @click="createMic()">
+              Mic
+            </div>
+          </div>
         </div>
-        <div v-if="playing" @click="stopPlayingExport" class="btn stop-playing">
+
+        <!-- Effects -->
+        <div class="menu effects">
+          <div class="btn label" @click="showEffectsMenu = !showEffectsMenu">
+            Effects
+          </div>
+          <div class="dropdown" :class="{ hidden: !showEffectsMenu }">
+            <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
+              Filter
+            </div>
+            <div class="btn btn-effect" @click="createEffect('Compressor')">
+              Comp
+            </div>
+            <div class="btn btn-effect" @click="createEffect('Delay')">
+              Delay
+            </div>
+            <div class="btn btn-effect" @click="createEffect('EQ3')">EQ3</div>
+            <div class="btn btn-effect" @click="createEffect('Looper')">
+              Looper
+            </div>
+            <div class="btn btn-effect" @click="createEffect('Reverb')">
+              Reverb
+            </div>
+            <!-- <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div> -->
+            <!-- Modulator -->
+            <div class="btn btn-modulator" @click="createModulator">Mod</div>
+          </div>
+        </div>
+
+        <!-- REC -->
+        <div class="btn btn-2 rec" v-if="!recording" @click="startRec">REC</div>
+        <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
           STOP
         </div>
-      </div>
-      <div
-        class="btn btn-export-download"
-        v-if="recordingsAvailable"
-        @click="downloadExport"
-      >
-        Download
-      </div>
 
-      <!-- SAVES -->
-      <div class="btn" v-if="currentSave" @click="save">Save</div>
-      <div class="btn" @click="saveAs">
-        <span v-if="currentSave">Save as</span>
-        <span v-else>Save</span>
-      </div>
-      <div
-        v-if="this.saves && this.saves.length > 0"
-        class="btn load-work"
-        @click="showSavedWorks = !showSavedWorks"
-      >
-        <div>Load</div>
-        <div class="saved-works" :class="{ hidden: !showSavedWorks }">
-          <div :key="s" class="saved-work" v-for="(savedWork, s) in saveNames">
-            <div class="saved-work-name" @click="loadSave(s)">
-              {{ savedWork.name }}
+        <!-- PLAY/STOP -->
+        <div class="play-stop" v-if="recordingsAvailable">
+          <div
+            v-if="!playing && !recording"
+            @click="playExport"
+            class="btn play-recs"
+          >
+            Play REC
+          </div>
+          <div
+            v-if="playing"
+            @click="stopPlayingExport"
+            class="btn stop-playing"
+          >
+            STOP
+          </div>
+        </div>
+        <div
+          class="btn btn-export-download"
+          v-if="recordingsAvailable && !recording"
+          @click="downloadExport"
+        >
+          Download
+        </div>
+
+        <!-- SAVES -->
+        <div class="saves-buttons" v-if="!recording">
+          <div class="btn" v-if="currentSave" @click="save">Save</div>
+          <div class="btn" @click="saveAs">
+            <span v-if="currentSave">Save as</span>
+            <span v-else>Save</span>
+          </div>
+          <div
+            v-if="this.saves && this.saves.length > 0"
+            class="btn load-work"
+            @click="showSavedWorks = !showSavedWorks"
+          >
+            <div>Load</div>
+            <div class="saved-works" :class="{ hidden: !showSavedWorks }">
+              <div
+                :key="s"
+                class="saved-work"
+                v-for="(savedWork, s) in saveNames"
+              >
+                <div class="saved-work-name" @click="loadSave(s)">
+                  {{ savedWork.name }}
+                </div>
+                <div class="saved-work-delete" @click="deleteSave(s)">X</div>
+              </div>
             </div>
-            <div class="saved-work-delete" @click="deleteSave(s)">X</div>
           </div>
         </div>
-      </div>
 
-      <!-- Config -->
-      <div class="menu config">
-        <div class="btn label" @click="showConfigMenu = !showConfigMenu">
-          INFO
-        </div>
-        <div class="dropdown" :class="{ hidden: !showConfigMenu }">
-          <div class="keystrokes-label">Keystrokes:</div>
-          <div class="dropdown-item">
-            Ctrl + m: <span>Mute current track</span>
+        <!-- Config -->
+        <div class="menu config">
+          <div class="btn label" @click="showConfigMenu = !showConfigMenu">
+            INFO
           </div>
-          <div class="dropdown-item">
-            m + (1..9): <span>Mute track 1 to 9</span>
-          </div>
-          <div class="dropdown-item">
-            ctrl + q: <span>Delete current track</span>
-          </div>
-          <div class="dropdown-item">z: <span>Octave down</span></div>
-          <div class="dropdown-item">x: <span>Octave up</span></div>
-          <div class="dropdown-item">c: <span>Transpose down</span></div>
-          <div class="dropdown-item">v: <span>Transpose up</span></div>
-          <div class="dropdown-item">
-            0 (zero): <span>Trigger all Loopers</span>
-          </div>
-          <div class="dropdown-item">
-            Play notes with: <span> AWSEDFTGYHUJKOLP</span>
-          </div>
-          <div class="dropdown-item">
-            Play Drumkit with: <span>numpad keys</span>
+          <div class="dropdown" :class="{ hidden: !showConfigMenu }">
+            <div class="keystrokes-label">Keystrokes:</div>
+            <div class="dropdown-item">
+              Ctrl + m: <span>Mute current track</span>
+            </div>
+            <div class="dropdown-item">
+              m + (1..9): <span>Mute track 1 to 9</span>
+            </div>
+            <div class="dropdown-item">
+              ctrl + q: <span>Delete current track</span>
+            </div>
+            <div class="dropdown-item">z: <span>Octave down</span></div>
+            <div class="dropdown-item">x: <span>Octave up</span></div>
+            <div class="dropdown-item">c: <span>Transpose down</span></div>
+            <div class="dropdown-item">v: <span>Transpose up</span></div>
+            <div class="dropdown-item">
+              0 (zero): <span>Trigger all Loopers</span>
+            </div>
+            <div class="dropdown-item">
+              Play notes with: <span> AWSEDFTGYHUJKOLP</span>
+            </div>
+            <div class="dropdown-item">
+              Play Drumkit with: <span>numpad keys</span>
+            </div>
           </div>
         </div>
       </div>
@@ -153,6 +180,7 @@ export default {
   data() {
     return {
       showInstrumentsMenu: false,
+      showEffectsMenu: false,
       showConfigMenu: false,
       showSavedWorks: false,
       saves: [],
@@ -311,14 +339,19 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.header.recording {
+  border-color: lightgreen;
+}
+
 .header {
   display: flex;
   align-items: center;
   justify-content: center;
   background: black;
-  padding: 0.2em;
+  padding: 0.4em;
   width: 100%;
   gap: 0.5em;
+  border: 2px solid transparent;
 
   .buttons {
     display: flex;
@@ -330,11 +363,10 @@ export default {
     padding: 0.4em 1em;
     background: gray;
     cursor: pointer;
-    border-radius: 5px;
   }
 
   .btn-modulator {
-    background: var(--color-2);
+    background: cyan;
   }
   .btn-effect {
     background: green;
@@ -343,7 +375,8 @@ export default {
     background: red;
   }
   .btn.stop-rec {
-    background: cyan;
+    // background: cyan;
+    background: red;
     color: black;
   }
 
@@ -365,7 +398,7 @@ export default {
     padding: 0.5em;
   }
 
-  .menu.instruments {
+  .instruments {
     .label {
       background: teal;
     }
@@ -376,9 +409,18 @@ export default {
       background: var(--color-1);
       margin-bottom: 0.5em;
     }
-    .dropdown-item:hover {
-      background: var(--color-2);
+  }
+
+  .effects {
+    .label {
+      background: green;
     }
+  }
+
+  .btn-effect:hover,
+  .btn-instrument:hover,
+  .btn-modulator:hover {
+    background: var(--color-2);
   }
 
   .menu.config {
@@ -401,6 +443,13 @@ export default {
   }
 
   //saves
+
+  .saves-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1em;
+  }
 
   .btn.load-work {
     position: relative;
