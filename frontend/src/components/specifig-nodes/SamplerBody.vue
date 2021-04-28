@@ -106,7 +106,6 @@ export default {
   position: relative;
   .label {
     padding: 2em 0.3em;
-    // width: 200px;
     overflow-x: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -129,6 +128,6 @@ export default {
   height: 20px;
 }
 .stop-btn {
-  cursor: pointera;
+  cursor: pointer;
 }
 </style>

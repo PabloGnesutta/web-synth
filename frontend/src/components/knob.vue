@@ -1,7 +1,7 @@
 <template>
   <div
     class="knob"
-    :class="{ mapping: thisIsMapping }"
+    :class="{ mapping: thisIsMapping, appIsMapping }"
     @mousedown="onMouseDown"
   >
     <div
@@ -131,6 +131,7 @@ export default {
       if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
 
       this.setKnobValueAndPosition(knobValue);
+      this.emitAndSetEmitValueWithKnobValue(knobValue);
     },
 
     setParamContraints(minVal, maxVal, initValue) {
@@ -211,12 +212,15 @@ export default {
   margin: 0 auto;
   background: transparent;
   user-select: none;
-  border: 1px solid transparent;
+  // border: 2px solid transparent;
+  border-radius: 5px;
   position: relative;
+  // z-index: 3;
 }
 
 .knob.mapping {
-  border: 1px solid yellow;
+  // border-color: yellow;
+  background: yellow;
 }
 
 .knob-inner {
@@ -257,8 +261,10 @@ export default {
   position: absolute;
   top: 22px;
   left: 50%;
+  min-width: 50px;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.7);
+  background: black;
   font-size: 0.8rem;
+  z-index: 2;
 }
 </style>

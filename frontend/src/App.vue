@@ -43,6 +43,7 @@ body {
 select {
   background: #272727;
   color: #f3f3f3;
+  user-select: none;
 }
 
 select:focus {

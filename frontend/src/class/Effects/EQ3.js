@@ -117,6 +117,7 @@ class EQ3 extends Node {
   setDryWet(value) {
     this.wetGain.gain.value = value
     this.dryGain.gain.value = value - 1
+    this.dryWet.value = value
   }
 }
 

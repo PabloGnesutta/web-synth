@@ -180,6 +180,9 @@
             </div>
           </div>
         </div>
+        <div class="map" @click="toggleMapping">
+          MAP
+        </div>
       </div>
     </div>
   </div>
@@ -213,6 +216,10 @@ export default {
 
   methods: {
     ...mapMutations(["setTempo", "setTotalBeats"]),
+
+    toggleMapping() {
+      this.$emit('toggleMapping')
+    },
 
     createInstrument(className) {
       this.$emit("createInstrument", className);

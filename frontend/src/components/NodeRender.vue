@@ -242,7 +242,7 @@
           >
             <Knob
               :ref="Node.name + '-dry-wet'"
-              :initVal="Node.dryWet.defaultValue"
+              :initVal="Node.dryWet.value"
               :minVal="Node.dryWet.minValue"
               :maxVal="Node.dryWet.maxValue"
               @knobTurned="setDryWet($event)"
@@ -272,6 +272,7 @@
 
       <!-- Track Gain controls -->
       <div class="node-controls" v-if="Node.name === 'Track Gain'">
+        <div class="fork" @click="forkTrack">FORK</div>
         <div class="rec-enabled-disabled" @click="toggleRecEnabled">
           <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
           <div v-else class="rec-btn rec-disabled">Rec disabled</div>
@@ -300,7 +301,7 @@ import EQ3Body from "./specifig-nodes/EQ3Body.vue";
 import LooperBody from "./specifig-nodes/LooperBody.vue";
 import DuetteBody from "./specifig-nodes/DuetteBody.vue";
 import FemodBody from "./specifig-nodes/FemodBody.vue";
-import SamplerBody from './specifig-nodes/SamplerBody.vue';
+import SamplerBody from "./specifig-nodes/SamplerBody.vue";
 export default {
   data() {
     return {
@@ -323,8 +324,19 @@ export default {
   methods: {
     ...mapMutations(["setAppConnecting", "setOriginNode"]),
 
+    // Track Gain
+
     toggleRecEnabled() {
       this.$emit("toggleRecEnabled");
+    },
+
+    toggleMute() {
+      this.muted = !this.muted;
+      this.Node.toggleMute();
+    },
+
+    forkTrack() {
+      this.$emit("forkTrack");
     },
 
     toggleFold() {
@@ -351,11 +363,6 @@ export default {
 
     deleteNode() {
       this.$emit("deleteNode");
-    },
-
-    toggleMute() {
-      this.muted = !this.muted;
-      this.Node.toggleMute();
     },
 
     toggleInstrumentEnabled() {
@@ -436,7 +443,10 @@ export default {
       this.Node.outputNode.gain.value = value;
     },
 
-    knobClicked(knobName) {},
+    knobClicked(knobName) {
+      const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
+      this.$emit("knobClicked", knobRef);
+    },
 
     startOsc() {
       this.Node.start(0);
@@ -578,6 +588,7 @@ export default {
 }
 
 .delete {
+  user-select: none;
   cursor: pointer;
   background: #444;
   padding: 0 0.2em;
@@ -691,6 +702,7 @@ export default {
 }
 
 .octave-transpose {
+  user-select: none;
   text-align: right;
   font-size: 0.9rem;
   margin-right: 0.5em;
@@ -735,6 +747,10 @@ export default {
 }
 
 // Track gain
+.fork {
+  padding: 1em;
+  margin-bottom: 0.5em;
+}
 .rec-enabled-disabled {
   cursor: pointer;
   margin-bottom: 1em;

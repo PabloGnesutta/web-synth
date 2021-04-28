@@ -45,6 +45,14 @@ class Mic extends Node {
     ]
   }
 
+  setAudioParam(index, value) {
+    let curvedValue = parseFloat(value)
+
+    const param = this.audioParams[index];
+    this.node[param.name].setValueAtTime(curvedValue, 0);
+    this.audioParams[index].value = parseFloat(value);
+  }
+
   playNote(i) {
   }
 

@@ -19,6 +19,7 @@
             @downloadExport="downloadExport"
             @stopPlayingExport="stopPlayingExport"
             @loadSave="loadSave"
+            @toggleMapping="toggleMapping"
             :tracks="tracks"
             :playing="playing"
             :recording="recording"
@@ -60,6 +61,7 @@
                 :instrumentEnabled="track.instrumentEnabled"
                 @deleteNode="deleteTrack(t)"
                 @toggleInstrumentEnabled="toggleInstrumentEnabled(t)"
+                @knobClicked="knobClicked"
               />
             </div>
 
@@ -73,6 +75,7 @@
                 :ref="'Node-' + n"
                 @deleteNode="deleteEffect(t, n)"
                 @levelClicked="levelClicked(Node)"
+                @knobClicked="knobClicked"
               />
               <div class="track-right-placeholder"></div>
             </div>
@@ -84,6 +87,8 @@
               :analyser="track.trackGainAnalyser"
               :recEnabled="track.recEnabled"
               @toggleRecEnabled="toggleRecEnabled(t)"
+              @forkTrack="forkTrack(t)"
+              @knobClicked="knobClicked"
             />
           </div>
         </div>
@@ -227,6 +232,12 @@ export default {
       this.tracks[t].recEnabled = !this.tracks[t].recEnabled;
     },
 
+    forkTrack(t) {
+      const newGain = new Gain(this.tracks[t].instrument.name + " Fork");
+      this.tracks[t].trackGain.connect(newGain);
+      this.createTrack(newGain);
+    },
+
     init() {
       this.addConfirmLeaveHandler();
       document.querySelector(".Home").removeEventListener("click", this.init);
@@ -234,7 +245,7 @@ export default {
       Node.context = this.context;
 
       this.createMainGain();
-      this.createTrack(new Sampler());
+      this.createTrack(new Femod());
 
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
@@ -466,10 +477,11 @@ export default {
       this.currentTrackIndex = this.tracks.length - 1;
       this.currentTrack = this.tracks[this.currentTrackIndex];
 
-      this.keypressListeners.push({
-        instrument,
-        trackName: this.currentTrack.name,
-      });
+      if (instrument.nodeType !== "Gain")
+        this.keypressListeners.push({
+          instrument,
+          trackName: this.currentTrack.name,
+        });
 
       if (instrument.nodeType === "Drumkit")
         this.numpadListeners.push({
@@ -689,16 +701,20 @@ export default {
       console.log(this.appIsMapping);
     },
 
-    knobClicked(refName) {
+    // knobClicked(refName) {
+    knobClicked(knobRef) {
+      console.log("ref", knobRef);
+      // ref.emitAndSetEmitValueWithKnobValue(60)
+      // return
       if (!this.mapping) return;
       if (this.refBeignMapped) {
         this.refBeignMapped.stopMapping();
         this.refBeignMapped = null;
       }
 
-      const knob = this.$refs[refName][0] || this.$refs[refName];
-      this.refBeignMapped = knob;
-      knob.startMapping();
+      // const knob = this.$refs[refName][0] || this.$refs[refName];
+      this.refBeignMapped = knobRef;
+      knobRef.startMapping();
     },
 
     getMIDIMessage({ data }) {
@@ -711,6 +727,7 @@ export default {
         const existingMap = this.maps.find((m) => m.refName === refName);
         if (!existingMap) {
           this.maps.push({
+            ref: this.refBeignMapped,
             refName,
             cmd,
             note,
@@ -719,22 +736,21 @@ export default {
           existingMap.cmd = cmd;
           existingMap.note = note;
         }
-        const knob = this.$refs[refName][0] || this.$refs[refName];
+        const knob = this.refBeignMapped;
         knob.assignMap(cmd, note);
-        return;
+        // return;
       } else {
         const mappedItem = this.maps.find(
           (m) => m.cmd === cmd && m.note === note
         );
         if (!mappedItem) return;
-        const knob =
-          this.$refs[mappedItem.refName][0] || this.$refs[mappedItem.refName];
+        const knob = mappedItem.ref;
         knob.receiveMidi(value);
       }
     },
 
     onMIDISuccess(midiAccess) {
-      // console.log("MIDI Access:", midiAccess);
+      console.log("MIDI Access:", midiAccess);
       this.inputs = midiAccess.inputs;
       this.outputs = midiAccess.outputs;
 
@@ -829,17 +845,16 @@ export default {
             instrument.setDuetteParam(o, 4, state.detune);
             instrument.setDuetteParam(o, 5, state.gain);
             instrument.setType(o, state.type);
-            // t.instrument.setDuetteParam(o, p)
           }
         }
-
-        // return;
 
         //setting effects
 
         t.effects.forEach((ef) => {
           const effect = new (effectsDict.get(ef.nodeType))();
           effect.setGain(ef.gain);
+
+          if (ef.type) effect.setType(ef.type);
 
           if (ef.audioParams)
             ef.audioParams.forEach((ef_ap, i) => {
@@ -856,7 +871,7 @@ export default {
               effect.setCustomParam(i, ef_cp.value);
             });
 
-          //set dry/wet
+          if (ef.dryWet) effect.setDryWet(ef.dryWet.value);
 
           this.insertEffect(effect);
         });
@@ -877,7 +892,6 @@ export default {
   },
 
   beforeDestroy() {
-    console.log("beforedestroy");
     this.setContext(null);
     window.removeEventListener("keyup", this.onKeyup);
     window.removeEventListener("keydown", this.onKeydown);
