@@ -164,7 +164,7 @@ export default {
       this.displayValue =
         this.emitValue >= 1000
           ? (this.emitValue / 1000).toFixed(2) + "k"
-          : parseFloat(this.emitValue).toFixed(1);
+          : parseFloat(this.emitValue).toFixed(2);
 
       this.displayValue = this.displayValue + (this.unit || "");
       // }

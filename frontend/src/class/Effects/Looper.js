@@ -25,9 +25,8 @@ class Looper extends Node {
     this.feedback = Node.context.createGain()
     this.source = Node.context.createBufferSource();
 
-    this.feedback.connect(this.outputNode)
-    // this.inputNode.connect(this.outputNode)
     this.inputNode.connect(this.feedback)
+    this.feedback.connect(this.outputNode)
 
     this.initInnerNodeAudioParams()
   }
@@ -62,7 +61,7 @@ class Looper extends Node {
     await this.setAudioBuffer(arrayBuffer)
 
     // this.inputNode.disconnect(this.mediaDestination)
-    this.inputNode.disconnect(this.feedback)
+    // this.inputNode.disconnect(this.feedback)
 
     if (this.playing) this.stopLoop()
 

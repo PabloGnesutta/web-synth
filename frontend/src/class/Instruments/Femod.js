@@ -104,6 +104,7 @@ class Femod extends Node {
         sn.mod.detune.setValueAtTime(value, 0)
       })
     }
+    
     this.customParams = [
       {
         name: "attack",

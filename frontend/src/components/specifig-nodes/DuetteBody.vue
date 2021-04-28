@@ -100,6 +100,7 @@ export default {
       margin: 0;
     }
     .mute-unmute {
+      user-select: none;
       align-self: flex-start;
       font-size: 0.9rem;
       background: #444;

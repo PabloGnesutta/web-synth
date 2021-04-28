@@ -43,7 +43,7 @@ class Duette extends Node {
   destroy() {
     super.destroy()
     this.scaleNodes.forEach(sn => {
-      for (let i = 0; i < oscillatorsPerNote; i++) {
+      for (let i = 0; i < this.oscillatorsPerNote; i++) {
         sn[i].ADSRGain.disconnect()
         sn[i].ADSRGain = null
         sn[i].destroy()

@@ -58,10 +58,13 @@
         <div v-if="Node.nodeType === 'Looper'" class="looper-body-wrapper">
           <LooperBody :Node="Node" />
         </div>
-        <div v-if="Node.nodeType === 'Duette'" class="looper-body-wrapper">
+        <div v-if="Node.nodeType === 'Sampler'" class="sampler-body-wrapper">
+          <SamplerBody :Node="Node" />
+        </div>
+        <div v-if="Node.nodeType === 'Duette'" class="duette-body-wrapper">
           <DuetteBody :Node="Node" />
         </div>
-        <div v-if="Node.nodeType === 'Femod'" class="looper-body-wrapper">
+        <div v-if="Node.nodeType === 'Femod'" class="femod-body-wrapper">
           <FemodBody :Node="Node" />
         </div>
 
@@ -71,6 +74,7 @@
             Node.nodeType !== 'Delay' &&
             Node.nodeType !== 'EQ3' &&
             Node.nodeType !== 'Femod' &&
+            Node.nodeType !== 'Sampler' &&
             Node.nodeType !== 'Duette'
           "
           class="node-body-inner"
@@ -296,6 +300,7 @@ import EQ3Body from "./specifig-nodes/EQ3Body.vue";
 import LooperBody from "./specifig-nodes/LooperBody.vue";
 import DuetteBody from "./specifig-nodes/DuetteBody.vue";
 import FemodBody from "./specifig-nodes/FemodBody.vue";
+import SamplerBody from './specifig-nodes/SamplerBody.vue';
 export default {
   data() {
     return {
@@ -472,6 +477,7 @@ export default {
     DuetteBody,
     FemodBody,
     AnalyserRender,
+    SamplerBody,
   },
 };
 </script>

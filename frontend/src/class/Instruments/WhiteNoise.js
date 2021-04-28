@@ -70,6 +70,14 @@ class WhiteNoise extends Node {
     ]
   }
 
+  setAudioParam(index, value) {
+    let curvedValue = parseFloat(value)
+
+    const param = this.audioParams[index];
+    this.node[param.name].setValueAtTime(curvedValue, 0);
+    this.audioParams[index].value = parseFloat(value);
+  }
+
   initInnerNodeAudioParams() {
     this.innerNodeAudioParams = [
       {
@@ -83,6 +91,15 @@ class WhiteNoise extends Node {
         node: this.modGain, nodeAudioParam: 'gain'
       },
     ]
+  }
+
+  setInnerNodeAudioParam(indexOrName, value) {
+    let index = indexOrName
+    if (typeof (indexOrName) !== 'number') index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
+
+    const innerNodeAudioParam = this.innerNodeAudioParams[index];
+    innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
+    this.innerNodeAudioParams[index].value = parseFloat(value);
   }
 
   createWhiteNoiseBuffer() {

@@ -110,8 +110,8 @@
 const noteKeys = require("../data/noteKeys");
 
 const Node = require("../class/Node");
-const Gain = require("../class/Effects/Gain");
 const EQ3 = require("../class/Effects/EQ3");
+const Gain = require("../class/Effects/Gain");
 const Delay = require("../class/Effects/Delay");
 const Reverb = require("../class/Effects/Reverb");
 const Looper = require("../class/Effects/Looper");
@@ -120,10 +120,11 @@ const BiquadFilter = require("../class/Effects/BiquadFilter");
 
 const Mic = require("../class/Instruments/Mic");
 const Femod = require("../class/Instruments/Femod");
+const Duette = require("../class/Instruments/Duette");
 const Carrier = require("../class/Instruments/Carrier");
 const Drumkit = require("../class/Instruments/Drumkit");
+const Sampler = require("../class/Instruments/Sampler");
 const WhiteNoise = require("../class/Instruments/WhiteNoise");
-const Duette = require("../class/Instruments/Duette");
 
 const Modulator = require("../class/Oscillator/Modulator");
 
@@ -132,6 +133,7 @@ const instrumentsDict = new Map([
   ["Femod", Femod],
   ["Carrier", Carrier],
   ["Drumkit", Drumkit],
+  ["Sampler", Sampler],
   ["Duette", Duette],
   ["WhiteNoise", WhiteNoise],
 ]);
@@ -161,13 +163,10 @@ export default {
       tracks: [],
       trackCount: 0,
       currentTrackIndex: 0,
-      trankGainDefaultVal: 0.4,
 
       mainGain: null,
       mixerGain: null,
       mainGainKnob: 0.5,
-
-      mic: null,
 
       keyEnabled: [],
       keypressListeners: [],
@@ -181,10 +180,10 @@ export default {
       refBeignMapped: null,
 
       //REC
-      mediaRecorders: [],
-      scene: [],
       recordingCount: 0,
       recordings: [],
+      scene: [],
+      mediaRecorders: [],
       recording: false,
       blobs: [],
       exportDestination: null,
@@ -235,8 +234,7 @@ export default {
       Node.context = this.context;
 
       this.createMainGain();
-      this.createTrack(new Drumkit());
-      this.createTrack(new Femod());
+      this.createTrack(new Sampler());
 
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
@@ -308,7 +306,6 @@ export default {
 
         mediaRecorder.onstop = (evt) => {
           const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
-          this.blobs.push(blob);
           chunks = null;
 
           const fileReader = new FileReader();
@@ -317,7 +314,7 @@ export default {
             const arrayBuffer = fileReader.result;
 
             this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-              this.scene.push({ audioBuffer, trackId: t.id });
+              this.scene.push({ audioBuffer, blob, trackId: t.id });
               // t.trackGain.disconnectNativeNode(dest)
               dest = null;
               if (++c === total) this.recordingsReady();
@@ -358,29 +355,30 @@ export default {
     },
 
     downloadExport() {
+      const length = this.recordings.length;
       let index = prompt(
         "Which recording do you want to download? Choose number: 1 to " +
-          this.recordings.length,
+          length,
         1
       );
       index = parseInt(index);
 
-      if (!index)
-        return alert("Only numers from 1 to " + this.recordings.length);
+      if (!index) return alert("Only numers from 1 to " + length);
 
-      if (index > this.recordings.length || index < 1)
+      if (index > length || index < 1)
         return alert("There is no such recording!");
 
-      index--;
-
-      let fileName = "websynth-export-" + new Date().toLocaleString("es-AR");
+      let fileName =
+        "websynth_export_" +
+        index +
+        " - " +
+        new Date().toLocaleDateString("es-AR");
       fileName = prompt("Export name: ", fileName);
       if (!fileName) return;
 
-      const a = document.createElement("a");
-      a.setAttribute("href", URL.createObjectURL(this.exportBlobs[index]));
-      a.setAttribute("download", fileName);
-      a.click();
+      index--;
+
+      this.downloadBlob(this.exportBlobs[index], fileName);
     },
 
     playExport() {
@@ -398,7 +396,7 @@ export default {
         return alert("There is no such recording!");
 
       index--;
-      // this.playAllTracks(index);
+
       this.exportSource = this.context.createBufferSource();
       this.exportSource.buffer = this.exports[index].audioBuffer;
 
@@ -409,20 +407,35 @@ export default {
       this.exportSource.onended = () => {
         this.playing = false;
       };
+
+      this.playAllTracks(index);
     },
 
-    playAllTracks(scene) {
-      this.recordings[0].scene.forEach((s) => {
-        const source = this.context.createBufferSource();
-        source.buffer = s.audioBuffer;
-        source.connect(this.mainGain);
-        source.start();
+    playAllTracks(index) {
+      this.recordings[index].scene.forEach((s) => {
+        // const source = this.context.createBufferSource();
+        // source.buffer = s.audioBuffer;
+        // source.connect(this.mainGain);
+        // source.start();
+        console.log(
+          "trackId: " +
+            s.trackId +
+            " - download URL: " +
+            URL.createObjectURL(s.blob)
+        );
       });
     },
 
     stopPlayingExport() {
       this.exportSource.stop(0);
       this.playing = false;
+    },
+
+    downloadBlob(blob, fileName) {
+      const a = document.createElement("a");
+      a.setAttribute("href", URL.createObjectURL(blob));
+      a.setAttribute("download", fileName);
+      a.click();
     },
 
     createTrack(instrument) {
@@ -886,7 +899,7 @@ export default {
 
 .top-section {
   position: fixed;
-  top: 0;
+  top: 2px;
   width: 100%;
   z-index: 1;
 }

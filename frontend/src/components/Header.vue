@@ -1,6 +1,6 @@
 <template>
   <div class="Header">
-    <div class="header" :class="{ recording }">
+    <div class="header" :class="{ recording, playing }">
       <div v-if="currentSave" class="current-save-name">
         {{ currentSave.name }}
       </div>
@@ -16,6 +16,12 @@
           <div class="dropdown" :class="{ hidden: !showInstrumentsMenu }">
             <div
               class="btn btn-instrument dropdown-item"
+              @click="createInstrument('Drumkit')"
+            >
+              Drumkit
+            </div>
+            <div
+              class="btn btn-instrument dropdown-item"
               @click="createInstrument('Duette')"
             >
               Duette
@@ -26,12 +32,8 @@
             >
               Femod
             </div>
-
-            <div
-              class="btn btn-instrument dropdown-item"
-              @click="createInstrument('Drumkit')"
-            >
-              Drumkit
+            <div class="btn btn-instrument dropdown-item" @click="createMic()">
+              Mic
             </div>
             <div
               class="btn btn-instrument dropdown-item"
@@ -45,8 +47,11 @@
             >
               Oscil
             </div>
-            <div class="btn btn-instrument dropdown-item" @click="createMic()">
-              Mic
+            <div
+              class="btn btn-instrument dropdown-item"
+              @click="createInstrument('Sampler')"
+            >
+              Sampler
             </div>
           </div>
         </div>
@@ -80,9 +85,15 @@
         </div>
 
         <!-- REC -->
-        <div class="btn btn-2 rec" v-if="!recording" @click="startRec">REC</div>
+        <div
+          class="btn btn-2 rec"
+          v-if="!recording && !playing"
+          @click="startRec"
+        >
+          REC
+        </div>
         <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
-          STOP
+          STOP REC
         </div>
 
         <!-- PLAY/STOP -->
@@ -90,16 +101,16 @@
           <div
             v-if="!playing && !recording"
             @click="playExport"
-            class="btn play-recs"
+            class="btn start-playing"
           >
-            Play REC
+            Play
           </div>
           <div
             v-if="playing"
             @click="stopPlayingExport"
             class="btn stop-playing"
           >
-            STOP
+            Stop
           </div>
         </div>
         <div
@@ -107,7 +118,7 @@
           v-if="recordingsAvailable && !recording"
           @click="downloadExport"
         >
-          Download
+          DOWNLOAD
         </div>
 
         <!-- SAVES -->
@@ -213,9 +224,11 @@ export default {
     },
     createEffect(className) {
       this.$emit("createEffect", className);
+      this.showEffectsMenu = false;
     },
     createModulator() {
       this.$emit("createModulator");
+      this.showEffectsMenu = false;
     },
 
     startRec() {
@@ -237,6 +250,8 @@ export default {
 
     save() {
       this.overWrite(this.currentSaveIndex);
+      localStorage.setItem("test stringi", JSON.stringify([]));
+      localStorage.setItem("test pelado", "[]");
     },
 
     saveAs() {
@@ -251,8 +266,8 @@ export default {
         this.saves = [];
         this.saveNames = [];
 
-        localStorage.setItem("websynth-saves", JSON.stringify([]));
-        localStorage.setItem("websynth-savenames", JSON.stringify([]));
+        localStorage.setItem("websynth-saves", "[]");
+        localStorage.setItem("websynth-savenames", "[]");
       }
 
       const existingSaveIndex = this.nameExists(name);
@@ -340,7 +355,10 @@ export default {
 
 <style lang="scss" scoped>
 .header.recording {
-  border-color: lightgreen;
+  border-color: crimson;
+}
+.header.playing {
+  border-color: green;
 }
 
 .header {
@@ -351,7 +369,7 @@ export default {
   padding: 0.4em;
   width: 100%;
   gap: 0.5em;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
 
   .buttons {
     display: flex;
@@ -439,6 +457,14 @@ export default {
       span {
         color: #333;
       }
+    }
+  }
+
+  //Play/Stop recording
+
+  .play-stop {
+    .btn {
+      background: #004b80;
     }
   }
 
