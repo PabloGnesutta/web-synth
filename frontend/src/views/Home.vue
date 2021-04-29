@@ -703,16 +703,12 @@ export default {
 
     // knobClicked(refName) {
     knobClicked(knobRef) {
-      console.log("ref", knobRef);
-      // ref.emitAndSetEmitValueWithKnobValue(60)
-      // return
+      console.log("knobClicked, knobRef", knobRef);
       if (!this.mapping) return;
       if (this.refBeignMapped) {
         this.refBeignMapped.stopMapping();
         this.refBeignMapped = null;
       }
-
-      // const knob = this.$refs[refName][0] || this.$refs[refName];
       this.refBeignMapped = knobRef;
       knobRef.startMapping();
     },

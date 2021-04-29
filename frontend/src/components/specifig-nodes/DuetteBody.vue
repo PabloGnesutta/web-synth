@@ -33,17 +33,18 @@
               {{ customParam.displayName }}
             </div>
 
-            <div class="knob-wrapper">
-              <div class="knob-wrapper">
-                <Knob
-                  :ref="Node.name + '-' + customParam.name"
-                  :unit="customParam.unit"
-                  :minVal="customParam.minValue"
-                  :maxVal="customParam.maxValue"
-                  :initVal="osc[customParam.name]"
-                  @knobTurned="setDuetteParam(o, paramIndex, $event)"
-                />
-              </div>
+            <div
+              class="knob-wrapper"
+              @click="knobClicked(Node.name + '-' + customParam.name)"
+            >
+              <Knob
+                :ref="Node.name + '-' + customParam.name"
+                :unit="customParam.unit"
+                :minVal="customParam.minValue"
+                :maxVal="customParam.maxValue"
+                :initVal="osc[customParam.name]"
+                @knobTurned="setDuetteParam(o, paramIndex, $event)"
+              />
             </div>
           </div>
         </div>
@@ -68,6 +69,11 @@ export default {
 
     setDuetteParam(oscIndex, paramIndex, value) {
       this.Node.setDuetteParam(oscIndex, paramIndex, value);
+    },
+
+    knobClicked(knobName) {
+      const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
+      this.$emit("knobClicked", knobRef);
     },
 
     getCssNodeName(name) {

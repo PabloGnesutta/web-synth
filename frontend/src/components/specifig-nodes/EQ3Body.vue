@@ -22,7 +22,10 @@
             {{ innerNodeAudioParam.displayName }}
           </div>
 
-          <div class="knob-wrapper">
+          <div
+            class="knob-wrapper"
+            @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)"
+          >
             <Knob
               :ref="Node.name + '-' + innerNodeAudioParam.name"
               :unit="innerNodeAudioParam.unit"
@@ -50,6 +53,11 @@ export default {
   methods: {
     setInnerNodeAudioParam(inapIndex, value) {
       this.Node.setInnerNodeAudioParam(inapIndex, value);
+    },
+
+    knobClicked(knobName) {
+      const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
+      this.$emit("knobClicked", knobRef);
     },
 
     getCssNodeName(name) {

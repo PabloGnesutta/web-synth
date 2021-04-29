@@ -50,22 +50,22 @@
 
       <div class="node-body">
         <div v-if="Node.nodeType === 'Delay'" class="delay-body-wrapper">
-          <DelayBody :Node="Node" />
+          <DelayBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
         <div v-if="Node.nodeType === 'EQ3'" class="eq3-body-wrapper">
-          <EQ3Body :Node="Node" />
+          <EQ3Body :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
         <div v-if="Node.nodeType === 'Looper'" class="looper-body-wrapper">
           <LooperBody :Node="Node" />
         </div>
         <div v-if="Node.nodeType === 'Sampler'" class="sampler-body-wrapper">
-          <SamplerBody :Node="Node" />
+          <SamplerBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
         <div v-if="Node.nodeType === 'Duette'" class="duette-body-wrapper">
-          <DuetteBody :Node="Node" />
+          <DuetteBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
         <div v-if="Node.nodeType === 'Femod'" class="femod-body-wrapper">
-          <FemodBody :Node="Node" />
+          <FemodBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
 
         <!-- The rest -->
@@ -170,16 +170,14 @@
                 class="knob-wrapper"
                 @click="knobClicked(Node.name + '-' + customParam.name)"
               >
-                <div class="knob-wrapper">
-                  <Knob
-                    :ref="Node.name + '-' + customParam.name"
-                    :unit="customParam.unit"
-                    :minVal="customParam.minValue"
-                    :maxVal="customParam.maxValue"
-                    :initVal="customParam.value"
-                    @knobTurned="setCustomParam(cpIndex, $event, customParam)"
-                  />
-                </div>
+                <Knob
+                  :ref="Node.name + '-' + customParam.name"
+                  :unit="customParam.unit"
+                  :minVal="customParam.minValue"
+                  :maxVal="customParam.maxValue"
+                  :initVal="customParam.value"
+                  @knobTurned="setCustomParam(cpIndex, $event, customParam)"
+                />
               </div>
             </div>
           </div>
@@ -445,6 +443,10 @@ export default {
 
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
+      this.$emit("knobClicked", knobRef);
+    },
+
+    knobClickedWithRef(knobRef) {
       this.$emit("knobClicked", knobRef);
     },
 

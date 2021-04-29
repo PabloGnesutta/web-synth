@@ -19,17 +19,18 @@
           {{ customParam.displayName }}
         </div>
 
-        <div class="knob-wrapper">
-          <div class="knob-wrapper">
-            <Knob
-              :ref="Node.name + '-' + customParam.name"
-              :unit="customParam.unit"
-              :minVal="customParam.minValue"
-              :maxVal="customParam.maxValue"
-              :initVal="customParam.value"
-              @knobTurned="setCustomParam(cpIndex, $event)"
-            />
-          </div>
+        <div
+          class="knob-wrapper"
+          @click="knobClicked(Node.name + '-' + customParam.name)"
+        >
+          <Knob
+            :ref="Node.name + '-' + customParam.name"
+            :unit="customParam.unit"
+            :minVal="customParam.minValue"
+            :maxVal="customParam.maxValue"
+            :initVal="customParam.value"
+            @knobTurned="setCustomParam(cpIndex, $event)"
+          />
         </div>
       </div>
     </div>
@@ -85,7 +86,12 @@ export default {
     },
 
     stopSample() {
-      this.Node.stopSample()
+      this.Node.stopSample();
+    },
+
+    knobClicked(knobName) {
+      const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
+      this.$emit("knobClicked", knobRef);
     },
 
     getCssNodeName(name) {
@@ -124,7 +130,8 @@ export default {
   background: var(--color-1);
 }
 
-.stop-btn, .stop-placeholder {
+.stop-btn,
+.stop-placeholder {
   height: 20px;
 }
 .stop-btn {

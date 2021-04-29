@@ -38,7 +38,10 @@
             {{ innerNodeAudioParam.displayName }}
           </div>
 
-          <div class="knob-wrapper">
+          <div
+            class="knob-wrapper"
+            @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)"
+          >
             <Knob
               :ref="Node.name + '-' + innerNodeAudioParam.name"
               :unit="innerNodeAudioParam.unit"
@@ -63,7 +66,10 @@
           {{ customParam.displayName }}
         </div>
 
-        <div class="knob-wrapper">
+        <div
+          class="knob-wrapper"
+          @click="knobClicked(Node.name + '-' + customParam.name)"
+        >
           <div class="knob-wrapper">
             <Knob
               :ref="Node.name + '-' + customParam.name"
@@ -131,6 +137,11 @@ export default {
         this.delayTimeKnobValue = value;
       }
       this.Node.setInnerNodeAudioParam(inapIndex, value);
+    },
+
+    knobClicked(knobName) {
+      const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
+      this.$emit("knobClicked", knobRef);
     },
 
     getCssNodeName(name) {

@@ -12,17 +12,18 @@
           {{ customParam.displayName }}
         </div>
 
-        <div class="knob-wrapper">
-          <div class="knob-wrapper">
-            <Knob
-              :ref="Node.name + '-' + customParam.name"
-              :unit="customParam.unit"
-              :minVal="customParam.minValue"
-              :maxVal="customParam.maxValue"
-              :initVal="customParam.value"
-              @knobTurned="setCustomParam(cpIndex, $event)"
-            />
-          </div>
+        <div
+          class="knob-wrapper"
+          @click="knobClicked(Node.name + '-' + customParam.name)"
+        >
+          <Knob
+            :ref="Node.name + '-' + customParam.name"
+            :unit="customParam.unit"
+            :minVal="customParam.minValue"
+            :maxVal="customParam.maxValue"
+            :initVal="customParam.value"
+            @knobTurned="setCustomParam(cpIndex, $event)"
+          />
         </div>
       </div>
     </div>
@@ -42,10 +43,12 @@
           {{ motulationParam.displayName }}
         </div>
 
-        <div
-          class="knob-wrapper"
-        >
-          <div class="knob-wrapper" v-if="motulationParam.name !== 'type'">
+        <div class="knob-wrapper">
+          <div
+            class="knob-wrapper"
+            v-if="motulationParam.name !== 'type'"
+            @click="knobClicked(Node.name + '-' + motulationParam.name)"
+          >
             <Knob
               :ref="Node.name + '-' + motulationParam.name"
               :unit="motulationParam.unit"
@@ -89,6 +92,11 @@ export default {
     setModType(mpIndex, e) {
       e.target.blur();
       this.Node.setModulationParam(mpIndex, e.target.value);
+    },
+
+    knobClicked(knobName) {
+      const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
+      this.$emit("knobClicked", knobRef);
     },
 
     getCssNodeName(name) {
