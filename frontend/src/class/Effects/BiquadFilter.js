@@ -73,12 +73,12 @@ class BiquadFilter extends Node {
   initInnerNodeAudioParams() {
     this.innerNodeAudioParams = [
       {
-        name: 'modFrequency', displayName: 'LFO freq', unit: 'hz', //%
+        name: 'modFrequency', displayName: 'freq', unit: 'hz', //%
         minValue: 0, maxValue: 60, value: 0, defaultValue: 0, step: 0.01,
         node: this.mod, nodeAudioParam: 'frequency'
       },
       {
-        name: 'modAmount', displayName: 'LFO amt', unit: '',
+        name: 'modAmount', displayName: 'amt', unit: '',
         minValue: 0, maxValue: 10000, value: 0, defaultValue: 0, step: 0.01,
         node: this.modGain, nodeAudioParam: 'gain'
       },

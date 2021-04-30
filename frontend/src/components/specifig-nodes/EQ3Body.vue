@@ -74,7 +74,7 @@ export default {
 <style lang="scss" scoped>
 .inner-node-audio-params {
   display: grid;
-  // grid-template-columns: 200px 1fr;
+  padding-top: .2em;
   grid-template-areas:
     "h1 h2 h3"
     "t1 t2 t3"

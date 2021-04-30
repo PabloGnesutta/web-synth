@@ -33,6 +33,10 @@
         <div class="node-name" @click="nodeClicked()">
           {{ Node.name }}
         </div>
+      </div>
+      <!-- /node-header -->
+
+      <div class="node-body">
         <!-- Types -->
         <div class="types" v-if="Node.types">
           <select @input="setType($event)">
@@ -45,10 +49,7 @@
             </option>
           </select>
         </div>
-      </div>
-      <!-- /node-header -->
 
-      <div class="node-body">
         <div v-if="Node.nodeType === 'Delay'" class="delay-body-wrapper">
           <DelayBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
@@ -70,8 +71,11 @@
         <div v-else-if="Node.nodeType === 'Femod'" class="femod-body-wrapper">
           <FemodBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
-        <div v-else-if="Node.nodeType === 'BiquadFilter'" class="femod-body-wrapper">
-          <FilterBody :Node="Node" />
+        <div
+          v-else-if="Node.nodeType === 'BiquadFilter'"
+          class="femod-body-wrapper"
+        >
+          <FilterBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
 
         <!-- The rest -->
@@ -81,6 +85,7 @@
             Node.nodeType !== 'EQ3' &&
             Node.nodeType !== 'Femod' &&
             Node.nodeType !== 'Sampler' &&
+            Node.nodeType !== 'BiquadFilter' &&
             Node.nodeType !== 'Duette'
           "
           class="node-body-inner"
@@ -92,14 +97,6 @@
               :key="audioParam.name"
               v-for="(audioParam, apIndex) in Node.audioParams"
               :class="[getCssNodeName(Node.name + ' ' + audioParam.name)]"
-              v-if="
-                !(Node.type === 'highshelf' && audioParam.name === 'Q') &&
-                !(Node.type === 'lowshelf' && audioParam.name === 'Q') &&
-                !(Node.type === 'notch' && audioParam.name === 'gain') &&
-                !(Node.type === 'lowpass' && audioParam.name === 'gain') &&
-                !(Node.type === 'bandpass' && audioParam.name === 'gain') &&
-                !(Node.type === 'highpass' && audioParam.name === 'gain')
-              "
             >
               <div
                 class="param-name connectable"
@@ -526,7 +523,7 @@ export default {
     display: inline-block;
     user-select: none;
     text-align: center;
-    margin-bottom: 0.2em;
+    // margin-bottom: 0.2em;
     cursor: pointer;
     position: relative;
   }
@@ -609,7 +606,8 @@ export default {
   text-align: center;
 }
 .types {
-  margin-bottom: 0.2em;
+  padding: 0.2em 0;
+  background: #272727;
 }
 
 // PARAMS
@@ -687,7 +685,7 @@ export default {
 }
 
 .BiquadFilter {
-  width: 160px;
+  width: 200px;
 }
 
 .Track-Gain {
