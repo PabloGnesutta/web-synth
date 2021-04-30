@@ -52,20 +52,26 @@
         <div v-if="Node.nodeType === 'Delay'" class="delay-body-wrapper">
           <DelayBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
-        <div v-if="Node.nodeType === 'EQ3'" class="eq3-body-wrapper">
+        <div v-else-if="Node.nodeType === 'EQ3'" class="eq3-body-wrapper">
           <EQ3Body :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
-        <div v-if="Node.nodeType === 'Looper'" class="looper-body-wrapper">
+        <div v-else-if="Node.nodeType === 'Looper'" class="looper-body-wrapper">
           <LooperBody :Node="Node" />
         </div>
-        <div v-if="Node.nodeType === 'Sampler'" class="sampler-body-wrapper">
+        <div
+          v-else-if="Node.nodeType === 'Sampler'"
+          class="sampler-body-wrapper"
+        >
           <SamplerBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
-        <div v-if="Node.nodeType === 'Duette'" class="duette-body-wrapper">
+        <div v-else-if="Node.nodeType === 'Duette'" class="duette-body-wrapper">
           <DuetteBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
-        <div v-if="Node.nodeType === 'Femod'" class="femod-body-wrapper">
+        <div v-else-if="Node.nodeType === 'Femod'" class="femod-body-wrapper">
           <FemodBody :Node="Node" @knobClicked="knobClickedWithRef" />
+        </div>
+        <div v-else-if="Node.nodeType === 'BiquadFilter'" class="femod-body-wrapper">
+          <FilterBody :Node="Node" />
         </div>
 
         <!-- The rest -->
@@ -300,6 +306,7 @@ import LooperBody from "./specifig-nodes/LooperBody.vue";
 import DuetteBody from "./specifig-nodes/DuetteBody.vue";
 import FemodBody from "./specifig-nodes/FemodBody.vue";
 import SamplerBody from "./specifig-nodes/SamplerBody.vue";
+import FilterBody from "./specifig-nodes/FilterBody.vue";
 export default {
   data() {
     return {
@@ -488,6 +495,7 @@ export default {
     LooperBody,
     DuetteBody,
     FemodBody,
+    FilterBody,
     AnalyserRender,
     SamplerBody,
   },
@@ -679,7 +687,7 @@ export default {
 }
 
 .BiquadFilter {
-  width: 140px;
+  width: 160px;
 }
 
 .Track-Gain {

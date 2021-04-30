@@ -104,7 +104,7 @@ export default {
     turnOn() {
       this.nextBeat = 1;
       this.nextBeatTime = this.context.currentTime;
-      this.setCurrentBeat(this.nextBeat);
+      this.setCurrentBeat(1);
       this.setNextBeatTime(this.nextBeatTime);
       this.setTempoAndSecondsPerBeat();
       this.scheduler();
@@ -142,7 +142,7 @@ export default {
     },
 
     setTempoAndSecondsPerBeat() {
-      this.setTempo(this.tempoKnobValue);
+      // this.setTempo(this.tempoKnobValue);
       this.setSecondsPerBeat(60.0 / this.tempo);
     },
 

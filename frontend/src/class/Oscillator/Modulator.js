@@ -24,7 +24,7 @@ class Modulator extends Oscillator {
     this.status = "STARTED"
 
     this.initAudioParams()
-    this.start()
+    this.node.start()
   }
 
   initAudioParams() {
@@ -38,6 +38,14 @@ class Modulator extends Oscillator {
         minValue: -detuneMax, maxValue: detuneMax, value: 0, defaultValue: 0, step: 0.1
       },
     ]
+  }
+
+  setAudioParam(index, value) {
+    let curvedValue = parseFloat(value)
+
+    const param = this.audioParams[index];
+    this.node[param.name].setValueAtTime(curvedValue, 0);
+    this.audioParams[index].value = parseFloat(value);
   }
 
   connectAudioParam(Node, audioParam) {
