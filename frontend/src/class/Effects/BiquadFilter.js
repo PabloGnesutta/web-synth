@@ -97,8 +97,8 @@ class BiquadFilter extends Node {
   refreshParams() {
     this.setValuesAccordingToType()
     this.node.frequency.setValueAtTime(this.audioParams[0].value, 0)
-    this.node.Q.setValueAtTime(this.audioParams[1].value, 0)//
-    this.node.gain.setValueAtTime(this.audioParams[2].value, 0)//
+    // this.node.Q.setValueAtTime(this.audioParams[1].value, 0)//
+    // this.node.gain.setValueAtTime(this.audioParams[2].value, 0)//
   }
 
   setType(type) {

@@ -28,6 +28,12 @@
             </div>
             <div
               class="btn btn-instrument dropdown-item"
+              @click="createInstrument('Surgeon')"
+            >
+              Surgeon
+            </div>
+            <div
+              class="btn btn-instrument dropdown-item"
               @click="createInstrument('Femod')"
             >
               Femod
@@ -180,9 +186,7 @@
             </div>
           </div>
         </div>
-        <div class="map" @click="toggleMapping">
-          MAP
-        </div>
+        <div class="map" @click="toggleMapping">MAP</div>
       </div>
     </div>
   </div>
@@ -218,7 +222,7 @@ export default {
     ...mapMutations(["setTempo", "setTotalBeats"]),
 
     toggleMapping() {
-      this.$emit('toggleMapping')
+      this.$emit("toggleMapping");
     },
 
     createInstrument(className) {

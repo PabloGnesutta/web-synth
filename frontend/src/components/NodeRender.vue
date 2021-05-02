@@ -68,6 +68,12 @@
         <div v-else-if="Node.nodeType === 'Duette'" class="duette-body-wrapper">
           <DuetteBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
+        <div
+          v-else-if="Node.nodeType === 'Surgeon'"
+          class="duette-body-wrapper"
+        >
+          <SurgeonBody :Node="Node" @knobClicked="knobClickedWithRef" />
+        </div>
         <div v-else-if="Node.nodeType === 'Femod'" class="femod-body-wrapper">
           <FemodBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
@@ -86,6 +92,7 @@
             Node.nodeType !== 'Femod' &&
             Node.nodeType !== 'Sampler' &&
             Node.nodeType !== 'BiquadFilter' &&
+            Node.nodeType !== 'Surgeon' &&
             Node.nodeType !== 'Duette'
           "
           class="node-body-inner"
@@ -301,6 +308,7 @@ import DelayBody from "./specifig-nodes/DelayBody";
 import EQ3Body from "./specifig-nodes/EQ3Body.vue";
 import LooperBody from "./specifig-nodes/LooperBody.vue";
 import DuetteBody from "./specifig-nodes/DuetteBody.vue";
+import SurgeonBody from "./specifig-nodes/SurgeonBody.vue";
 import FemodBody from "./specifig-nodes/FemodBody.vue";
 import SamplerBody from "./specifig-nodes/SamplerBody.vue";
 import FilterBody from "./specifig-nodes/FilterBody.vue";
@@ -491,6 +499,7 @@ export default {
     DelayBody,
     LooperBody,
     DuetteBody,
+    SurgeonBody,
     FemodBody,
     FilterBody,
     AnalyserRender,
@@ -647,7 +656,9 @@ export default {
 
 .Duette {
   width: 350px;
-  // padding: 0 .2em;
+}
+.Surgeon {
+  width: 350px;
 }
 
 .Carrier,

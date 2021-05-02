@@ -27,17 +27,30 @@ class Duette extends Node {
     this.octave = 3
     this.transpose = 0
 
-    this.scaleNodes = []
 
-    this.oscillatorsState = [
+    this.scaleNodes = []
+    this.oscillatorGroupGains = []
+
+    this.oscillatorsGroups = [
       { A: 0.1, D: 0.5, S: 0.8, R: 0.3, detune: 0, gain: 0.6, type: 'triangle', muted: false },
       { A: 1.9, D, S, R, detune: 10, gain: 0.3, type: 'sawtooth', muted: false },
       { A: 0, D: 0.1, S: 0, R: 0.1, detune: -10, gain: 0.8, type: 'sine', muted: false },
     ]
-    this.oscillatorsPerNote = this.oscillatorsState.length
+
+    this.oscillatorsPerNote = this.oscillatorsGroups.length
+
+    for (let i = 0; i < this.oscillatorsPerNote; i++) {
+      const gain = Node.context.createGain()
+      gain.connect(this.outputNode)
+      this.oscillatorGroupGains.push(gain)
+    }
+
+    this.inputNode.connect(this.outputNode)
+    this.lastConnected = 0
 
     this.initDuetteParams()
     this.initOscillators()
+
   }
 
   destroy() {
@@ -56,22 +69,27 @@ class Duette extends Node {
   initOscillators() {
     for (let i = 0; i < noteKeys.length; i++) {
       let oscillators = []
-      this.oscillatorsState.forEach(o => {
+      this.oscillatorsGroups.forEach((o, l) => {
         const osc = new ADSROsc(o.type);
-        osc.connectNativeNode(this.outputNode);
+        osc.outputNode.connect(this.oscillatorGroupGains[l]);
         oscillators.push(osc)
       })
       this.scaleNodes.push(oscillators);
     }
   }
 
+  setOscillatorTarget(origin, destination) {
+  }
+
   playNote(i) {
     let noteIndex = i + 12 * this.octave + this.transpose
     if (noteIndex < 0) noteIndex = 0
-    if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
+    else if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
+
+    let freq = notes[noteIndex][noteFreqIndex]
 
     for (let o = 0; o < this.oscillatorsPerNote; o++) {
-      this.scaleNodes[i][o].startWithFrequency(notes[noteIndex][noteFreqIndex]); //.waveLength probar
+      this.scaleNodes[i][o].startWithFrequency(freq, o); //.waveLength probar
     }
   }
 
@@ -88,13 +106,12 @@ class Duette extends Node {
     if (key === "v") this.transpose = this.transpose < 12 ? this.transpose + 1 : this.transpose;
   }
 
-  //en vez de mutear todos los osciladores debería haber una ganancia para cada grupo de oscilladores 
-  //(oscillatorsState.length) y mutear esa ganancia en su lugar
   toggleMute(index) {
-    this.scaleNodes.forEach(sn => {
-      sn[index].toggleMute()
-    })
-    this.oscillatorsState[index].muted = !this.oscillatorsState[index].muted
+    this.oscillatorsGroups[index].muted = !this.oscillatorsGroups[index].muted
+    if (this.oscillatorsGroups[index].muted)
+      this.oscillatorGroupGains[index].gain.value = 0
+    else
+      this.oscillatorGroupGains[index].gain.value = 1
   }
 
   setType(index, value) {
@@ -103,7 +120,7 @@ class Duette extends Node {
       sn[index].node.type = value
 
     })
-    this.oscillatorsState[index].type = value
+    this.oscillatorsGroups[index].type = value
   }
 
   setDuetteParam(oscIndex, paramIndex, value) {
@@ -116,7 +133,7 @@ class Duette extends Node {
       this.scaleNodes.forEach(sn => {
         sn[index][prop] = value
       })
-      this.oscillatorsState[index][prop] = value
+      this.oscillatorsGroups[index][prop] = value
     }
 
     const setDetune = (index, value) => {
@@ -124,7 +141,7 @@ class Duette extends Node {
         sn[index].detuneValue = value
         sn[index].node.detune.setValueAtTime(value, 0)
       })
-      this.oscillatorsState[index].detune = value
+      this.oscillatorsGroups[index].detune = value
     }
 
     const setGain = (index, value) => {
@@ -132,7 +149,7 @@ class Duette extends Node {
         sn[index].outputNode.gain.value = value
         sn[index].gain = value
       })
-      this.oscillatorsState[index].gain = value
+      this.oscillatorsGroups[index].gain = value
     }
 
     this.duetteParams = [
@@ -191,7 +208,7 @@ class Duette extends Node {
         displayName: "level",
         unit: '',
         minValue: 0,
-        maxValue: 1,
+        maxValue: 3,
         value: 0.7,
         set(i, v) { setGain(i, v) }
       },

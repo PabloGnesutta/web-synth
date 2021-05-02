@@ -137,10 +137,10 @@ export default {
 
       fileReader.onloadend = () => {
         const arrayBuffer = fileReader.result;
-
-        this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-          this.Node.setAudioBuffer(audioBuffer);
-        });
+        this.Node.setAudioBuffer(arrayBuffer);
+        // this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
+        //   this.Node.setAudioBuffer(audioBuffer);
+        // });
       };
 
       fileReader.readAsArrayBuffer(file);

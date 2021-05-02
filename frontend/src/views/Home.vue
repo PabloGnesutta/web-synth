@@ -126,6 +126,7 @@ const BiquadFilter = require("../class/Effects/BiquadFilter");
 const Mic = require("../class/Instruments/Mic");
 const Femod = require("../class/Instruments/Femod");
 const Duette = require("../class/Instruments/Duette");
+const Surgeon = require("../class/Instruments/Surgeon");
 const Carrier = require("../class/Instruments/Carrier");
 const Drumkit = require("../class/Instruments/Drumkit");
 const Sampler = require("../class/Instruments/Sampler");
@@ -140,6 +141,7 @@ const instrumentsDict = new Map([
   ["Drumkit", Drumkit],
   ["Sampler", Sampler],
   ["Duette", Duette],
+  ["Surgeon", Surgeon],
   ["WhiteNoise", WhiteNoise],
 ]);
 
@@ -245,7 +247,7 @@ export default {
       Node.context = this.context;
 
       this.createMainGain();
-      this.createTrack(new Femod());
+      this.createTrack(new Surgeon());
 
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);

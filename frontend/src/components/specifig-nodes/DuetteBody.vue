@@ -1,6 +1,6 @@
 <template>
   <div class="DuetteBody">
-    <div class="oscillator" v-for="(osc, o) in Node.oscillatorsState" :key="o">
+    <div class="oscillator" v-for="(osc, o) in Node.oscillatorsGroups" :key="o">
       <div class="oscillator-inner">
         <div class="top">
           <div class="types">
@@ -20,6 +20,9 @@
             :class="{ muted: osc.muted }"
           >
             M
+          </div>
+          <div class="destination">
+            <span @click="setDestination(o)">Destination</span>
           </div>
         </div>
         <div class="custom-params params-container">
@@ -59,6 +62,10 @@ export default {
   props: ["Node"],
 
   methods: {
+    setDestination(o) {
+      this.Node.setOscillatorTarget(o)
+    },
+
     toggleMute(index) {
       this.Node.toggleMute(index);
     },
