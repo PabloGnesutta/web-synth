@@ -1,5 +1,4 @@
 const Node = require("../Node")
-const SurgeonOsc = require("../Oscillator/SurgeonOsc")
 const noteKeys = require("../../data/noteKeys")
 const notes = require("../../data/notes")
 
@@ -11,9 +10,9 @@ const D = 0
 const S = 1
 const R = 0.1
 
+modulatorPeak = 3000
 carrierConstraints = { minValue: 0, maxValue: 1, value: 1 }
-modulatorConstraints = { minValue: 0, maxValue: 3000, value: 100 }
-
+modulatorConstraints = { minValue: 0, maxValue: modulatorPeak, value: 100 }
 
 class Surgeon extends Node {
   static SurgeonCount = 0
@@ -32,19 +31,19 @@ class Surgeon extends Node {
     //A;D;S;R;detine;gain tiene que estar en este orden
     this.oscillatorGroups = [
       {
-        A: 0.1, D: 0.5, S: 1, R: 0.3, detune: 0, gain: 0.6,
-        peak: 1, type: 'triangle', destination: 'OUTPUT', muted: false,
+        A: 2.6, D: 0.5, S: 520, R: 0.3, detune: 0, gain: 1,
+        peak: modulatorPeak, type: 'sawtooth', destination: 2, muted: false,
         destinations: [['B', 1], ['C', 2], ['Out', 'OUTPUT']],
         name: 'A'
       },
       {
-        A: 1.9, D, S: 1, R, detune: 0, gain: 0.3,
+        A: 1.9, D, S: 1, R, detune: 0, gain: 0.2,
         peak: 1, type: 'sawtooth', destination: 'OUTPUT', muted: false,
         destinations: [['A', 0], ['C', 2], ['Out', 'OUTPUT']],
         name: 'B'
       },
       {
-        A: 0, D: 0.1, S: 0, R: 0.1, detune: 0, gain: 0.8,
+        A: 0, D: 0.1, S: 1, R: 0.1, detune: 0, gain: 0.8,
         peak: 1, type: 'sine', destination: 'OUTPUT', muted: false,
         destinations: [['A', 0], ['B', 1], ['Out', 'OUTPUT']],
         name: 'C'
@@ -57,7 +56,11 @@ class Surgeon extends Node {
     this.groupOscillators = Array(noteKeys.length)
 
     this.groupGains = Array(this.oscillatorsPerNote.length)
-    this.groupOctaveTranspose = Array(this.oscillatorsPerNote.length)
+    this.groupOctaveTranspose = [
+      [3, 0],
+      [3, 0],
+      [2, 0],
+    ]
 
     for (let i = 0; i < this.oscillatorsPerNote; i++) {
       const gain = Node.context.createGain()
@@ -65,7 +68,6 @@ class Surgeon extends Node {
 
       this.groupGains[i] = gain
       this.groupADSRGains[i] = Node.context.createGain()
-      this.groupOctaveTranspose[i] = [3, 0]
     }
 
     this.inputNode.connect(this.outputNode)
@@ -90,7 +92,7 @@ class Surgeon extends Node {
       oscillatorGroup.S = 1
       return carrierConstraints
     } else {
-      oscillatorGroup.peak = 1000
+      oscillatorGroup.peak = modulatorPeak
       oscillatorGroup.S = 1000
       return modulatorConstraints
     }
@@ -116,15 +118,11 @@ class Surgeon extends Node {
       let ADSRGain = Node.context.createGain()
       let oscillator = oscillators[o]
 
-
-      let val = 0
       oscillator.connect(ADSRGain)
-      if (destination !== 'OUTPUT') {
-        val = 100
-        ADSRGain.connect(oscillators[destination].frequency) //detination!
-        ADSRGain.gain.value = 1000
-      } else {
 
+      if (destination !== 'OUTPUT') {
+        ADSRGain.connect(oscillators[destination].frequency) //detination!
+      } else {
         ADSRGain.connect(this.groupGains[o]) //detination!
       }
 
@@ -137,7 +135,7 @@ class Surgeon extends Node {
 
       oscillator.start(t0)
 
-      ADSRGain.gain.setValueAtTime(val, t0)
+      ADSRGain.gain.setValueAtTime(0, t0)
       ADSRGain.gain.linearRampToValueAtTime(peak, t1)
       ADSRGain.gain.linearRampToValueAtTime(S, t1 + D)
 
@@ -164,7 +162,6 @@ class Surgeon extends Node {
       ADSRGain.gain.linearRampToValueAtTime(0, t + R)
 
       oscillators[o].stop(t + R)
-      //set timeout R to kill ADSRGain and connections?
     }
   }
 

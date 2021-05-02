@@ -21,9 +21,6 @@
           >
             M
           </div>
-          <div class="destination">
-            <span @click="setDestination(o)">Destination</span>
-          </div>
         </div>
         <div class="custom-params params-container">
           <div
@@ -62,10 +59,6 @@ export default {
   props: ["Node"],
 
   methods: {
-    setDestination(o) {
-      this.Node.setOscillatorTarget(o)
-    },
-
     toggleMute(index) {
       this.Node.toggleMute(index);
     },

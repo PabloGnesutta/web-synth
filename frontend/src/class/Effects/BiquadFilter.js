@@ -15,6 +15,7 @@ class BiquadFilter extends Node {
 
     this.type = 'lowpass'
     this.types = ['lowpass', 'highpass', 'bandpass', 'notch', 'lowshelf', 'highshelf', 'peaking']
+
     this.modTypes = ['sine', 'triangle', 'sawtooth', 'square']
     this.modType = "sawtooth"
 
@@ -28,7 +29,7 @@ class BiquadFilter extends Node {
     this.modGain = Node.context.createGain()
 
     this.mod.start()
-    this.mod.type = "square"
+    this.mod.type = this.modType
     this.mod.connect(this.modGain)
     this.modGain.connect(this.node.frequency)
 

@@ -693,6 +693,20 @@ export default {
     },
 
     // MIDI
+    triggerNoteOn(note, channel) {
+      console.log("noteon", note, channel);
+
+      this.keypressListeners.forEach((scaleInterface) => {
+        scaleInterface.instrument.playNote(note);
+      });
+    },
+    triggerNoteOff(note, channel) {
+      console.log("noteoff", note, channel);
+      this.keypressListeners.forEach((scaleInterface) => {
+        scaleInterface.instrument.stopNote(note);
+      });
+    },
+
     toggleMapping() {
       if (this.refBeignMapped) {
         this.refBeignMapped.stopMapping();
@@ -715,8 +729,10 @@ export default {
       knobRef.startMapping();
     },
 
-    getMIDIMessage({ data }) {
-      const cmd = data[0];
+    getMIDIMessage(event) {
+      let data = event.data;
+
+      const status = data[0];
       const note = data[1];
       const value = data[2];
 
@@ -727,23 +743,32 @@ export default {
           this.maps.push({
             ref: this.refBeignMapped,
             refName,
-            cmd,
+            cmd: status,
             note,
           });
         } else {
-          existingMap.cmd = cmd;
+          existingMap.cmd = status;
           existingMap.note = note;
         }
         const knob = this.refBeignMapped;
-        knob.assignMap(cmd, note);
-        // return;
+        knob.assignMap(status, note);
       } else {
-        const mappedItem = this.maps.find(
-          (m) => m.cmd === cmd && m.note === note
-        );
-        if (!mappedItem) return;
-        const knob = mappedItem.ref;
-        knob.receiveMidi(value);
+        const binary = status.toString(2);
+        const command = binary.substr(0, 4);
+        const channel = parseInt(binary.substr(4, 4), 2) + 1;
+
+        //note on / note off
+        if (command === "1001") this.triggerNoteOn(note, channel);
+        else if (command === "1000") this.triggerNoteOff(note, channel);
+        else {
+          //turn knob
+          const mappedItem = this.maps.find(
+            (m) => m.cmd === status && m.note === note
+          );
+          if (!mappedItem) return;
+          const knob = mappedItem.ref;
+          knob.receiveMidi(value);
+        }
       }
     },
 
