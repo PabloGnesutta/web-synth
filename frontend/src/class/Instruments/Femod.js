@@ -98,7 +98,7 @@ class Femod extends Node {
     oscillator.start(t0)
 
     ADSRGain.gain.setValueAtTime(0, t0)
-    ADSRGain.gain.linearRampToValueAtTime(1, t1)
+    ADSRGain.gain.linearRampToValueAtTime(peak, t1)
     ADSRGain.gain.linearRampToValueAtTime(S, t1 + D)
 
     this.modulators[index] = mod
@@ -145,7 +145,6 @@ class Femod extends Node {
   setNotInUse(index) {
     inUse[index] = false
     available[index] = true
-    // noteIndexInUse[index] = null //optional?
   }
 
   getInuseIndexByNote(i) {
@@ -155,17 +154,13 @@ class Femod extends Node {
   initCustomParams() {
     const setScaleNodeProperty = (prop, value) => {
       if (prop === 'A') A = value
-      if (prop === 'D') D = value
-      if (prop === 'S') S = value
-      if (prop === 'R') R = value
+      else if (prop === 'D') D = value
+      else if (prop === 'S') S = value
+      else if (prop === 'R') R = value
     }
 
     const setDetune = (value) => {
-      // this.scaleNodes.forEach(sn => {
-      //   sn.detuneValue = value
-      //   sn.node.detune.setValueAtTime(value, 0)
-      //   sn.mod.detune.setValueAtTime(value, 0)
-      // })
+      //tiempo real agregar
     }
 
     this.customParams = [
@@ -236,17 +231,11 @@ class Femod extends Node {
   initModulationParams() {
     const setModLevel = (value) => {
       this.modLevelValue = value
-      // this.scaleNodes.forEach(sn => {
-      //   sn.modLevelValue = value
-      //   sn.modLevel.gain.setValueAtTime(value, 0)
-      // })
+      //tiempo real agregar
     }
     const setModType = (value) => {
       this.modType = value
-      // this.scaleNodes.forEach(sn => {
-      //   sn.modType = value
-      //   sn.mod.type = value
-      // })
+      //tiempo real agregar
     }
     this.modulationParams = [
       {
