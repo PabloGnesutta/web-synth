@@ -7,10 +7,6 @@ const maxDelayTime = 3
 const initialDelayTime = 0.3
 const initialFeddback = 0.5
 
-const audioParamsConfig = [
-  { name: 'gain', minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.01 },
-]
-
 class Delay extends Node {
   static delayCount = 0
 
@@ -53,7 +49,7 @@ class Delay extends Node {
       },
       {
         name: 'feedback', displayName: 'feedback', unit: '', //%
-        minValue: 0, maxValue: 0.99, value: initialFeddback, defaultValue: initialFeddback, step: 0.01,
+        minValue: 0, maxValue: 1, value: initialFeddback, defaultValue: initialFeddback, step: 0.01,
         node: this.feedbackGain, nodeAudioParam: 'gain'
       },
     ]

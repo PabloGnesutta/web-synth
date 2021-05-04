@@ -24,9 +24,6 @@ class Femod extends Node {
     this.types = ["sine", "triangle", "sawtooth", "square"]
     this.type = "sawtooth"
 
-    this.octave = 3
-    this.transpose = 0
-
     this.scaleNodes = []
 
     this.inputNode.connect(this.outputNode)
@@ -72,9 +69,9 @@ class Femod extends Node {
   }
 
   playNote(i) {
-    let noteIndex = i + 12 * this.octave + this.transpose
-    if (noteIndex < 0) noteIndex = 0
-    if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
+    // let noteIndex = i + 12 * this.octave + this.transpose
+    // if (noteIndex < 0) noteIndex = 0
+    // if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
 
     this.scaleNodes[i].startWithFrequency(notes[noteIndex][noteFreqIndex]); //.waveLength probar
   }
@@ -83,12 +80,12 @@ class Femod extends Node {
     this.scaleNodes[i].stop();
   }
 
-  onOtherKeyup(key) {
-    if (key === "z" && this.octave > 1) this.octave--;
-    if (key === "x") this.octave = this.octave < 8 ? this.octave + 1 : this.octave;
-    if (key === "c") this.transpose = this.transpose <= -12 ? -12 : this.transpose - 1;
-    if (key === "v") this.transpose = this.transpose < 12 ? this.transpose + 1 : this.transpose;
-  }
+  // onOtherKeyup(key) {
+  //   if (key === "z" && this.octave > 1) this.octave--;
+  //   if (key === "x") this.octave = this.octave < 8 ? this.octave + 1 : this.octave;
+  //   if (key === "c") this.transpose = this.transpose <= -12 ? -12 : this.transpose - 1;
+  //   if (key === "v") this.transpose = this.transpose < 12 ? this.transpose + 1 : this.transpose;
+  // }
 
   initCustomParams() {
     const setScaleNodeProperty = (prop, value) => {

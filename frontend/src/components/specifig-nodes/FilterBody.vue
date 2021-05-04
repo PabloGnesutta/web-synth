@@ -55,7 +55,7 @@
       </div>
 
       <!-- Inner Node Audio Params -->
-      <div class="inner-node-audio-params" v-if="Node.innerNodeAudioParams">
+      <div class="inner-node-audio-params">
         <div
           class="inner-node-audio-param param"
           v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
@@ -104,7 +104,7 @@
       </div>
 
       <!-- Set as TEmpo -->
-      <div class="set-as-tempo" @click="setAsTempo">SET AS TEMPO</div>
+      <div class="set-as-tempo" @click="setAsTempo">SET AS ROUGH TEMPO</div>
     </div>
   </div>
 </template>
@@ -125,10 +125,7 @@ export default {
         { display: "4", value: 4 },
         { display: "5", value: 5 },
         { display: "6", value: 6 },
-        { display: "7", value: 7 },
         { display: "8", value: 8 },
-        // { display: "9", value: 9 },
-        // { display: "10", value: 10 },
         { display: "12", value: 12 },
       ],
     };
@@ -140,16 +137,9 @@ export default {
   },
 
   methods: {
-    ...mapMutations([
-      "setTempo",
-      // "setTotalBeats",
-      // "setCurrentBeat",
-      // "setNextBeatTime",
-      "setSecondsPerBeat",
-    ]),
+    ...mapMutations(["setTempo", "setSecondsPerBeat"]),
 
     setAudioParam(apIndex, value, callerIsSetSync) {
-      console.log("apindex", apIndex);
       // if (inapIndex === 0 && !callerIsSetSync) {
       //   //frequency... VER
       //   this.delayTimeKnobValue = value;

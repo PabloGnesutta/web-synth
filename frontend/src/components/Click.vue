@@ -22,7 +22,7 @@
         max="300"
         step="1"
         v-model="tempoKnobValue"
-        @input="setTempoAndSecondsPerBeat"
+        @input="setTempoWithSlider"
       />
     </div>
 
@@ -106,7 +106,7 @@ export default {
       this.nextBeatTime = this.context.currentTime;
       this.setCurrentBeat(1);
       this.setNextBeatTime(this.nextBeatTime);
-      this.setTempoAndSecondsPerBeat();
+      this.setTempoWithSlider();
       this.scheduler();
       this.clickActive = true;
     },
@@ -141,9 +141,13 @@ export default {
       this.nextBeat = this.nextBeat >= this.totalBeats ? 1 : this.nextBeat + 1;
     },
 
-    setTempoAndSecondsPerBeat() {
-      // this.setTempo(this.tempoKnobValue);
+    localSetSecondsPerBeat() {
       this.setSecondsPerBeat(60.0 / this.tempo);
+    },
+
+    setTempoWithSlider() {
+      this.setTempo(this.tempoKnobValue);
+      this.localSetSecondsPerBeat();
     },
 
     sheduleClickNote(time) {
@@ -202,7 +206,7 @@ export default {
   justify-content: center;
   gap: 1em;
   background: #333;
-  padding: .3em;
+  padding: 0.3em;
 }
 
 .on-off {

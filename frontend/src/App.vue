@@ -33,6 +33,7 @@ export default {
 :root {
   --color-1: teal;
   --color-2: coral;
+  --header-height: 50px;
 }
 
 body {

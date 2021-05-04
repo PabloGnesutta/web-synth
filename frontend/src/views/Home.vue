@@ -9,6 +9,7 @@
       <div class="top-section">
         <div class="header-wrapper">
           <Header
+            :ref="'header'"
             @createInstrument="createInstrument"
             @createModulator="createModulator"
             @createEffect="createEffect"
@@ -112,6 +113,7 @@
 </template>
 
 <script>
+const notes = require("../data/notes");
 const noteKeys = require("../data/noteKeys");
 
 const Node = require("../class/Node");
@@ -210,6 +212,8 @@ export default {
       //keys
       m_pressed: false,
       ctrl_pressed: false,
+      octave: 3,
+      transpose: 0,
     };
   },
 
@@ -634,12 +638,17 @@ export default {
       this.keyEnabled[e.keyCode] = false;
 
       const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk[0]);
+
       if (noteKeyIndex !== -1) {
+        let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+        if (noteIndex < 0) noteIndex = 0;
+        if (noteIndex > notes.length - 1) noteIndex = notes.length - 1;
+
         this.keypressListeners.forEach((scaleInterface) => {
-          scaleInterface.instrument.playNote(noteKeyIndex);
+          scaleInterface.instrument.playNote(noteIndex);
         });
       } else {
-        this.onOtherDown(e);
+        this.onOtherKeydown(e);
       }
     },
 
@@ -648,20 +657,23 @@ export default {
       const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk[0]);
 
       if (noteKeyIndex !== -1) {
+        let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+
         this.keypressListeners.forEach((scaleInterface) => {
-          scaleInterface.instrument.stopNote(noteKeyIndex);
+          scaleInterface.instrument.stopNote(noteIndex);
         });
       } else {
         this.onOtherKeyup(e);
       }
     },
 
-    onOtherDown({ key, keyCode }) {
+    onOtherKeydown({ key, keyCode }) {
+      //m
       if (keyCode === 77) this.m_pressed = true;
-      if (keyCode === 17) this.ctrl_pressed = true;
-
-      //1 a 9 numpad
-      if (keyCode >= 97 && keyCode <= 105) {
+      //ctrl
+      else if (keyCode === 17) this.ctrl_pressed = true;
+      //1 a 9 numpad:
+      else if (keyCode >= 97 && keyCode <= 105) {
         this.numpadListeners.forEach((scaleInterface) => {
           scaleInterface.instrument.playNote(parseInt(key));
         });
@@ -669,39 +681,55 @@ export default {
     },
 
     onOtherKeyup({ key, keyCode }) {
-      // console.log(keyCode, key);
+      console.log(keyCode);
       //1 a 9
-      if (keyCode >= 49 && keyCode <= 57)
+      if (keyCode >= 49 && keyCode <= 57) {
         if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
+      } else {
+        switch (keyCode) {
+          case 77: //m
+            this.m_pressed = false;
+            if (this.ctrl_pressed) this.currentTrack.trackGain.toggleMute();
+            break;
+          case 81: //q
+            if (this.ctrl_pressed) this.deleteTrack(this.currentTrackIndex);
+            break;
+          case 17: //ctrl
+            this.ctrl_pressed = false;
+            break;
+          case 27: //esc
+            this.$refs.header.hideMenues();
+            break;
+          case 90: //z
+            this.octave--;
+            break;
+          case 88: //x
+            this.octave++;
+            break;
+          case 67: //c
+            this.transpose--;
+            break;
+          case 86: //v
+            this.transpose++;
+            break;
 
-      //m
-      if (keyCode === 77) {
-        this.m_pressed = false;
-        if (this.ctrl_pressed) this.currentTrack.trackGain.toggleMute();
+          // default:
+          //   this.keypressListeners.forEach((scaleInterface) => {
+          //     scaleInterface.instrument.onOtherKeyup(key);
+          //   });
+        }
       }
-
-      //q
-      if (keyCode === 81)
-        if (this.ctrl_pressed) this.deleteTrack(this.currentTrackIndex);
-
-      //ctrl
-      if (keyCode === 17) this.ctrl_pressed = false;
-
-      this.keypressListeners.forEach((scaleInterface) => {
-        scaleInterface.instrument.onOtherKeyup(key);
-      });
     },
 
     // MIDI
-    triggerNoteOn(note, channel) {
-      console.log("noteon", note, channel);
 
+    triggerNoteOn(note, channel) {
       this.keypressListeners.forEach((scaleInterface) => {
         scaleInterface.instrument.playNote(note);
       });
     },
+
     triggerNoteOff(note, channel) {
-      console.log("noteoff", note, channel);
       this.keypressListeners.forEach((scaleInterface) => {
         scaleInterface.instrument.stopNote(note);
       });
@@ -729,7 +757,7 @@ export default {
       knobRef.startMapping();
     },
 
-    getMIDIMessage(event) {
+    onMIDIMessage(event) {
       let data = event.data;
 
       const status = data[0];
@@ -757,9 +785,11 @@ export default {
         const command = binary.substr(0, 4);
         const channel = parseInt(binary.substr(4, 4), 2) + 1;
 
-        //note on / note off
+        //note on / note off / sustain pedal
         if (command === "1001") this.triggerNoteOn(note, channel);
         else if (command === "1000") this.triggerNoteOff(note, channel);
+        else if (command === "1011")
+          console.log("sustain pedal pressed", value);
         else {
           //turn knob
           const mappedItem = this.maps.find(
@@ -778,7 +808,7 @@ export default {
       this.outputs = midiAccess.outputs;
 
       for (var input of this.inputs.values()) {
-        input.onmidimessage = this.getMIDIMessage;
+        input.onmidimessage = this.onMIDIMessage;
       }
     },
 

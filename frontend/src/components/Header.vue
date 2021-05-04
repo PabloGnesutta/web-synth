@@ -1,31 +1,33 @@
 <template>
   <div class="Header">
     <div class="header" :class="{ recording, playing }">
+      <div
+        class="backdrop"
+        @click.self="hideMenues"
+        v-if="menuInstrumentsVisible || menuEffectsVisible"
+      ></div>
       <div v-if="currentSave" class="current-save-name">
         {{ currentSave.name }}
       </div>
       <div class="buttons">
         <!-- Instruments -->
         <div class="menu instruments" v-if="!recording">
-          <div
-            class="btn label"
-            @click="showInstrumentsMenu = !showInstrumentsMenu"
-          >
+          <div class="btn label" @click="toggleInstrumentsMenu">
             Instruments
           </div>
-          <div class="dropdown" :class="{ hidden: !showInstrumentsMenu }">
+          <div class="dropdown" :class="{ hidden: !menuInstrumentsVisible }">
             <div
               class="btn btn-instrument dropdown-item"
               @click="createInstrument('Drumkit')"
             >
               Drumkit
             </div>
-            <div
+            <!-- <div
               class="btn btn-instrument dropdown-item"
               @click="createInstrument('Duette')"
             >
               Duette
-            </div>
+            </div> -->
             <div
               class="btn btn-instrument dropdown-item"
               @click="createInstrument('Surgeon')"
@@ -64,10 +66,8 @@
 
         <!-- Effects -->
         <div class="menu effects">
-          <div class="btn label" @click="showEffectsMenu = !showEffectsMenu">
-            Effects
-          </div>
-          <div class="dropdown" :class="{ hidden: !showEffectsMenu }">
+          <div class="btn label" @click="toggleEffectsMenu">Effects</div>
+          <div class="dropdown" :class="{ hidden: !menuEffectsVisible }">
             <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
               Filter
             </div>
@@ -197,8 +197,8 @@ import { mapGetters, mapMutations } from "vuex";
 export default {
   data() {
     return {
-      showInstrumentsMenu: false,
-      showEffectsMenu: false,
+      menuInstrumentsVisible: false,
+      menuEffectsVisible: false,
       showConfigMenu: false,
       showSavedWorks: false,
       saves: [],
@@ -225,21 +225,36 @@ export default {
       this.$emit("toggleMapping");
     },
 
+    toggleInstrumentsMenu() {
+      this.menuInstrumentsVisible = !this.menuInstrumentsVisible;
+      this.menuEffectsVisible = false;
+    },
+
+    toggleEffectsMenu() {
+      this.menuInstrumentsVisible = false;
+      this.menuEffectsVisible = !this.menuEffectsVisible;
+    },
+
+    hideMenues() {
+      this.menuInstrumentsVisible = false;
+      this.menuEffectsVisible = false;
+    },
+
     createInstrument(className) {
       this.$emit("createInstrument", className);
-      this.showInstrumentsMenu = false;
+      this.menuInstrumentsVisible = false;
     },
     createMic() {
       this.$emit("createMic");
-      this.showInstrumentsMenu = false;
+      this.menuInstrumentsVisible = false;
     },
     createEffect(className) {
       this.$emit("createEffect", className);
-      this.showEffectsMenu = false;
+      this.menuEffectsVisible = false;
     },
     createModulator() {
       this.$emit("createModulator");
-      this.showEffectsMenu = false;
+      this.menuEffectsVisible = false;
     },
 
     startRec() {
@@ -365,6 +380,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.backdrop {
+  position: absolute;
+  top: var(--header-height);
+  left: 0;
+  width: 100%;
+  height: calc(100vh - var(--header-height));
+  background: transparent;
+}
 .header.recording {
   border-color: crimson;
 }
@@ -373,6 +396,7 @@ export default {
 }
 
 .header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -385,6 +409,7 @@ export default {
   .buttons {
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: 1em;
   }
 

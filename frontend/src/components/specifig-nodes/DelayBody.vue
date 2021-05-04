@@ -14,10 +14,7 @@
         </div>
       </div>
     </div>
-    <div
-      class="inner-node-audio-params params-container"
-      v-if="Node.innerNodeAudioParams"
-    >
+    <div class="inner-node-audio-params params-container">
       <div
         class="inner-node-audio-param param"
         v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
@@ -55,7 +52,7 @@
       </div>
     </div>
 
-    <div class="custom-params params-container" v-if="Node.customParams">
+    <div class="custom-params params-container">
       <div
         class="custom-param param"
         v-for="(customParam, cpIndex) in Node.customParams"
@@ -83,11 +80,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Set as TEmpo -->
+    <div class="set-as-tempo" @click="setAsTempo">SET AS ROUGH TEMPO</div>
   </div>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapGetters, mapMutations } from "vuex";
 import Knob from "../Knob";
 export default {
   data() {
@@ -100,7 +100,6 @@ export default {
         { display: "2", value: 2 },
         { display: "3", value: 3 },
         { display: "4", value: 4 },
-        // { display: "5", value: 5 },
         { display: "6", value: 6 },
       ],
       delayTimeKnobValue: 0,
@@ -113,9 +112,14 @@ export default {
   },
 
   methods: {
+    ...mapMutations(["setTempo", "setSecondsPerBeat"]),
+
     setSync(i) {
       this.syncButtonSelected = i;
-      const delayTime = this.secondsPerBeat / this.syncButtons[i].value;
+      let delayTime = this.secondsPerBeat / this.syncButtons[i].value;
+
+      delayTime -= delayTime * 0.01;
+      // delayTime -= 0.01;
 
       if (this.sync) this.setInnerNodeAudioParam("delayTime", delayTime, true);
     },
@@ -125,6 +129,13 @@ export default {
 
       if (this.sync) this.setSync(this.syncButtonSelected);
       else this.setInnerNodeAudioParam("delayTime", this.delayTimeKnobValue);
+    },
+
+    setAsTempo() {
+      let secondsPerBeat = this.Node.delay.delayTime.value;
+
+      this.setTempo(60 / secondsPerBeat);
+      this.setSecondsPerBeat(secondsPerBeat);
     },
 
     setCustomParam(cpIndex, value) {
@@ -178,5 +189,13 @@ export default {
   &.selected {
     background: var(--color-1);
   }
+}
+
+.set-as-tempo {
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-top: 0.5em;
+  padding: 0.2em;
+  background: #111;
 }
 </style>

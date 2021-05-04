@@ -1,6 +1,6 @@
 <template>
   <div class="SurgeonBody">
-    <div class="oscillator" v-for="(osc, o) in Node.oscillatorGroups" :key="o">
+    <div class="oscillator" v-for="(osc, o) in Node.oscillatorGroupProps" :key="o">
       <div class="oscillator-inner">
         <div class="top">
           <div class="types">
@@ -23,14 +23,14 @@
             :class="{ selected: currentOsc === o }"
           >
             <div class="octave" :ref="o + 'octave'">
-              <span>oc:</span> {{ groupOctaveTranspose[o].octave }}
+              <span>oct:</span> {{ groupOctaveTranspose[o].octave }}
             </div>
             <div
               class="transpose"
               :ref="o + 'transpose'"
               :class="{ selected: transposeSelected[o] }"
             >
-              <span>tr:</span> {{ groupOctaveTranspose[o].transpose }}
+              <span>transp:</span> {{ groupOctaveTranspose[o].transpose }}
             </div>
           </div>
 

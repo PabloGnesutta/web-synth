@@ -17,7 +17,7 @@
               :class="{ enabled: instrumentEnabled }"
             ></div>
           </div>
-          <div class="placeholder" v-else></div>
+          <!-- <div class="save-preset">save</div> -->
         </div>
         <div class="top-right" v-if="Node.name !== 'Track Gain'">
           <div class="delete" @click="deleteNode()">X</div>
@@ -586,6 +586,10 @@ export default {
   height: 20px;
   display: flex;
   justify-content: space-between;
+  .top-left {
+    display: flex;
+    gap: 0.2em;
+  }
 }
 
 .instrument-enabler {
