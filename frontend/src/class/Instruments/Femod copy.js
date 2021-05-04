@@ -4,7 +4,7 @@ const Node = require("../Node")
 const notes = require("../../data/notes")
 
 //repite en surgeon
-const polyphony = 3;
+const polyphony = 15;
 let noteIndexInUse = Array(polyphony).fill(null) //noteIndex
 let available = Array(polyphony).fill(true)
 let inUse = Array(polyphony).fill(false)
@@ -13,11 +13,10 @@ const noteFreqIndex = 1
 const peak = 1
 
 const initialGain = 0.5
-
-let A = 2
-let D = 1
-let S = 0.5
-let R = 2
+const A = 2
+const D = 1
+const S = 0.5
+const R = 2
 
 class Femod extends Node {
   static femodCount = 0
@@ -34,95 +33,107 @@ class Femod extends Node {
 
     this.modLevelValue = 1000
     this.modType = "sine"
-
-
-    this.ADSRGains = Array(polyphony)
-    this.modulators = Array(polyphony)
-    this.oscillators = Array(polyphony)
+    // this.scaleNodes = []
 
     this.inputNode.connect(this.outputNode)
 
     this.initModulationParams()
     this.initCustomParams()
+    // this.initOscillators()
   }
 
   destroy() {
     super.destroy(true)
+    // this.scaleNodes.forEach(sn => {
+    //   sn.ADSRGain.disconnect()
+    //   sn.ADSRGain = null
+    //   sn.modLevel.disconnect()
+    //   sn.mod.disconnect()
+    //   sn.modLevel = null
+    //   sn.mod = null
+    //   sn.destroy()
+    //   sn = null;
+    // })
+    // this.scaleNodes = []
   }
+
+  // initOscillators() {
+  //   for (let i = 0; i < noteKeys.length; i++) {
+  //     const osc = new ADSROscWithMod(this.type);
+  //     osc.A = A
+  //     osc.D = D
+  //     osc.S = S
+  //     osc.R = R
+  //     osc.connectNativeNode(this.outputNode);
+  //     this.scaleNodes.push(osc);
+  //   }
+  // }
 
   setType(value) {
     this.type = value
-    // this.scaleNodes.forEach(sn => {
-    //   sn.type = value
-    //   sn.node.type = value
-    // })
+    this.scaleNodes.forEach(sn => {
+      sn.type = value
+      sn.node.type = value
+    })
   }
 
   playNote(i) {
-    //polyphony
+    // let noteIndex = i + 12 * this.octave + this.transpose
+    // if (noteIndex < 0) noteIndex = 0
+    // if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
+
+    // this.scaleNodes[i].startWithFrequency(notes[noteIndex][noteFreqIndex]); //.waveLength probar
+
+    //pollyphony
     const index = this.getFirstAvailable()
     if (index === -1) return
     this.setInUse(index, i)
 
-    const freq = notes[i][noteFreqIndex]
-    const t0 = Node.context.currentTime
-    const t1 = t0 + A
+    let freq = notes[i][noteFreqIndex]
+
+    const t = Node.context.currentTime
 
     const ADSRGain = Node.context.createGain()
     ADSRGain.connect(this.outputNode)
 
-    const oscillator = Node.context.createOscillator()
-    oscillator.type = this.type
-    oscillator.connect(ADSRGain)
+    const node = Node.context.createOscillator()
+    node.type = this.type
+    node.connect(ADSRGain)
 
     //FM
     const modLevel = Node.context.createGain()
     const mod = Node.context.createOscillator()
 
-    modLevel.connect(oscillator.frequency)
-    modLevel.gain.setValueAtTime(this.modLevelValue, t0)
+    modLevel.connect(node.frequency)
+    modLevel.gain.setValueAtTime(this.modLevelValue, t)
 
     mod.type = this.modType
 
-    mod.frequency.setValueAtTime(freq, t0) //sync with note freq
+    mod.frequency.setValueAtTime(freq, t) //sync with note freq
     mod.detune.value = this.customParams[4].value
     mod.connect(modLevel)
     //---
 
-    oscillator.frequency.setValueAtTime(freq, t0)
-    oscillator.detune.value = this.customParams[4].value
+    node.frequency.setValueAtTime(freq, t)
+    node.detune.value = this.customParams[4].value
 
     //start note and mod
+    const t0 = Node.context.currentTime
+    const t1 = t0 + A
 
     mod.start(t0)
-    oscillator.start(t0)
+    node.start(t0)
+
+    console.log(this.customParams)
 
     ADSRGain.gain.setValueAtTime(0, t0)
     ADSRGain.gain.linearRampToValueAtTime(1, t1)
     ADSRGain.gain.linearRampToValueAtTime(S, t1 + D)
 
-    this.modulators[index] = mod
-    this.ADSRGains[index] = ADSRGain
-    this.oscillators[index] = oscillator
   }
 
   stopNote(i) {
-    const index = this.getInuseIndexByNote(i)
-    if (index === -1) return
-    const ADSRGain = this.ADSRGains[index]
-    const oscillator = this.oscillators[index]
-    const modulator = this.modulators[index]
-
-    const t = Node.context.currentTime
-
-    ADSRGain.gain.cancelScheduledValues(t);
-    ADSRGain.gain.setValueAtTime(ADSRGain.gain.value, t);
-    ADSRGain.gain.linearRampToValueAtTime(0, t + R)
-
-    oscillator.stop(t + R)
-    modulator.stop(t + R)
-
-    this.setNotInUse(index)
+    // this.scaleNodes[i].stop();
   }
 
   getFirstAvailable() {
@@ -154,10 +165,9 @@ class Femod extends Node {
 
   initCustomParams() {
     const setScaleNodeProperty = (prop, value) => {
-      if (prop === 'A') A = value
-      if (prop === 'D') D = value
-      if (prop === 'S') S = value
-      if (prop === 'R') R = value
+      // this.scaleNodes.forEach(sn => {
+      //   sn[prop] = value
+      // })
     }
 
     const setDetune = (value) => {
@@ -235,14 +245,12 @@ class Femod extends Node {
 
   initModulationParams() {
     const setModLevel = (value) => {
-      this.modLevelValue = value
       // this.scaleNodes.forEach(sn => {
       //   sn.modLevelValue = value
       //   sn.modLevel.gain.setValueAtTime(value, 0)
       // })
     }
     const setModType = (value) => {
-      this.modType = value
       // this.scaleNodes.forEach(sn => {
       //   sn.modType = value
       //   sn.mod.type = value

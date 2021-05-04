@@ -3,10 +3,9 @@ const Node = require("../Node")
 const notes = require("../../data/notes")
 
 const polyphony = 15;
+let noteIndexInUse = Array(polyphony).fill(null) //noteIndex
 let available = Array(polyphony).fill(true)
 let inUse = Array(polyphony).fill(false)
-
-let noteIndexInUse = Array(polyphony).fill(null) //noteIndex
 
 const noteFreqIndex = 1
 
@@ -204,10 +203,8 @@ class Surgeon extends Node {
     this.setNotInUse(index)
   }
 
-
-
   toggleMute(index) {
-    //falta arreglar en caso de modulatora
+    //falta arreglar en caso de modulator
     this.oscillatorGroupProps[index].muted = !this.oscillatorGroupProps[index].muted
     if (this.oscillatorGroupProps[index].muted)
       this.groupGains[index].gain.value = 0
