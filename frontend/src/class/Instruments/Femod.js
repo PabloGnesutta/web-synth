@@ -7,7 +7,6 @@ let noteIndexInUse = Array(polyphony).fill(null) //noteIndex
 let available = Array(polyphony).fill(true)
 let inUse = Array(polyphony).fill(false)
 
-const noteFreqIndex = 1
 const peak = 1
 
 const initialGain = 0.5
@@ -45,6 +44,7 @@ class Femod extends Node {
   }
 
   destroy() {
+    //chequear
     super.destroy(true)
   }
 
@@ -87,7 +87,7 @@ class Femod extends Node {
 
     oscillator.frequency.setValueAtTime(freq, t0)
     oscillator.detune.value = detune
-    
+
     //start note and mod
     mod.start(t0)
     oscillator.start(t0)
@@ -120,30 +120,10 @@ class Femod extends Node {
     this.setNotInUse(index)
   }
 
-  getFirstAvailable() {
-    let found = false
-    let index = -1
-    while (!found && index < polyphony) {
-      index++
-      found = available[index]
-    }
-    if (!found) index = -1
-    else available[index] = false
-    return index
-  }
-
-  setInUse(inUseIndex, noteIndex) {
-    inUse[inUseIndex] = true
-    noteIndexInUse[inUseIndex] = noteIndex
-  }
-
-  setNotInUse(index) {
-    inUse[index] = false
-    available[index] = true
-  }
-
-  getInuseIndexByNote(i) {
-    return noteIndexInUse.findIndex(ni => ni === i)
+  setCustomParam(index, value) {
+    const customParam = this.customParams[index];
+    customParam.value = value
+    customParam.set(parseFloat(value))
   }
 
   initCustomParams() {
@@ -217,10 +197,10 @@ class Femod extends Node {
     ]
   }
 
-  setCustomParam(index, value) {
-    const customParam = this.customParams[index];
-    customParam.value = value
-    customParam.set(parseFloat(value))
+  setModulationParam(index, value) {
+    const modulationParams = this.modulationParams[index];
+    modulationParams.value = value
+    modulationParams.set(value)
   }
 
   initModulationParams() {
@@ -254,10 +234,30 @@ class Femod extends Node {
     ]
   }
 
-  setModulationParam(index, value) {
-    const modulationParams = this.modulationParams[index];
-    modulationParams.value = value
-    modulationParams.set(value)
+  getFirstAvailable() {
+    let found = false
+    let index = -1
+    while (!found && index < polyphony) {
+      index++
+      found = available[index]
+    }
+    if (!found) index = -1
+    else available[index] = false
+    return index
+  }
+
+  setInUse(inUseIndex, noteIndex) {
+    inUse[inUseIndex] = true
+    noteIndexInUse[inUseIndex] = noteIndex
+  }
+
+  setNotInUse(index) {
+    inUse[index] = false
+    available[index] = true
+  }
+
+  getInuseIndexByNote(i) {
+    return noteIndexInUse.findIndex(ni => ni === i)
   }
 }
 

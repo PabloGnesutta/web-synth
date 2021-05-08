@@ -668,7 +668,7 @@ export default {
       }
     },
 
-    onOtherKeydown({ keyCode }) {
+    onOtherKeydown({ key, keyCode }) {
       //m
       if (keyCode === 77) this.m_pressed = true;
       //ctrl
@@ -682,7 +682,7 @@ export default {
     },
 
     onOtherKeyup({ keyCode }) {
-      console.log(keyCode);
+      // console.log(keyCode);
       //1 a 9
       if (keyCode >= 49 && keyCode <= 57) {
         if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
@@ -743,7 +743,6 @@ export default {
 
     // knobClicked(refName) {
     knobClicked(knobRef) {
-      console.log("knobClicked, knobRef", knobRef);
       if (!this.mapping) return;
       if (this.refBeignMapped) {
         this.refBeignMapped.stopMapping();

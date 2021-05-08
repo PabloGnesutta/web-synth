@@ -539,7 +539,7 @@ export default {
 
 .node.folded {
   width: 34px;
-  max-height: 340px;
+  // max-height: 340px;
   overflow: hidden;
   .node-header {
     display: none;
