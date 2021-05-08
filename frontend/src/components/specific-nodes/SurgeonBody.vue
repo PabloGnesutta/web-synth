@@ -1,10 +1,14 @@
 <template>
   <div class="SurgeonBody">
-    <div class="oscillator" v-for="(osc, o) in Node.oscillatorGroupProps" :key="o">
+    <div
+      class="oscillator"
+      v-for="(osc, o) in Node.oscillatorGroupProps"
+      :key="o"
+    >
       <div class="oscillator-inner">
         <div class="top">
           <div class="types">
-            <span class="label">{{osc.name}}</span>
+            <span class="label">{{ osc.name }}</span>
             <select @input="setType(o, $event)">
               <option
                 :key="type"
@@ -37,7 +41,7 @@
           <!-- Destination -->
           <div class="destination">
             <span class="label">Dest</span>
-            <select @input="setDestination(o, $event)">
+            <select @input="setOscillatorTarget(o, $event)">
               <option
                 :selected="dest[1] === osc.destination"
                 v-for="(dest, d) in osc.destinations"
@@ -71,13 +75,15 @@
 
             <div
               class="knob-wrapper"
-              @click="knobClicked(Node.name + '-' + customParam.name)"
+              @click="
+                knobClicked(Node.name + '-osc-' + o + '-' + customParam.name)
+              "
             >
               <Knob
-                :ref="Node.name + '-' + customParam.name"
+                :ref="Node.name + '-osc-' + o + '-' + customParam.name"
                 :unit="customParam.unit"
-                :minVal="customParam.minValue"
-                :maxVal="customParam.maxValue"
+                :minVal="Node.minValues[o][paramIndex]"
+                :maxVal="Node.maxValues[o][paramIndex]"
                 :initVal="osc[customParam.name]"
                 @knobTurned="setSurgeonParam(o, paramIndex, $event)"
               />
@@ -128,23 +134,22 @@ export default {
       window.removeEventListener("keyup", this.onKeyUp);
     },
 
-    //37 8 9 40 left up right bottom
     onKeyUp(e) {
       let val = 0;
       let param = 0;
       switch (e.keyCode) {
-        case 37:
+        case 37: //´left
           val = -1;
           param = 1;
           break;
-        case 38:
+        case 38: //up
           val = 1;
           break;
-        case 39:
+        case 39: //right
           val = 1;
           param = 1;
           break;
-        case 40:
+        case 40: //bottom
           val = -1;
           break;
       }
@@ -159,13 +164,14 @@ export default {
       });
     },
 
-    setDestination(o, event) {
+    setOscillatorTarget(o, event) {
       const { minValue, maxValue, value } = this.Node.setOscillatorTarget(
         o,
         event.target.value
       );
-      let refName = this.Node.name + "-S";
-      let ref = this.$refs[refName][o];
+      let refName = this.Node.name + "-osc-" + o + "-S";
+
+      let ref = this.$refs[refName][0];
       ref.setParamContraints(minValue, maxValue, value);
     },
 
@@ -199,7 +205,7 @@ export default {
 
 <style lang="scss" scoped>
 .SurgeonBody {
-  font-size: .9rem;
+  font-size: 0.9rem;
 }
 .oscillator {
   display: flex;
@@ -254,7 +260,7 @@ export default {
 
   .label {
     display: inline-block;
-    margin-right: .2em;
+    margin-right: 0.2em;
   }
 }
 

@@ -86,7 +86,7 @@ class Duette extends Node {
     if (noteIndex < 0) noteIndex = 0
     else if (noteIndex > notes.length - 1) noteIndex = notes.length - 1
 
-    let freq = notes[noteIndex][noteFreqIndex]
+    let freq = notes[noteIndex]
 
     for (let o = 0; o < this.oscillatorsPerNote; o++) {
       this.scaleNodes[i][o].startWithFrequency(freq, o); //.waveLength probar

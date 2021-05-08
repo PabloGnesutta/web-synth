@@ -22,12 +22,6 @@
             >
               Drumkit
             </div>
-            <!-- <div
-              class="btn btn-instrument dropdown-item"
-              @click="createInstrument('Duette')"
-            >
-              Duette
-            </div> -->
             <div
               class="btn btn-instrument dropdown-item"
               @click="createInstrument('Surgeon')"

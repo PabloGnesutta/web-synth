@@ -304,14 +304,14 @@ import { mapGetters, mapMutations } from "vuex";
 
 import Knob from "./Knob";
 import AnalyserRender from "./AnalyserRender";
-import DelayBody from "./specifig-nodes/DelayBody";
-import EQ3Body from "./specifig-nodes/EQ3Body.vue";
-import LooperBody from "./specifig-nodes/LooperBody.vue";
-import DuetteBody from "./specifig-nodes/DuetteBody.vue";
-import SurgeonBody from "./specifig-nodes/SurgeonBody.vue";
-import FemodBody from "./specifig-nodes/FemodBody.vue";
-import SamplerBody from "./specifig-nodes/SamplerBody.vue";
-import FilterBody from "./specifig-nodes/FilterBody.vue";
+import DelayBody from "./specific-nodes/DelayBody";
+import EQ3Body from "./specific-nodes/EQ3Body.vue";
+import LooperBody from "./specific-nodes/LooperBody.vue";
+import DuetteBody from "./specific-nodes/DuetteBody.vue";
+import SurgeonBody from "./specific-nodes/SurgeonBody.vue";
+import FemodBody from "./specific-nodes/FemodBody.vue";
+import SamplerBody from "./specific-nodes/SamplerBody.vue";
+import FilterBody from "./specific-nodes/FilterBody.vue";
 export default {
   data() {
     return {

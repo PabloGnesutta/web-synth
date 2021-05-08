@@ -1,6 +1,4 @@
 const Node = require("../Node")
-// const ADSROscWithMod = require("../Oscillator/ADSROscWithMod")
-// const noteKeys = require("../../data/noteKeys")
 const notes = require("../../data/notes")
 
 //repite en surgeon
@@ -52,10 +50,7 @@ class Femod extends Node {
 
   setType(value) {
     this.type = value
-    // this.scaleNodes.forEach(sn => {
-    //   sn.type = value
-    //   sn.node.type = value
-    // })
+    //set real time
   }
 
   playNote(i) {
@@ -64,7 +59,9 @@ class Femod extends Node {
     if (index === -1) return
     this.setInUse(index, i)
 
-    const freq = notes[i][noteFreqIndex]
+    let detune = this.customParams[4].value
+
+    const freq = notes[i]
     const t0 = Node.context.currentTime
     const t1 = t0 + A
 
@@ -85,15 +82,13 @@ class Femod extends Node {
     mod.type = this.modType
 
     mod.frequency.setValueAtTime(freq, t0) //sync with note freq
-    mod.detune.value = this.customParams[4].value
+    mod.detune.value = detune
     mod.connect(modLevel)
-    //---
 
     oscillator.frequency.setValueAtTime(freq, t0)
-    oscillator.detune.value = this.customParams[4].value
-
+    oscillator.detune.value = detune
+    
     //start note and mod
-
     mod.start(t0)
     oscillator.start(t0)
 
