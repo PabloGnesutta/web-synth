@@ -80,7 +80,7 @@
             </div>
             <!-- <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div> -->
             <!-- Modulator -->
-            <div class="btn btn-modulator" @click="createModulator">Mod</div>
+            <!-- <div class="btn btn-modulator" @click="createModulator">Mod</div> -->
           </div>
         </div>
 
@@ -270,8 +270,6 @@ export default {
 
     save() {
       this.overWrite(this.currentSaveIndex);
-      localStorage.setItem("test stringi", JSON.stringify([]));
-      localStorage.setItem("test pelado", "[]");
     },
 
     saveAs() {
@@ -304,7 +302,9 @@ export default {
         id: count,
         name,
       });
+
       const saves = this.getSaves();
+
       saves.push({
         id: count,
         name,
@@ -312,7 +312,9 @@ export default {
         totalBeats: this.totalBeats,
         tracks: JSON.stringify(this.tracks),
       });
+
       this.updateSaves(saves);
+
       localStorage.setItem(
         "websynth-savenames",
         JSON.stringify(this.saveNames)
@@ -340,6 +342,7 @@ export default {
     getSaves() {
       return JSON.parse(localStorage.getItem("websynth-saves"));
     },
+    
     updateSaves(saves) {
       localStorage.setItem("websynth-saves", JSON.stringify(saves));
     },
@@ -472,8 +475,6 @@ export default {
   }
 
   .menu.config {
-    .label {
-    }
     .dropdown {
       right: 0;
       bottom: 0;

@@ -47,6 +47,11 @@ export default {
     this.renderSpectrum();
   },
 
+  beforeDestroy() {
+    window.cancelAnimationFrame(this.renderWaveForm);
+    window.cancelAnimationFrame(this.renderSpectrum);
+  },
+
   methods: {
     switchMode() {
       if (this.mode === "spectrum") this.mode = "waveshape";

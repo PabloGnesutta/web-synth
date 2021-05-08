@@ -449,8 +449,7 @@ export default {
     //level
 
     setNodeGain(value) {
-      // this.Node.setGain(value);
-      this.Node.outputNode.gain.value = value;
+      this.Node.setGain(value);
     },
 
     knobClicked(knobName) {

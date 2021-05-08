@@ -51,6 +51,7 @@ class Node {
   }
 
   setGain(value) {
+    console.log('setgain', value)
     this.gain = value
     if (!this.muted)
       this.outputNode.gain.setValueAtTime(value, 0)

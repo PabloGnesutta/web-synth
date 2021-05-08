@@ -65,7 +65,7 @@
         <div class="custom-params params-container">
           <div
             class="custom-param param"
-            v-for="(customParam, paramIndex) in Node.duetteParams"
+            v-for="(customParam, paramIndex) in Node.surgeonParams"
             :key="customParam.name"
             :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
           >
@@ -82,7 +82,7 @@
               <Knob
                 :ref="Node.name + '-osc-' + o + '-' + customParam.name"
                 :unit="customParam.unit"
-                :minVal="Node.minValues[o][paramIndex]"
+                :minVal="Node.minValues[paramIndex]"
                 :maxVal="Node.maxValues[o][paramIndex]"
                 :initVal="osc[customParam.name]"
                 @knobTurned="setSurgeonParam(o, paramIndex, $event)"
@@ -111,10 +111,10 @@ export default {
   props: ["Node"],
 
   created() {
-    this.groupOctaveTranspose = this.Node.groupOctaveTranspose.map((ot) => {
+    this.groupOctaveTranspose = this.Node.oscillatorGroupProps.map((ot) => {
       return {
-        octave: ot[0],
-        transpose: ot[1],
+        octave: ot.octave,
+        transpose: ot.transpose,
       };
     });
   },
@@ -136,31 +136,32 @@ export default {
 
     onKeyUp(e) {
       let val = 0;
-      let param = 0;
+      let param = "octave";
       switch (e.keyCode) {
-        case 37: //´left
+        case 37: //left
           val = -1;
-          param = 1;
+          param = "transpose";
           break;
         case 38: //up
           val = 1;
           break;
         case 39: //right
           val = 1;
-          param = 1;
+          param = "transpose";
           break;
         case 40: //bottom
           val = -1;
           break;
       }
 
-      //node.set debería ser y que ESC resetee a 0
-      this.Node.groupOctaveTranspose[this.currentOsc][param] += val;
+      if (val === 0) return;
+
+      this.Node.addToOctaveTranspose(this.currentOsc, param, val);
 
       //rendering
       this.$set(this.groupOctaveTranspose, this.currentOsc, {
-        octave: this.Node.groupOctaveTranspose[this.currentOsc][0],
-        transpose: this.Node.groupOctaveTranspose[this.currentOsc][1],
+        octave: this.Node.oscillatorGroupProps[this.currentOsc].octave,
+        transpose: this.Node.oscillatorGroupProps[this.currentOsc].transpose,
       });
     },
 

@@ -45,14 +45,14 @@
         >
           <!-- Modulators -->
           <div class="track-inner" :class="'track-inner_' + t">
-            <div class="track-modulators">
+            <!-- <div class="track-modulators">
               <NodeRender
                 v-for="(Mod, m) in track.modulators"
                 :Node="Mod"
                 :key="m"
                 @deleteNode="deleteModulator(t, m)"
               />
-            </div>
+            </div> -->
 
             <!-- Instrument -->
             <div class="track-instrument">
@@ -252,7 +252,7 @@ export default {
 
       this.createMainGain();
       // this.createTrack(new Femod());
-      this.createTrack(new Surgeon());
+      // this.createTrack(new Surgeon());
 
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
@@ -668,7 +668,7 @@ export default {
       }
     },
 
-    onOtherKeydown({ key, keyCode }) {
+    onOtherKeydown({ keyCode }) {
       //m
       if (keyCode === 77) this.m_pressed = true;
       //ctrl
@@ -681,7 +681,7 @@ export default {
       }
     },
 
-    onOtherKeyup({ key, keyCode }) {
+    onOtherKeyup({ keyCode }) {
       console.log(keyCode);
       //1 a 9
       if (keyCode >= 49 && keyCode <= 57) {
@@ -713,11 +713,6 @@ export default {
           case 86: //v
             this.transpose++;
             break;
-
-          // default:
-          //   this.keypressListeners.forEach((scaleInterface) => {
-          //     scaleInterface.instrument.onOtherKeyup(key);
-          //   });
         }
       }
     },
@@ -889,16 +884,37 @@ export default {
             instrument.setModulationParam(i, ins_mp.value);
           });
 
-        if (t.instrument.duetteParams) {
+        // if (t.instrument.duetteParams) {
+        //   for (let o = 0; o < t.instrument.oscillatorsPerNote; o++) {
+        //     const state = t.instrument.oscillatorsState[o];
+        //     instrument.setDuetteParam(o, 0, state.A);
+        //     instrument.setDuetteParam(o, 1, state.D);
+        //     instrument.setDuetteParam(o, 2, state.S);
+        //     instrument.setDuetteParam(o, 3, state.R);
+        //     instrument.setDuetteParam(o, 4, state.detune);
+        //     instrument.setDuetteParam(o, 5, state.gain);
+        //     instrument.setType(o, state.type);
+        //   }
+        // }
+
+        if (t.instrument.surgeonParams) {
           for (let o = 0; o < t.instrument.oscillatorsPerNote; o++) {
-            const state = t.instrument.oscillatorsState[o];
-            instrument.setDuetteParam(o, 0, state.A);
-            instrument.setDuetteParam(o, 1, state.D);
-            instrument.setDuetteParam(o, 2, state.S);
-            instrument.setDuetteParam(o, 3, state.R);
-            instrument.setDuetteParam(o, 4, state.detune);
-            instrument.setDuetteParam(o, 5, state.gain);
+            const state = t.instrument.oscillatorGroupProps[o];
+
+            instrument.setSurgeonParam(o, 0, state.A);
+            instrument.setSurgeonParam(o, 1, state.D);
+            instrument.setSurgeonParam(o, 2, state.S);
+            instrument.setSurgeonParam(o, 3, state.R);
+            instrument.setSurgeonParam(o, 4, state.detune);
+            instrument.setSurgeonParam(o, 5, state.gain);
+
+            instrument.setOctaveTranspose(o, "octave", state.octave);
+            instrument.setOctaveTranspose(o, "transpose", state.transpose);
+
             instrument.setType(o, state.type);
+            instrument.setOscillatorTarget(o, state.destination);
+
+            instrument.setMute(o, state.muted);
           }
         }
 
@@ -906,6 +922,7 @@ export default {
 
         t.effects.forEach((ef) => {
           const effect = new (effectsDict.get(ef.nodeType))();
+
           effect.setGain(ef.gain);
 
           if (ef.type) effect.setType(ef.type);
@@ -1016,10 +1033,6 @@ export default {
   overflow-x: auto;
   padding-bottom: 0.3em;
   flex: 1;
-}
-
-.track-right-placeholder {
-  // width: 10px;
 }
 
 .node {
