@@ -62,16 +62,19 @@
         <div class="menu effects">
           <div class="btn label" @click="toggleEffectsMenu">Effects</div>
           <div class="dropdown" :class="{ hidden: !menuEffectsVisible }">
-            <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
-              Filter
-            </div>
             <div class="btn btn-effect" @click="createEffect('Compressor')">
               Comp
             </div>
             <div class="btn btn-effect" @click="createEffect('Delay')">
               Delay
             </div>
+            <div class="btn btn-effect" @click="createEffect('Distortion')">
+              Distortion
+            </div>
             <div class="btn btn-effect" @click="createEffect('EQ3')">EQ3</div>
+            <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
+              Filter
+            </div>
             <div class="btn btn-effect" @click="createEffect('Looper')">
               Looper
             </div>
@@ -180,7 +183,7 @@
             </div>
           </div>
         </div>
-        <div class="map" @click="toggleMapping">MAP</div>
+        <div class="map" @click="toggleMapping">Map MIDI</div>
       </div>
     </div>
   </div>
@@ -273,13 +276,16 @@ export default {
     },
 
     saveAs() {
+      //qué pasa en caso de primera interacción? count anda?
       let count = localStorage.getItem("websynth-count");
+
       if (!count) localStorage.setItem("websynth-count", 0);
       localStorage.setItem("websynth-count", ++count);
 
-      const name = prompt("Save Name", "Untitled " + count);
+      const name = prompt("Nombre del trabajo", "Sin título " + count);
       if (!name) return;
 
+      //ver, saves no tiene que estar en memoria, sólo names
       if (!this.saves) {
         this.saves = [];
         this.saveNames = [];
@@ -290,8 +296,8 @@ export default {
 
       const existingSaveIndex = this.nameExists(name);
       if (existingSaveIndex !== -1) {
-        if (!confirm("That name already exists, wanna overwrite?")) return;
-        else this.overWrite(existingSaveIndex);
+        if (confirm("Ese nombre ya existe, querés sobreescribir?"))
+          this.overWrite(existingSaveIndex);
       } else {
         this.saveNew(count, name);
       }
@@ -305,6 +311,16 @@ export default {
 
       const saves = this.getSaves();
 
+      this.tracks.forEach((track) => {
+        console.log("track", track.instrument.saveString());
+        track.effects.forEach((effect) => {
+          console.log("effect", effect);
+        });
+      });
+
+      // return;
+
+      //la papota
       saves.push({
         id: count,
         name,
@@ -327,13 +343,16 @@ export default {
 
     overWrite(existingSaveIndex) {
       const saves = this.getSaves();
+      //la papota
       saves[existingSaveIndex].tempo = this.tempo;
       saves[existingSaveIndex].totalBeats = this.totalBeats;
       saves[existingSaveIndex].tracks = JSON.stringify(this.tracks);
+
       this.updateSaves(saves);
 
-      if (this.currentSaveIndex === existingSaveIndex) alert("Work saved");
-      else alert("Work overwritten");
+      alert("Trabajo guardado");
+      // if (this.currentSaveIndex === existingSaveIndex) alert("Trabajo guardado");
+      // else alert("Trabajo sobreescrito");
 
       this.currentSaveIndex = existingSaveIndex;
       this.currentSave = saves[existingSaveIndex];
@@ -342,13 +361,15 @@ export default {
     getSaves() {
       return JSON.parse(localStorage.getItem("websynth-saves"));
     },
-    
+
     updateSaves(saves) {
+      this.saves = saves;
       localStorage.setItem("websynth-saves", JSON.stringify(saves));
     },
 
     loadSave(s) {
       // if (!confirm('Load ' + this.saveNames[s].name + '? Unsaved changes will be lost.')) return
+
       const tracks = JSON.parse(this.saves[s].tracks);
       this.$emit("loadSave", tracks);
       this.setTempo(this.saves[s].tempo);
@@ -358,7 +379,7 @@ export default {
     },
 
     deleteSave(s) {
-      if (!confirm("Sure you want to delete " + this.saves[s].name + "?"))
+      if (!confirm("Segur@ que querés borrar " + this.saves[s].name + "?"))
         return;
       this.saves.splice(s, 1);
       this.saveNames.splice(s, 1);
@@ -489,6 +510,10 @@ export default {
         color: #333;
       }
     }
+  }
+  //MIDI Map
+  .map {
+    cursor: pointer;
   }
 
   //Play/Stop recording

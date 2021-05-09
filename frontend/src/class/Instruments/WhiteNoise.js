@@ -34,6 +34,12 @@ class WhiteNoise extends Node {
     this.initInnerNodeAudioParams()
   }
 
+  destroy() {
+    super.destroy()
+    this.mod.disconnect()
+    this.modGain.disconnect()
+  }
+
   playNote(i) {
     if (this.playing) return
     const filterFreq = i.map(30, 90, 0, frequencyMax);

@@ -14,6 +14,7 @@ class Drumkit extends Node {
     this.nodeType = "Drumkit"
     this.nodeRol = "Instrument"
     this.buffers = []
+    this.source = null
 
     this.inputNode.connect(this.outputNode)
 
@@ -36,12 +37,16 @@ class Drumkit extends Node {
 
     this.source.start(0);
     this.source.connect(this.outputNode);
+
+    //agregar polyphony para poder desconnectar correctamente los nodos
+
+    // this.source.onended = () => {
+    //   this.source.disconnect()
+    // }
   }
 
   stopNote(i) {
   }
-
-  onOtherKeyup(key) { }
 
   destroy() {
     super.destroy()

@@ -50,11 +50,13 @@ class Sampler extends Node {
     this.playing = true
     this.source.onended = () => {
       this.playing = false
+      this.source.disconnect()
     }
   }
 
   stopSample() {
     this.source.stop(0)
+    this.source.disconnect()
   }
 
   stopNote(i) {

@@ -1,13 +1,7 @@
 const Node = require("../Node")
-// const noteKeys = require("../../data/noteKeys")
 const notes = require("../../data/notes")
 
 const polyphony = 15;
-let noteIndexInUse = Array(polyphony).fill(null) //noteIndex
-let available = Array(polyphony).fill(true)
-let inUse = Array(polyphony).fill(false)
-
-const noteFreqIndex = 1
 
 const initialGain = 0.7
 const A = 0
@@ -31,7 +25,11 @@ class Surgeon extends Node {
 
     this.oscTypes = ["sine", "triangle", "sawtooth", "square"]
 
-    //related to polyphony
+    //polyphony
+    this.noteIndexInUse = Array(polyphony).fill(null) //noteIndex
+    this.available = Array(polyphony).fill(true)
+    this.inUse = Array(polyphony).fill(false)
+
     this.groupADSRGains = Array(polyphony)
     this.groupOscillators = Array(polyphony)
     this.gains = Array(polyphony)
@@ -39,12 +37,6 @@ class Surgeon extends Node {
     this.initOscillatorGroupProps()
 
     this.groupGains = Array(this.oscillatorsPerNote)
-    //octave transpose va en las props
-    // this.groupOctaveTranspose = [
-    //   [0, 0],
-    //   [0, 0],
-    //   [0, 0],
-    // ]
 
     for (let o = 0; o < this.oscillatorsPerNote; o++) {
       const gain = Node.context.createGain()
@@ -56,13 +48,6 @@ class Surgeon extends Node {
     this.initSurgeonParams()
   }
 
-  //chequear
-  destroy() {
-    super.destroy()
-    for (let i = 0; i < this.oscillatorsPerNote; i++) {
-    }
-  }
-
   playNote(i) {
     //polyphony
     const index = this.getFirstAvailable()
@@ -72,7 +57,6 @@ class Surgeon extends Node {
     const gains = Array(this.oscillatorsPerNote.length)
     const ADSRGains = Array(this.oscillatorsPerNote.length)
     const oscillators = Array(this.oscillatorsPerNote.length)
-
 
     for (let o = 0; o < this.oscillatorsPerNote; o++) {
       oscillators[o] = Node.context.createOscillator()
@@ -130,6 +114,7 @@ class Surgeon extends Node {
     //polyphony
     const index = this.getInuseIndexByNote(i)
     if (index === -1) return
+    const gains = this.gains[index]
     const ADSRGains = this.groupADSRGains[index]
     const oscillators = this.groupOscillators[index]
 
@@ -144,6 +129,12 @@ class Surgeon extends Node {
       ADSRGain.gain.linearRampToValueAtTime(0, t + R)
 
       oscillators[o].stop(t + R)
+
+      setTimeout(() => {
+        oscillators[o].disconnect()
+        ADSRGain.disconnect()
+        gains[o].disconnect()
+      }, R * 1000);
     }
 
     this.setNotInUse(index)
@@ -198,26 +189,30 @@ class Surgeon extends Node {
     this.oscillatorGroupProps = [
       {
         A: 2.6, D: 0.5, S: 1000, R: 0.3, detune: 0, gain: 0.5,
-        octave: 0, transpose: 0,
-        peak: modulatorPeak, type: 'sawtooth', destination: 2, muted: false,
+        type: 'sawtooth', octave: 0, transpose: 0,
         destinations: [['B', 1], ['C', 2], ['Out', 'OUTPUT']],
+        destination: 2,
+        peak: modulatorPeak, muted: false,
         name: 'A'
       },
       {
-        A: 1.9, D, S: 1, R, detune: 0, gain: 0.2,
-        octave: 0, transpose: 0,
-        peak: 1, type: 'sawtooth', destination: 'OUTPUT', muted: false,
+        A: 1.9, D: D, S: S, R, detune: 0, gain: 0.2,
+        type: 'sawtooth', octave: 0, transpose: 0,
         destinations: [['A', 0], ['C', 2], ['Out', 'OUTPUT']],
+        destination: 'OUTPUT',
+        peak: 1, muted: false,
         name: 'B'
       },
       {
-        A: 0, D: 0.1, S: 1, R: 0.1, detune: 0, gain: 0.8,
-        octave: 0, transpose: 0,
-        peak: 1, type: 'sine', destination: 'OUTPUT', muted: false,
+        A: A, D: 0.1, S: S, R: 0.1, detune: 0, gain: 0.8,
+        type: 'sine', octave: 0, transpose: 0,
         destinations: [['A', 0], ['B', 1], ['Out', 'OUTPUT']],
+        destination: 'OUTPUT',
+        peak: 1, muted: false,
         name: 'C'
       },
     ]
+
     this.oscillatorsPerNote = this.oscillatorGroupProps.length
   }
 
@@ -301,6 +296,44 @@ class Surgeon extends Node {
     ]
   }
 
+  saveString() {
+    return JSON.stringify({ nodeType: 'Surgeon', gain: this.gain, state: this.oscillatorGroupProps })
+  }
+
+  destroy() {
+    //chequear
+    super.destroy()
+
+    this.inUse = null
+    this.available = null
+    this.noteIndexInUse = null
+
+    this.surgeonParams = null
+    this.oscillatorGroupProps = null
+
+    for (let o = 0; o < this.oscillatorsPerNote; o++) {
+      this.groupGains[o].disconnect()
+      this.groupGains[o] = null
+
+      for (let i = 0; i < polyphony; i++) {
+        if (this.gains[i]) {
+          if (this.gains[i][o]) {
+            this.gains[i][o].disconnect()
+            this.gains[i][o] = null
+            this.groupADSRGains[i][o].disconnect()
+            this.groupADSRGains[i][o] = null
+            this.groupOscillators[i][o].disconnect()
+            this.groupOscillators[i][o] = null
+          }
+        }
+      }
+    }
+
+    this.gains = null
+    this.groupADSRGains = null
+    this.groupOscillators = null
+  }
+
   //Polyphony helper functions
 
   getFirstAvailable() {
@@ -308,25 +341,25 @@ class Surgeon extends Node {
     let index = -1
     while (!found && index < polyphony) {
       index++
-      found = available[index]
+      found = this.available[index]
     }
     if (!found) index = -1
-    else available[index] = false
+    else this.available[index] = false
     return index
   }
 
   setInUse(inUseIndex, noteIndex) {
-    inUse[inUseIndex] = true
-    noteIndexInUse[inUseIndex] = noteIndex
+    this.inUse[inUseIndex] = true
+    this.noteIndexInUse[inUseIndex] = noteIndex
   }
 
   setNotInUse(index) {
-    inUse[index] = false
-    available[index] = true
+    this.inUse[index] = false
+    this.available[index] = true
   }
 
   getInuseIndexByNote(i) {
-    return noteIndexInUse.findIndex(ni => ni === i)
+    return this.noteIndexInUse.findIndex(ni => ni === i)
   }
 
 }

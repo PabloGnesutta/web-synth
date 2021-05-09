@@ -2,10 +2,7 @@ const Node = require("../Node")
 const notes = require("../../data/notes")
 
 //repite en surgeon
-const polyphony = 3;
-let noteIndexInUse = Array(polyphony).fill(null) //noteIndex
-let available = Array(polyphony).fill(true)
-let inUse = Array(polyphony).fill(false)
+const polyphony = 15;
 
 const peak = 1
 
@@ -32,20 +29,19 @@ class Femod extends Node {
     this.modLevelValue = 1000
     this.modType = "sine"
 
+    this.noteIndexInUse = Array(polyphony).fill(null)
+    this.available = Array(polyphony).fill(true)
+    this.inUse = Array(polyphony).fill(false)
 
     this.ADSRGains = Array(polyphony)
     this.modulators = Array(polyphony)
+    this.modulatorGains = Array(polyphony)
     this.oscillators = Array(polyphony)
 
     this.inputNode.connect(this.outputNode)
 
     this.initModulationParams()
     this.initCustomParams()
-  }
-
-  destroy() {
-    //chequear
-    super.destroy(true)
   }
 
   setType(value) {
@@ -96,6 +92,7 @@ class Femod extends Node {
     ADSRGain.gain.linearRampToValueAtTime(peak, t1)
     ADSRGain.gain.linearRampToValueAtTime(S, t1 + D)
 
+    this.modulatorGains[index] = modLevel
     this.modulators[index] = mod
     this.ADSRGains[index] = ADSRGain
     this.oscillators[index] = oscillator
@@ -116,6 +113,13 @@ class Femod extends Node {
 
     oscillator.stop(t + R)
     modulator.stop(t + R)
+
+    setTimeout(() => {
+      oscillator.disconnect()
+      modulator.disconnect()
+      ADSRGain.disconnect()
+      this.modulatorGains[index].disconnect()
+    }, R * 1000);
 
     this.setNotInUse(index)
   }
@@ -146,8 +150,7 @@ class Femod extends Node {
         minValue: 0,
         maxValue: 5,
         value: A,
-        defaultValue: A,
-        step: 0.01,
+        // defaultValue: A,
         set(v) { setScaleNodeProperty("A", v) }
       },
       {
@@ -157,8 +160,7 @@ class Femod extends Node {
         minValue: 0.01,
         maxValue: 3,
         value: D,
-        defaultValue: D,
-        step: 0.01,
+        // defaultValue: D,
         set(v) { setScaleNodeProperty("D", v) }
       },
       {
@@ -168,8 +170,7 @@ class Femod extends Node {
         minValue: 0,
         maxValue: 1,
         value: S,
-        defaultValue: S,
-        step: 0.01,
+        // defaultValue: S,
         set(v) { setScaleNodeProperty("S", v) }
       },
       {
@@ -179,8 +180,7 @@ class Femod extends Node {
         minValue: 0.001,
         maxValue: 5,
         value: R,
-        defaultValue: R,
-        step: 0.001,
+        // defaultValue: R,
         set(v) { setScaleNodeProperty("R", v) }
       },
       {
@@ -190,8 +190,7 @@ class Femod extends Node {
         minValue: -100,
         maxValue: 100,
         value: 0,
-        defaultValue: 0,
-        step: 0.1,
+        // defaultValue: 0,
         set(v) { setDetune(v) }
       },
     ]
@@ -227,11 +226,39 @@ class Femod extends Node {
         minValue: 0,
         maxValue: 3000,
         value: 100,
-        defaultValue: 100,
-        step: 0.1,
+        // defaultValue: 100,
         set(v) { setModLevel(v) }
       },
     ]
+  }
+
+  saveString() {
+    return JSON.stringify({
+      nodeType: 'Femod',
+      gain: this.gain,
+      customParams: this.customParams,
+      modulationParams: this.modulationParams
+    })
+  }
+
+  destroy() {
+    super.destroy()
+
+    this.inUse = null
+    this.available = null
+    this.noteIndexInUse = null
+    this.modulationParams = null
+
+    for (let i = 0; i < polyphony; i++)
+      if (this.ADSRGains[i]) {
+        this.ADSRGains[i].disconnect()
+        this.modulators[i].disconnect()
+        this.oscillators[i].disconnect()
+      }
+
+    this.ADSRGains = null
+    this.modulators = null
+    this.oscillators = null
   }
 
   getFirstAvailable() {
@@ -239,25 +266,25 @@ class Femod extends Node {
     let index = -1
     while (!found && index < polyphony) {
       index++
-      found = available[index]
+      found = this.available[index]
     }
     if (!found) index = -1
-    else available[index] = false
+    else this.available[index] = false
     return index
   }
 
   setInUse(inUseIndex, noteIndex) {
-    inUse[inUseIndex] = true
-    noteIndexInUse[inUseIndex] = noteIndex
+    this.inUse[inUseIndex] = true
+    this.noteIndexInUse[inUseIndex] = noteIndex
   }
 
   setNotInUse(index) {
-    inUse[index] = false
-    available[index] = true
+    this.inUse[index] = false
+    this.available[index] = true
   }
 
   getInuseIndexByNote(i) {
-    return noteIndexInUse.findIndex(ni => ni === i)
+    return this.noteIndexInUse.findIndex(ni => ni === i)
   }
 }
 

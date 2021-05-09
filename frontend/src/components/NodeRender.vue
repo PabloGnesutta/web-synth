@@ -531,7 +531,6 @@ export default {
     display: inline-block;
     user-select: none;
     text-align: center;
-    // margin-bottom: 0.2em;
     cursor: pointer;
     position: relative;
   }
@@ -539,7 +538,7 @@ export default {
 
 .node.folded {
   width: 34px;
-  // max-height: 340px;
+  max-height: 340px;
   overflow: hidden;
   .node-header {
     display: none;

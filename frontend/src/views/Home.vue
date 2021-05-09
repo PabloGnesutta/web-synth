@@ -120,6 +120,7 @@ const Node = require("../class/Node");
 const EQ3 = require("../class/Effects/EQ3");
 const Gain = require("../class/Effects/Gain");
 const Delay = require("../class/Effects/Delay");
+const Distortion = require("../class/Effects/Distortion");
 const Reverb = require("../class/Effects/Reverb");
 const Looper = require("../class/Effects/Looper");
 const Compressor = require("../class/Effects/Compressor");
@@ -153,6 +154,7 @@ const effectsDict = new Map([
   ["Delay", Delay],
   ["Reverb", Reverb],
   ["Looper", Looper],
+  ["Distortion", Distortion],
   ["Compressor", Compressor],
   ["BiquadFilter", BiquadFilter],
 ]);
@@ -253,6 +255,7 @@ export default {
       this.createMainGain();
       // this.createTrack(new Femod());
       // this.createTrack(new Surgeon());
+      // this.insertEffect(new Distortion())
 
       window.addEventListener("keyup", this.onKeyup);
       window.addEventListener("keydown", this.onKeydown);
@@ -624,10 +627,8 @@ export default {
       this.mainGain.connect(this.context.destination);
 
       this.mixerGain = this.context.createGain();
-      this.mixerComp = this.context.createDynamicsCompressor();
 
       this.mixerGain.connect(this.mainGain);
-      // this.mixerComp.connect(this.mainGain);
     },
 
     onMainGainKnobInput(val) {
@@ -732,13 +733,13 @@ export default {
     },
 
     toggleMapping() {
+      console.log(this.$refs);
       if (this.refBeignMapped) {
         this.refBeignMapped.stopMapping();
         this.refBeignMapped = null;
       }
       this.mapping = !this.mapping;
       this.setAppIsMapping(this.mapping);
-      console.log(this.appIsMapping);
     },
 
     // knobClicked(refName) {
@@ -853,15 +854,16 @@ export default {
     loadSave(tracks) {
       tracks.forEach((t) => {
         const instrument = new (instrumentsDict.get(t.instrument.nodeType))();
-        instrument.setGain(t.instrument.gain);
 
-        if (t.instrument.octave) instrument.octave = t.instrument.octave;
-        if (t.instrument.transpose)
-          instrument.transpose = t.instrument.transpose;
+        // if (t.instrument.octave) instrument.octave = t.instrument.octave;
+        // if (t.instrument.transpose)
+        //   instrument.transpose = t.instrument.transpose;
 
         this.createTrack(instrument);
 
-        //seting instruments
+        //instrument
+
+        instrument.setGain(t.instrument.gain);
 
         if (t.instrument.audioParams)
           t.instrument.audioParams.forEach((ins_ap, i) => {
@@ -1002,11 +1004,11 @@ export default {
 
 .tracks {
   margin: 6em 0 1em;
-  border: 3px solid transparent;
+  border: 4px solid transparent;
 }
 
 .tracks.mapping {
-  border: 3px solid var(--color-1);
+  border-color: var(--color-1);
 }
 
 .track {

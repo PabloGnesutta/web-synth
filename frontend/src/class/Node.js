@@ -29,7 +29,10 @@ class Node {
     if (this.modulationParams) this.modulationParams = null
     if (this.innerNodeAudioParams) this.innerNodeAudioParams = null
 
-    if (this.node) this.node = null
+    if (this.node) {
+      this.node.disconnect()
+      this.node = null
+    }
 
     this.inputNode = null
     this.outputNode = null
@@ -47,11 +50,12 @@ class Node {
     })
     this.outputNode.disconnect()
     this.outputs = []
+
+    this.inputNode.disconnect()
     return this
   }
 
   setGain(value) {
-    console.log('setgain', value)
     this.gain = value
     if (!this.muted)
       this.outputNode.gain.setValueAtTime(value, 0)

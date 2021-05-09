@@ -173,7 +173,6 @@ class BiquadFilter extends Node {
 
   initDryWet() {
     this.dryWet = {
-      // name: "dry/wet",
       displayName: "dry/wet",
       unit: '', //%
       minValue: 0,
@@ -188,7 +187,6 @@ class BiquadFilter extends Node {
     this.wetGain.gain.value = value
     this.dryGain.gain.value = value - 1
     this.dryWet.value = value
-    console.log(this.dryWet)
   }
 
 }
