@@ -17,7 +17,9 @@
               :class="{ enabled: instrumentEnabled }"
             ></div>
           </div>
-          <!-- <div class="save-preset">save</div> -->
+          <div class="save-preset" @click="savePreset()" v-if="Node.saveString">
+            Guardar
+          </div>
         </div>
         <div class="top-right" v-if="Node.name !== 'Track Gain'">
           <div class="delete" @click="deleteNode()">X</div>
@@ -318,6 +320,7 @@ export default {
       loopStatus: "CLEARED",
       folded: false,
       muted: false,
+      presetCandidates: ["Surgeon", "Femod"],
     };
   },
 
@@ -373,6 +376,34 @@ export default {
 
     deleteNode() {
       this.$emit("deleteNode");
+    },
+
+    savePreset() {
+      const presetsKey = this.Node.nodeType + "-presets";
+      const namesKey = presetsKey + "-names";
+
+      let names = localStorage.getItem(namesKey);
+
+      if (!names) {
+        localStorage.setItem(presetsKey, "[]");
+        localStorage.setItem(namesKey, "[]");
+        names = "[]";
+      }
+
+      const newPresetName = prompt("Nombre del preset a guardar");
+      names = JSON.parse(names);
+      //ver si existe
+
+      let presets = localStorage.getItem(presetsKey);
+      presets = JSON.parse(presets);
+
+      const saveString = this.Node.saveString();
+
+      names.push(newPresetName);
+      presets.push({ name: newPresetName, saveString });
+
+      localStorage.setItem(namesKey, JSON.stringify(names));
+      localStorage.setItem(presetsKey, JSON.stringify(presets));
     },
 
     toggleInstrumentEnabled() {
@@ -587,6 +618,9 @@ export default {
   .top-left {
     display: flex;
     gap: 0.2em;
+    .save-preset {
+      font-size: 0.8rem;
+    }
   }
 }
 

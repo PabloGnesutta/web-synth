@@ -189,6 +189,17 @@ class BiquadFilter extends Node {
     this.dryWet.value = value
   }
 
+  saveString() {
+    return JSON.stringify({
+      nodeRol: this.nodeRol,
+      nodeType: this.nodeType,
+      gain: this.gain,
+      type: this.type,
+      innerNodeAudioParams: this.innerNodeAudioParams,
+      audioParams: this.audioParams,
+      dryWet: this.dryWet,
+    })
+  }
 }
 
 module.exports = BiquadFilter

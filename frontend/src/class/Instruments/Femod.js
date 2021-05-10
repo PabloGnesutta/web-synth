@@ -28,6 +28,7 @@ class Femod extends Node {
 
     this.modLevelValue = 1000
     this.modType = "sine"
+    this.modDetune = 0
 
     this.noteIndexInUse = Array(polyphony).fill(null)
     this.available = Array(polyphony).fill(true)
@@ -78,7 +79,7 @@ class Femod extends Node {
     mod.type = this.modType
 
     mod.frequency.setValueAtTime(freq, t0) //sync with note freq
-    mod.detune.value = detune
+    mod.detune.value = this.modDetune
     mod.connect(modLevel)
 
     oscillator.frequency.setValueAtTime(freq, t0)
@@ -114,11 +115,12 @@ class Femod extends Node {
     oscillator.stop(t + R)
     modulator.stop(t + R)
 
+    //anda bien para memory leak pero el release la caga
     setTimeout(() => {
       oscillator.disconnect()
-      modulator.disconnect()
+      // modulator.disconnect()
       ADSRGain.disconnect()
-      this.modulatorGains[index].disconnect()
+      // this.modulatorGains[index].disconnect()
     }, R * 1000);
 
     this.setNotInUse(index)
@@ -150,7 +152,6 @@ class Femod extends Node {
         minValue: 0,
         maxValue: 5,
         value: A,
-        // defaultValue: A,
         set(v) { setScaleNodeProperty("A", v) }
       },
       {
@@ -160,7 +161,6 @@ class Femod extends Node {
         minValue: 0.01,
         maxValue: 3,
         value: D,
-        // defaultValue: D,
         set(v) { setScaleNodeProperty("D", v) }
       },
       {
@@ -170,7 +170,6 @@ class Femod extends Node {
         minValue: 0,
         maxValue: 1,
         value: S,
-        // defaultValue: S,
         set(v) { setScaleNodeProperty("S", v) }
       },
       {
@@ -180,7 +179,6 @@ class Femod extends Node {
         minValue: 0.001,
         maxValue: 5,
         value: R,
-        // defaultValue: R,
         set(v) { setScaleNodeProperty("R", v) }
       },
       {
@@ -190,7 +188,6 @@ class Femod extends Node {
         minValue: -100,
         maxValue: 100,
         value: 0,
-        // defaultValue: 0,
         set(v) { setDetune(v) }
       },
     ]
@@ -211,6 +208,10 @@ class Femod extends Node {
       this.modType = value
       //tiempo real agregar
     }
+    const setModDetune = (value) => {
+      this.modDetune = value
+      //tiempo real agregar
+    }
     this.modulationParams = [
       {
         name: "type",
@@ -226,15 +227,24 @@ class Femod extends Node {
         minValue: 0,
         maxValue: 3000,
         value: 100,
-        // defaultValue: 100,
         set(v) { setModLevel(v) }
+      },
+      {
+        name: "modDetune",
+        displayName: "fine",
+        unit: '',
+        minValue: -100,
+        maxValue: 100,
+        value: 0,
+        set(v) { setModDetune(v) }
       },
     ]
   }
 
   saveString() {
     return JSON.stringify({
-      nodeType: 'Femod',
+      nodeRol: this.nodeRol,
+      nodeType: this.nodeType,
       gain: this.gain,
       customParams: this.customParams,
       modulationParams: this.modulationParams

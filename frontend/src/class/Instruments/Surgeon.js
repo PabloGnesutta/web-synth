@@ -216,16 +216,16 @@ class Surgeon extends Node {
     this.oscillatorsPerNote = this.oscillatorGroupProps.length
   }
 
-  setSurgeonParam(oscIndex, paramIndex, value) {
-    this.surgeonParams[paramIndex].set(oscIndex, parseFloat(value))
-  }
-
   addToOctaveTranspose(index, param, value) {
     this.oscillatorGroupProps[index][param] += value
   }
 
   setOctaveTranspose(index, param, value) {
     this.oscillatorGroupProps[index][param] = value
+  }
+
+  setSurgeonParam(oscIndex, paramIndex, value) {
+    this.surgeonParams[paramIndex].set(oscIndex, parseFloat(value))
   }
 
   initSurgeonParams() {
@@ -297,7 +297,12 @@ class Surgeon extends Node {
   }
 
   saveString() {
-    return JSON.stringify({ nodeType: 'Surgeon', gain: this.gain, state: this.oscillatorGroupProps })
+    return JSON.stringify({
+      nodeRol: this.nodeRol,
+      nodeType: this.nodeType,
+      gain: this.gain,
+      oscillatorGroupProps: this.oscillatorGroupProps
+    })
   }
 
   destroy() {

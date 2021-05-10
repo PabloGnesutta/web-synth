@@ -24,15 +24,42 @@
             </div>
             <div
               class="btn btn-instrument dropdown-item"
-              @click="createInstrument('Surgeon')"
+              @click.self="createInstrument('Surgeon')"
+              @mouseenter="showSurgeonPresets = true"
+              @mouseleave="showSurgeonPresets = false"
             >
               Surgeon
+              <div
+                class="sub-dropdown"
+                :class="{ hidden: !showSurgeonPresets }"
+              >
+                <div
+                  class="sub-dropdown-item"
+                  v-for="(preset, p) in surgeonPresets"
+                  :key="p"
+                  @click.prevent="selectPreset('Surgeon', p)"
+                >
+                  {{ preset }}
+                </div>
+              </div>
             </div>
             <div
               class="btn btn-instrument dropdown-item"
-              @click="createInstrument('Femod')"
+              @click.self="createInstrument('Femod')"
+              @mouseenter="showFemodPresets = true"
+              @mouseleave="showFemodPresets = false"
             >
               Femod
+              <div class="sub-dropdown" :class="{ hidden: !showFemodPresets }">
+                <div
+                  class="sub-dropdown-item"
+                  v-for="(preset, p) in femodPresets"
+                  :key="p"
+                  @click.prevent="selectPreset('Femod', p)"
+                >
+                  {{ preset }}
+                </div>
+              </div>
             </div>
             <div class="btn btn-instrument dropdown-item" @click="createMic()">
               Mic
@@ -71,9 +98,29 @@
             <div class="btn btn-effect" @click="createEffect('Distortion')">
               Distortion
             </div>
-            <div class="btn btn-effect" @click="createEffect('EQ3')">EQ3</div>
-            <div class="btn btn-effect" @click="createEffect('BiquadFilter')">
+            <div
+              class="btn btn-effect dropdown-item"
+              @click="createEffect('EQ3')"
+            >
+              EQ3
+            </div>
+            <div
+              class="btn btn-effect dropdown-item"
+              @click.self="createEffect('BiquadFilter')"
+              @mouseenter="showFilterPresets = true"
+              @mouseleave="showFilterPresets = false"
+            >
               Filter
+              <div class="sub-dropdown" :class="{ hidden: !showFilterPresets }">
+                <div
+                  class="sub-dropdown-item"
+                  v-for="(preset, p) in filterPresets"
+                  :key="p"
+                  @click.prevent="selectPreset('BiquadFilter', p)"
+                >
+                  {{ preset }}
+                </div>
+              </div>
             </div>
             <div class="btn btn-effect" @click="createEffect('Looper')">
               Looper
@@ -201,6 +248,15 @@ export default {
       saves: [],
       saveNames: [],
       currentSave: undefined,
+
+      showSurgeonPresets: false,
+      showFemodPresets: false,
+
+      surgeonPresets: [],
+      femodPresets: [],
+
+      showFilterPresets: false,
+      filterPresets: [],
     };
   },
 
@@ -213,6 +269,15 @@ export default {
   mounted() {
     this.saves = JSON.parse(localStorage.getItem("websynth-saves"));
     this.saveNames = JSON.parse(localStorage.getItem("websynth-savenames"));
+
+    this.femodPresets = JSON.parse(localStorage.getItem("Femod-presets-names"));
+    this.surgeonPresets = JSON.parse(
+      localStorage.getItem("Surgeon-presets-names")
+    );
+
+    this.filterPresets = JSON.parse(
+      localStorage.getItem("BiquadFilter-presets-names")
+    );
   },
 
   methods: {
@@ -252,6 +317,15 @@ export default {
     createModulator() {
       this.$emit("createModulator");
       this.menuEffectsVisible = false;
+    },
+
+    //presets
+
+    selectPreset(nodeName, p) {
+      const store = localStorage.getItem(nodeName + "-presets");
+      const preset = JSON.parse(store)[p];
+      const saveString = JSON.parse(preset.saveString);
+      this.$emit("loadPreset", saveString);
     },
 
     startRec() {
@@ -423,166 +497,183 @@ export default {
   width: 100%;
   gap: 0.5em;
   border: 3px solid transparent;
+}
 
-  .buttons {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1em;
-  }
+.buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+}
 
-  .btn {
-    padding: 0.4em 1em;
-    background: gray;
-    cursor: pointer;
-  }
+.btn {
+  padding: 0.4em 1em;
+  background: gray;
+  cursor: pointer;
+}
 
-  .btn-modulator {
-    background: cyan;
-  }
-  .btn-effect {
-    background: green;
-  }
-  .btn.rec {
-    background: red;
-  }
-  .btn.stop-rec {
-    // background: cyan;
-    background: red;
-    color: black;
-  }
+.btn-effect {
+  background: green;
+}
+.btn.rec {
+  background: red;
+}
+.btn.stop-rec {
+  background: red;
+  color: black;
+}
 
-  .menu {
-    position: relative;
-  }
+.menu {
+  position: relative;
+}
 
-  .dropdown {
-    position: absolute;
-    z-index: 10;
-    min-width: 150px;
-  }
+.dropdown {
+  position: absolute;
+  z-index: 10;
+  min-width: 150px;
+}
 
-  .dropdown.hidden {
-    display: none;
-  }
+.dropdown.hidden {
+  display: none;
+}
 
-  .dropdown-item {
+.dropdown-item {
+  position: relative;
+  padding: 0.5em;
+}
+
+.sub-dropdown.hidden {
+  display: none;
+}
+
+.sub-dropdown {
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: translateX(100%);
+
+  .sub-dropdown-item {
     padding: 0.5em;
+    background: rgb(1, 71, 71);
   }
 
-  .instruments {
-    .label {
-      background: teal;
-    }
-    .dropdown {
-      background: teal;
-    }
-    .dropdown-item {
-      background: var(--color-1);
-      margin-bottom: 0.5em;
-    }
+  .sub-dropdown-item:hover {
+    background: rgb(2, 51, 51);
   }
+}
 
-  .effects {
-    .label {
-      background: green;
-    }
+.instruments {
+  .label {
+    background: teal;
   }
-
-  .btn-effect:hover,
-  .btn-instrument:hover,
-  .btn-modulator:hover {
-    background: var(--color-2);
+  .dropdown {
+    background: teal;
   }
-
-  .menu.config {
-    .dropdown {
-      right: 0;
-      bottom: 0;
-      transform: translateY(calc(100% + 5px));
-      min-width: 250px;
-      background: rgb(255, 83, 83);
-      .keystrokes-label {
-        padding: 0.5em;
-        font-weight: bold;
-      }
-      span {
-        color: #333;
-      }
-    }
-  }
-  //MIDI Map
-  .map {
-    cursor: pointer;
-  }
-
-  //Play/Stop recording
-
-  .play-stop {
-    .btn {
-      background: #004b80;
-    }
-  }
-
-  //saves
-
-  .saves-buttons {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1em;
-  }
-
-  .btn.load-work {
-    position: relative;
-    cursor: default;
-  }
-
-  .saved-works {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    min-width: 170px;
-    background: #555;
-    transform: translateY(calc(100% + 5px));
-  }
-
-  .saved-works.hidden {
-    display: none;
-  }
-
-  .saved-work {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5em;
-    padding: 0 0.4em;
-
+  .dropdown-item {
+    background: var(--color-1);
     margin-bottom: 0.5em;
   }
-  .saved-work:last-child {
-    margin-bottom: 0;
-  }
-  .saved-work:hover {
-    background: #222;
-  }
+}
 
-  .saved-work-name {
-    cursor: pointer;
-    padding: 0.5em;
-    flex: 1;
+.effects {
+  .label {
+    background: green;
   }
+}
 
-  .saved-work-name:hover {
-    background: var(--color-2);
-  }
+.btn-effect:hover,
+.btn-instrument:hover,
+.btn-modulator:hover {
+  background: var(--color-2);
+}
 
-  .saved-work-delete {
-    padding: 0.5em;
-    cursor: pointer;
+.menu.config {
+  .dropdown {
+    right: 0;
+    bottom: 0;
+    transform: translateY(calc(100% + 5px));
+    min-width: 250px;
+    background: rgb(255, 83, 83);
+    .keystrokes-label {
+      padding: 0.5em;
+      font-weight: bold;
+    }
+    span {
+      color: #333;
+    }
   }
-  .saved-work-delete:hover {
-    background: var(--color-1);
+}
+//MIDI Map
+.map {
+  cursor: pointer;
+}
+
+//Play/Stop recording
+
+.play-stop {
+  .btn {
+    background: #004b80;
   }
+}
+
+//saves
+
+.saves-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+}
+
+.btn.load-work {
+  position: relative;
+  cursor: default;
+}
+
+.saved-works {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  min-width: 170px;
+  background: #555;
+  transform: translateY(calc(100% + 5px));
+}
+
+.saved-works.hidden {
+  display: none;
+}
+
+.saved-work {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  padding: 0 0.4em;
+
+  margin-bottom: 0.5em;
+}
+.saved-work:last-child {
+  margin-bottom: 0;
+}
+.saved-work:hover {
+  background: #222;
+}
+
+.saved-work-name {
+  cursor: pointer;
+  padding: 0.5em;
+  flex: 1;
+}
+
+.saved-work-name:hover {
+  background: var(--color-2);
+}
+
+.saved-work-delete {
+  padding: 0.5em;
+  cursor: pointer;
+}
+.saved-work-delete:hover {
+  background: var(--color-1);
 }
 </style>

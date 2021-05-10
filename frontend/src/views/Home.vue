@@ -21,6 +21,7 @@
             @stopPlayingExport="stopPlayingExport"
             @loadSave="loadSave"
             @toggleMapping="toggleMapping"
+            @loadPreset="loadPreset"
             :tracks="tracks"
             :playing="playing"
             :recording="recording"
@@ -520,13 +521,16 @@ export default {
 
       //remove track
       track.instrument.destroy();
+      track.instrument = null;
       track.trackGain.destroy();
+      track.trackGain = null;
       track.effects.forEach((e) => {
         e.destroy();
+        e = null;
       });
-      track.modulators.forEach((m) => {
-        m.destroy();
-      });
+      // track.modulators.forEach((m) => {
+      //   m.destroy();
+      // });
       track = null;
       this.tracks.splice(t, 1);
     },
@@ -575,13 +579,14 @@ export default {
       prev.disconnect().connect(next);
 
       effects[n].destroy();
+      effects[n] = null;
       effects.splice(n, 1);
     },
 
     deleteModulator(t, m) {
-      const trackModulators = this.tracks[t].modulators;
-      trackModulators[m].destroy();
-      trackModulators.splice(m, 1);
+      // const trackModulators = this.tracks[t].modulators;
+      // trackModulators[m].destroy();
+      // trackModulators.splice(m, 1);
     },
 
     // CREATE NODES
@@ -596,8 +601,8 @@ export default {
       return Node;
     },
     createModulator() {
-      const track = this.tracks[this.currentTrackIndex];
-      track.modulators.push(new Modulator("sawtooth"));
+      // const track = this.tracks[this.currentTrackIndex];
+      // track.modulators.push(new Modulator("sawtooth"));
     },
 
     createMic() {
@@ -733,7 +738,6 @@ export default {
     },
 
     toggleMapping() {
-      console.log(this.$refs);
       if (this.refBeignMapped) {
         this.refBeignMapped.stopMapping();
         this.refBeignMapped = null;
@@ -853,101 +857,107 @@ export default {
 
     loadSave(tracks) {
       tracks.forEach((t) => {
-        const instrument = new (instrumentsDict.get(t.instrument.nodeType))();
+        this.loadInstrument(t.instrument);
 
-        // if (t.instrument.octave) instrument.octave = t.instrument.octave;
-        // if (t.instrument.transpose)
-        //   instrument.transpose = t.instrument.transpose;
-
-        this.createTrack(instrument);
-
-        //instrument
-
-        instrument.setGain(t.instrument.gain);
-
-        if (t.instrument.audioParams)
-          t.instrument.audioParams.forEach((ins_ap, i) => {
-            instrument.setAudioParam(i, ins_ap.value);
-          });
-
-        if (t.instrument.innerNodeAudioParams)
-          t.instrument.innerNodeAudioParams.forEach((ins_inap, i) => {
-            instrument.setInnerNodeAudioParam(i, ins_inap.value);
-          });
-
-        if (t.instrument.customParams)
-          t.instrument.customParams.forEach((ins_cp, i) => {
-            instrument.setCustomParam(i, ins_cp.value);
-          });
-
-        if (t.instrument.modulationParams)
-          t.instrument.modulationParams.forEach((ins_mp, i) => {
-            instrument.setModulationParam(i, ins_mp.value);
-          });
-
-        // if (t.instrument.duetteParams) {
-        //   for (let o = 0; o < t.instrument.oscillatorsPerNote; o++) {
-        //     const state = t.instrument.oscillatorsState[o];
-        //     instrument.setDuetteParam(o, 0, state.A);
-        //     instrument.setDuetteParam(o, 1, state.D);
-        //     instrument.setDuetteParam(o, 2, state.S);
-        //     instrument.setDuetteParam(o, 3, state.R);
-        //     instrument.setDuetteParam(o, 4, state.detune);
-        //     instrument.setDuetteParam(o, 5, state.gain);
-        //     instrument.setType(o, state.type);
-        //   }
-        // }
-
-        if (t.instrument.surgeonParams) {
-          for (let o = 0; o < t.instrument.oscillatorsPerNote; o++) {
-            const state = t.instrument.oscillatorGroupProps[o];
-
-            instrument.setSurgeonParam(o, 0, state.A);
-            instrument.setSurgeonParam(o, 1, state.D);
-            instrument.setSurgeonParam(o, 2, state.S);
-            instrument.setSurgeonParam(o, 3, state.R);
-            instrument.setSurgeonParam(o, 4, state.detune);
-            instrument.setSurgeonParam(o, 5, state.gain);
-
-            instrument.setOctaveTranspose(o, "octave", state.octave);
-            instrument.setOctaveTranspose(o, "transpose", state.transpose);
-
-            instrument.setType(o, state.type);
-            instrument.setOscillatorTarget(o, state.destination);
-
-            instrument.setMute(o, state.muted);
-          }
-        }
-
-        //setting effects
-
-        t.effects.forEach((ef) => {
-          const effect = new (effectsDict.get(ef.nodeType))();
-
-          effect.setGain(ef.gain);
-
-          if (ef.type) effect.setType(ef.type);
-
-          if (ef.audioParams)
-            ef.audioParams.forEach((ef_ap, i) => {
-              effect.setAudioParam(i, ef_ap.value);
-            });
-
-          if (ef.innerNodeAudioParams)
-            ef.innerNodeAudioParams.forEach((ef_inap, i) => {
-              effect.setInnerNodeAudioParam(i, ef_inap.value);
-            });
-
-          if (ef.customParams)
-            ef.customParams.forEach((ef_cp, i) => {
-              effect.setCustomParam(i, ef_cp.value);
-            });
-
-          if (ef.dryWet) effect.setDryWet(ef.dryWet.value);
-
-          this.insertEffect(effect);
+        t.effects.forEach((savedEffect) => {
+          this.loadEffect(savedEffect);
         });
       });
+    },
+
+    loadPreset(saveString) {
+      if (saveString.nodeRol === "Instrument") this.loadInstrument(saveString);
+      else this.loadEffect(saveString);
+    },
+
+    loadInstrument(savedInst) {
+      const instrument = new (instrumentsDict.get(savedInst.nodeType))();
+
+      this.createTrack(instrument);
+
+      instrument.setGain(savedInst.gain);
+
+      if (instrument.audioParams)
+        savedInst.audioParams.forEach((ins_ap, i) => {
+          instrument.setAudioParam(i, ins_ap.value);
+        });
+
+      if (instrument.innerNodeAudioParams)
+        savedInst.innerNodeAudioParams.forEach((ins_inap, i) => {
+          instrument.setInnerNodeAudioParam(i, ins_inap.value);
+        });
+
+      if (instrument.customParams)
+        savedInst.customParams.forEach((ins_cp, i) => {
+          instrument.setCustomParam(i, ins_cp.value);
+        });
+
+      if (instrument.modulationParams)
+        savedInst.modulationParams.forEach((ins_mp, i) => {
+          instrument.setModulationParam(i, ins_mp.value);
+        });
+
+      // if (savedInst.duetteParams) {
+      //   for (let o = 0; o < savedInst.oscillatorsPerNote; o++) {
+      //     const state = savedInst.oscillatorsState[o];
+      //     instrument.setDuetteParam(o, 0, state.A);
+      //     instrument.setDuetteParam(o, 1, state.D);
+      //     instrument.setDuetteParam(o, 2, state.S);
+      //     instrument.setDuetteParam(o, 3, state.R);
+      //     instrument.setDuetteParam(o, 4, state.detune);
+      //     instrument.setDuetteParam(o, 5, state.gain);
+      //     instrument.setType(o, state.type);
+      //   }
+      // }
+
+      if (instrument.surgeonParams) {
+        for (let o = 0; o < instrument.oscillatorsPerNote; o++) {
+          const state = savedInst.oscillatorGroupProps[o];
+
+          instrument.setType(o, state.type);
+          instrument.setOscillatorTarget(o, state.destination);
+
+          instrument.setSurgeonParam(o, 0, state.A);
+          instrument.setSurgeonParam(o, 1, state.D);
+          instrument.setSurgeonParam(o, 2, state.S);
+          instrument.setSurgeonParam(o, 3, state.R);
+          instrument.setSurgeonParam(o, 4, state.detune);
+          instrument.setSurgeonParam(o, 5, state.gain);
+
+          instrument.setOctaveTranspose(o, "octave", state.octave);
+          instrument.setOctaveTranspose(o, "transpose", state.transpose);
+
+          instrument.setMute(o, state.muted);
+        }
+      }
+    },
+
+    loadEffect(savedEffect) {
+      console.log(savedEffect)
+      const effect = new (effectsDict.get(savedEffect.nodeType))();
+
+      effect.setGain(savedEffect.gain);
+
+      if (effect.type) effect.setType(savedEffect.type);
+
+      if (effect.audioParams)
+        savedEffect.audioParams.forEach((ef_ap, i) => {
+          effect.setAudioParam(i, ef_ap.value);
+        });
+
+      if (effect.innerNodeAudioParams)
+        savedEffect.innerNodeAudioParams.forEach((ef_inap, i) => {
+          effect.setInnerNodeAudioParam(i, ef_inap.value);
+        });
+
+      if (effect.customParams)
+        savedEffect.customParams.forEach((ef_cp, i) => {
+          effect.setCustomParam(i, ef_cp.value);
+        });
+
+      if (effect.dryWet) effect.setDryWet(savedEffect.dryWet.value);
+
+      this.insertEffect(effect);
     },
 
     getCssNodeName(name) {
