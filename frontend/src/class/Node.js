@@ -30,7 +30,8 @@ class Node {
     if (this.innerNodeAudioParams) this.innerNodeAudioParams = null
 
     if (this.node) {
-      this.node.disconnect()
+      //jabia problemas con poner y quitar un effecto, dejaba de sonar... chequear
+      // this.node.disconnect()
       this.node = null
     }
 
@@ -51,7 +52,7 @@ class Node {
     this.outputNode.disconnect()
     this.outputs = []
 
-    this.inputNode.disconnect()
+    // this.inputNode.disconnect()
     return this
   }
 

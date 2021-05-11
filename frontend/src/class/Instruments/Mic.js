@@ -1,6 +1,6 @@
 const Node = require("../Node")
 
-const initialGain = 0.05
+const initialGain = 1
 
 class Mic extends Node {
   static micCount = 0

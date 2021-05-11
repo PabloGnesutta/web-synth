@@ -255,7 +255,7 @@ export default {
 
       this.createMainGain();
       // this.createTrack(new Femod());
-      // this.createTrack(new Surgeon());
+      this.createTrack(new Surgeon());
       // this.insertEffect(new Distortion())
 
       window.addEventListener("keyup", this.onKeyup);
@@ -788,8 +788,8 @@ export default {
         //note on / note off / sustain pedal
         if (command === "1001") this.triggerNoteOn(note, channel);
         else if (command === "1000") this.triggerNoteOff(note, channel);
-        else if (command === "1011")
-          console.log("sustain pedal pressed", value);
+        // else if (command === "1011")
+        //   console.log("sustain pedal pressed", value);
         else {
           //turn knob
           const mappedItem = this.maps.find(
@@ -933,7 +933,7 @@ export default {
     },
 
     loadEffect(savedEffect) {
-      console.log(savedEffect)
+      console.log(savedEffect);
       const effect = new (effectsDict.get(savedEffect.nodeType))();
 
       effect.setGain(savedEffect.gain);

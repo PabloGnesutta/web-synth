@@ -4,7 +4,7 @@
       <div
         class="backdrop"
         @click.self="hideMenues"
-        v-if="menuInstrumentsVisible || menuEffectsVisible"
+        v-if="menuInstrumentsVisible || menuEffectsVisible || menuConfigVisible"
       ></div>
       <div v-if="currentSave" class="current-save-name">
         {{ currentSave.name }}
@@ -13,7 +13,7 @@
         <!-- Instruments -->
         <div class="menu instruments" v-if="!recording">
           <div class="btn label" @click="toggleInstrumentsMenu">
-            Instruments
+            Instrumentos
           </div>
           <div class="dropdown" :class="{ hidden: !menuInstrumentsVisible }">
             <div
@@ -61,9 +61,9 @@
                 </div>
               </div>
             </div>
-            <div class="btn btn-instrument dropdown-item" @click="createMic()">
+            <!-- <div class="btn btn-instrument dropdown-item" @click="createMic()">
               Mic
-            </div>
+            </div> -->
             <div
               class="btn btn-instrument dropdown-item"
               @click="createInstrument('WhiteNoise')"
@@ -90,13 +90,13 @@
           <div class="btn label" @click="toggleEffectsMenu">Effects</div>
           <div class="dropdown" :class="{ hidden: !menuEffectsVisible }">
             <div class="btn btn-effect" @click="createEffect('Compressor')">
-              Comp
+              Compresor
             </div>
             <div class="btn btn-effect" @click="createEffect('Delay')">
               Delay
             </div>
             <div class="btn btn-effect" @click="createEffect('Distortion')">
-              Distortion
+              Distorción
             </div>
             <div
               class="btn btn-effect dropdown-item"
@@ -110,7 +110,7 @@
               @mouseenter="showFilterPresets = true"
               @mouseleave="showFilterPresets = false"
             >
-              Filter
+              Filtro
               <div class="sub-dropdown" :class="{ hidden: !showFilterPresets }">
                 <div
                   class="sub-dropdown-item"
@@ -168,7 +168,7 @@
           v-if="recordingsAvailable && !recording"
           @click="downloadExport"
         >
-          DOWNLOAD
+          Descargar
         </div>
 
         <!-- SAVES -->
@@ -201,32 +201,51 @@
 
         <!-- Config -->
         <div class="menu config">
-          <div class="btn label" @click="showConfigMenu = !showConfigMenu">
-            INFO
-          </div>
-          <div class="dropdown" :class="{ hidden: !showConfigMenu }">
-            <div class="keystrokes-label">Keystrokes:</div>
+          <div class="btn label" @click="toggleInfoMenu">INFO</div>
+          <div class="dropdown" :class="{ hidden: !menuConfigVisible }">
             <div class="dropdown-item">
-              Ctrl + m: <span>Mute current track</span>
+              Para agregar un nuevo track, seleccioná un
+              <span> instrumento</span>
             </div>
             <div class="dropdown-item">
-              m + (1..9): <span>Mute track 1 to 9</span>
+              Al agregar seleccionar un <span> efecto</span>, éste se agregará
+              al track seleccionado
             </div>
-            <div class="dropdown-item">
-              ctrl + q: <span>Delete current track</span>
-            </div>
-            <div class="dropdown-item">z: <span>Octave down</span></div>
-            <div class="dropdown-item">x: <span>Octave up</span></div>
-            <div class="dropdown-item">c: <span>Transpose down</span></div>
-            <div class="dropdown-item">v: <span>Transpose up</span></div>
-            <div class="dropdown-item">
+            <!-- <div class="dropdown-item">
               0 (zero): <span>Trigger all Loopers</span>
+            </div> -->
+            <div class="dropdown-item">
+              Tocar notas con teclas <span> AWSEDFTGYHUJKOLP</span> o con un
+              <span> dispositivo MIDI</span>
             </div>
             <div class="dropdown-item">
-              Play notes with: <span> AWSEDFTGYHUJKOLP</span>
+              Tocar Drumkit con: <span>teclas 1 a 9 del Numpad</span>
+            </div>
+
+            <div class="dropdown-item">z: <span>Subir octava</span></div>
+            <div class="dropdown-item">x: <span>Bajar octava</span></div>
+            <div class="dropdown-item">
+              c: <span>Transponer 1 semitono arriba</span>
             </div>
             <div class="dropdown-item">
-              Play Drumkit with: <span>numpad keys</span>
+              v: <span>Transponer 1 semitono abajo</span>
+            </div>
+
+            <div class="dropdown-item">
+              Ctrl + m: <span>Silenciar tracl actual</span>
+            </div>
+            <div class="dropdown-item">
+              m + (1..9): <span>Silenciar track 1 a 9</span>
+            </div>
+            <div class="dropdown-item">
+              ctrl + q: <span>Borrar track actual</span>
+            </div>
+
+            <div class="dropdown-item">
+              Se pueden guardar las sesiones y reanudarlas. Por el momento esta
+              funcionalidad es limitada, y sólo se guardan los instrumentos y
+              los efectos y sus estados. No así los archivos de audio como loops
+              o grabaciones.
             </div>
           </div>
         </div>
@@ -243,7 +262,7 @@ export default {
     return {
       menuInstrumentsVisible: false,
       menuEffectsVisible: false,
-      showConfigMenu: false,
+      menuConfigVisible: false,
       showSavedWorks: false,
       saves: [],
       saveNames: [],
@@ -288,18 +307,27 @@ export default {
     },
 
     toggleInstrumentsMenu() {
-      this.menuInstrumentsVisible = !this.menuInstrumentsVisible;
+      this.menuConfigVisible = false;
       this.menuEffectsVisible = false;
+      this.menuInstrumentsVisible = !this.menuInstrumentsVisible;
     },
 
     toggleEffectsMenu() {
+      this.menuConfigVisible = false;
       this.menuInstrumentsVisible = false;
       this.menuEffectsVisible = !this.menuEffectsVisible;
+    },
+
+    toggleInfoMenu() {
+      this.menuEffectsVisible = false;
+      this.menuInstrumentsVisible = false;
+      this.menuConfigVisible = !this.menuConfigVisible;
     },
 
     hideMenues() {
       this.menuInstrumentsVisible = false;
       this.menuEffectsVisible = false;
+      this.menuConfigVisible = false;
     },
 
     createInstrument(className) {

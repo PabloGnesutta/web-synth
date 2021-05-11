@@ -63,6 +63,13 @@ export default {
     this.setParamContraints(this.minVal, this.maxVal, parseFloat(this.initVal));
   },
 
+  beforeDestroy() {
+    window.removeEventListener("mousemove", this.moveKnob);
+    window.removeEventListener("mouseup", this.onMouseUp);
+    window.removeEventListener("keydown", this.onKeydown);
+    window.removeEventListener("keyup", this.onKeyup);
+  },
+
   methods: {
     valueClicked() {
       if (this.appConnecting) return;
@@ -92,6 +99,7 @@ export default {
     },
 
     moveKnob(e) {
+      // console.log(this.ctrlPressed, this.shiftPressed)
       let translation = this.lastYPos - e.clientY;
       if (translation < this.calib && translation > -this.calib) return;
       this.lastYPos = e.clientY;

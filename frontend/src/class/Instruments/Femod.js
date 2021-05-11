@@ -115,11 +115,11 @@ class Femod extends Node {
     oscillator.stop(t + R)
     modulator.stop(t + R)
 
-    //anda bien para memory leak pero el release la caga
+    //anda bien para memory leak pero el release la caga, por eso comenté la modulación
     setTimeout(() => {
       oscillator.disconnect()
-      // modulator.disconnect()
       ADSRGain.disconnect()
+      // modulator.disconnect()
       // this.modulatorGains[index].disconnect()
     }, R * 1000);
 
