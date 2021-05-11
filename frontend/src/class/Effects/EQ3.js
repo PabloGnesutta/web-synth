@@ -119,6 +119,21 @@ class EQ3 extends Node {
     this.dryGain.gain.value = value - 1
     this.dryWet.value = value
   }
+
+  destroy() {
+    super.destroy()
+    this.low.disconnect()
+    this.mid.disconnect()
+    this.high.disconnect()
+    this.dryGain.disconnect()
+    this.wetGain.disconnect()
+
+    this.low = null
+    this.mid = null
+    this.high = null
+    this.dryGain = null
+    this.wetGain = null
+  }
 }
 
 module.exports = EQ3

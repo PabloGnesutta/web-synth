@@ -1,6 +1,6 @@
 const Node = require("../Node")
 
-const initialGain = 1
+const initialGain = 0.5
 
 class Mic extends Node {
   static micCount = 0
@@ -18,6 +18,14 @@ class Mic extends Node {
     this.node.connect(this.outputNode)
 
     this.initAudioParams()
+  }
+
+  setAudioParam(index, value) {
+    let curvedValue = parseFloat(value)
+
+    const param = this.audioParams[index];
+    this.node[param.name].setValueAtTime(curvedValue, 0);
+    this.audioParams[index].value = parseFloat(value);
   }
 
   initAudioParams() {
@@ -45,23 +53,17 @@ class Mic extends Node {
     ]
   }
 
-  setAudioParam(index, value) {
-    let curvedValue = parseFloat(value)
-
-    const param = this.audioParams[index];
-    this.node[param.name].setValueAtTime(curvedValue, 0);
-    this.audioParams[index].value = parseFloat(value);
-  }
-
   playNote(i) {
   }
 
   stopNote(i) {
   }
 
-  onOtherKeyup(key) {
+  destroy() {
+    super.destroy()
+    this.mic.disconnect()
+    this.mic = null
   }
-
 
 }
 

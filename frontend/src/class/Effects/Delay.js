@@ -82,6 +82,19 @@ class Delay extends Node {
     this.dryGain.gain.value = value - 1
     this.dryWet.value = value
   }
+
+  destroy() {
+    super.destroy()
+    this.delay.disconnect()
+    this.dryGain.disconnect()
+    this.wetGain.disconnect()
+    this.feedbackGain.disconnect()
+
+    this.delay = null
+    this.dryGain = null
+    this.wetGain = null
+    this.feedbackGain = null
+  }
 }
 
 module.exports = Delay

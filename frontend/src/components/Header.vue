@@ -61,9 +61,9 @@
                 </div>
               </div>
             </div>
-            <!-- <div class="btn btn-instrument dropdown-item" @click="createMic()">
+            <div class="btn btn-instrument dropdown-item" @click="createMic()">
               Mic
-            </div> -->
+            </div>
             <div
               class="btn btn-instrument dropdown-item"
               @click="createInstrument('WhiteNoise')"
@@ -87,7 +87,7 @@
 
         <!-- Effects -->
         <div class="menu effects">
-          <div class="btn label" @click="toggleEffectsMenu">Effects</div>
+          <div class="btn label" @click="toggleEffectsMenu">Efectos</div>
           <div class="dropdown" :class="{ hidden: !menuEffectsVisible }">
             <div class="btn btn-effect" @click="createEffect('Compressor')">
               Compresor
@@ -173,17 +173,17 @@
 
         <!-- SAVES -->
         <div class="saves-buttons" v-if="!recording">
-          <div class="btn" v-if="currentSave" @click="save">Save</div>
+          <div class="btn" v-if="currentSave" @click="save">Guardar</div>
           <div class="btn" @click="saveAs">
-            <span v-if="currentSave">Save as</span>
-            <span v-else>Save</span>
+            <span v-if="currentSave">Guardar como</span>
+            <span v-else>Guardar</span>
           </div>
           <div
             v-if="this.saves && this.saves.length > 0"
             class="btn load-work"
             @click="showSavedWorks = !showSavedWorks"
           >
-            <div>Load</div>
+            <div>Cargar</div>
             <div class="saved-works" :class="{ hidden: !showSavedWorks }">
               <div
                 :key="s"

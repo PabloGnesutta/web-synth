@@ -31,6 +31,16 @@ class Looper extends Node {
     this.initInnerNodeAudioParams()
   }
 
+  destroy() {
+    //chequear
+    super.destroy()
+    this.feedback.disconnect()
+    this.source.disconnect()
+
+    this.feedback = null
+    this.source = null
+  }
+
   startLoop(startAt) {
     this.status = "PLAYING"
     this.playing = true;

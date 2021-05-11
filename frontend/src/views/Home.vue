@@ -254,8 +254,8 @@ export default {
       Node.context = this.context;
 
       this.createMainGain();
-      // this.createTrack(new Femod());
-      this.createTrack(new Surgeon());
+      this.createTrack(new Sampler());
+      // this.createTrack(new Surgeon());
       // this.insertEffect(new Distortion())
 
       window.addEventListener("keyup", this.onKeyup);

@@ -200,6 +200,19 @@ class BiquadFilter extends Node {
       dryWet: this.dryWet,
     })
   }
+
+  destroy() {
+    super.destroy()
+    this.mod.disconnect()
+    this.modGain.disconnect()
+    this.dryGain.disconnect()
+    this.wetGain.disconnect()
+
+    this.mod = null
+    this.modGain = null
+    this.dryGain = null
+    this.wetGain = null
+  }
 }
 
 module.exports = BiquadFilter

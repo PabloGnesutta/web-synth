@@ -78,6 +78,15 @@ class Compressor extends Node {
     this.dryGain.gain.value = value - 1
     this.dryWet.value = value
   }
+
+  destroy() {
+    super.destroy()
+    this.dryGain.disconnect()
+    this.wetGain.disconnect()
+
+    this.dryGain = null
+    this.wetGain = null
+  }
 }
 
 module.exports = Compressor

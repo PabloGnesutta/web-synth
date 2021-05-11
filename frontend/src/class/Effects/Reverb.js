@@ -29,7 +29,7 @@ class Reverb extends Node {
     this.initReverb(this.type)
   }
 
-  //se podrían cachear los buffers
+  //se podrían cachear los buffers, o no...
   initReverb(type) {
     fetch(dirName + type + '.wav').then(res => { return res.arrayBuffer() })
       .then((arrayBuffer) => {
@@ -56,6 +56,17 @@ class Reverb extends Node {
     this.wetGain.gain.value = value
     this.dryGain.gain.value = value - 1
     this.dryWet.value = value
+  }
+
+  destroy() {
+    super.destroy()
+    this.dryGain.disconnect()
+    this.wetGain.disconnect()
+    this.convolver.disconnect()
+
+    this.dryGain = null
+    this.wetGain = null
+    this.convolver = null
   }
 
 }

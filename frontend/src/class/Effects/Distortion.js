@@ -33,6 +33,14 @@ class Distortion extends Node {
     this.initCustomParams()
   }
 
+  destroy() {
+    super.destroy()
+    this.dryGain.disconnect()
+    this.wetGain.disconnect()
+    this.dryGain = null
+    this.wetGain = null
+  }
+
   initCustomParams() {
     this.customParams = [
       {
