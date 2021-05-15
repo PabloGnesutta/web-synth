@@ -24,7 +24,7 @@ class Carrier extends Oscillator {
 
   initAudioParams() {
     this.audioParams = [
-      { name: 'detune', displayName: 'fine', unit: 'hz', minValue: -detuneMax, maxValue: detuneMax, value: 0, defaultValue: 0, step: 0.1 },
+      { name: 'detune', displayName: 'fine', unit: 'hz', minValue: -detuneMax, maxValue: detuneMax, value: 0, },
       { name: 'frequency', displayName: 'freq', unit: 'hz', minValue: 20, maxValue: 7000, value: 220 },
     ]
   }

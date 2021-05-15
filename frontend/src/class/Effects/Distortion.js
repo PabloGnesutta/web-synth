@@ -33,6 +33,15 @@ class Distortion extends Node {
     this.initCustomParams()
   }
 
+  saveString() {
+    return JSON.stringify({
+      nodeType: this.nodeType,
+      gain: this.gain,
+      customParams: this.this.customParams,
+      dryWet: this.dryWet
+    })
+  }
+
   destroy() {
     super.destroy()
     this.dryGain.disconnect()
@@ -48,7 +57,7 @@ class Distortion extends Node {
         minValue: 20, maxValue: 100, value: this.curveAmount,
       },
       {
-        name: 'some', displayName: 'harsh', unit: '', //%
+        name: 'harsh', displayName: 'harsh', unit: '', //%
         minValue: 0, maxValue: 3, value: this.harshAmount,
       },
     ]
@@ -72,7 +81,7 @@ class Distortion extends Node {
     this.node.curve = this.makeDistortionCurve(this.curveAmount, val);
   }
 
-  makeDistortionCurve(amount, some) {
+  makeDistortionCurve(amount, harsh) {
     let
       k = amount,
       n_samples = 44100,
@@ -83,9 +92,9 @@ class Distortion extends Node {
     for (let i = 0; i < n_samples; ++i) {
       x = i * 2 / n_samples - 1;
 
-      curve[i] = (3 + some) * x * k * (Math.PI / 180) / (Math.PI + some * Math.abs(x))
+      curve[i] = (3 + harsh) * x * k * (Math.PI / 180) / (Math.PI + harsh * Math.abs(x))
 
-      // curve[i] = (3 + k) * x * some * deg / (Math.PI + k * Math.abs(x)); //esta va mas
+      // curve[i] = (3 + k) * x * harsh * deg / (Math.PI + k * Math.abs(x)); //esta va mas
 
       // curve[i] = (3 + k) * Math.atan(Math.sinh(x * 0.25) * 5) / (Math.PI + k * Math.abs(x));
 
@@ -99,9 +108,7 @@ class Distortion extends Node {
       unit: '', //%
       minValue: 0,
       maxValue: 1,
-      defaultValue: 1,
       value: 1,
-      step: 0.01
     }
   }
 

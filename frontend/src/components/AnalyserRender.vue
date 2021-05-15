@@ -44,6 +44,7 @@ export default {
 
     if (this.expanded) this.barWidth = this.canvas.width / this.bufferLength;
     else this.barWidth = this.canvas.width;
+    // this.renderWaveForm();
     this.renderSpectrum();
   },
 
@@ -76,8 +77,6 @@ export default {
     },
 
     renderSpectrum() {
-      window.requestAnimationFrame(this.renderSpectrum);
-
       this.analyser.getByteFrequencyData(this.dataArray);
 
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -87,7 +86,7 @@ export default {
 
       for (var i = 0; i < this.bufferLength; i++) {
         barHeight = this.dataArray[i];
-        this.ctx.fillStyle = "rgb(" + (barHeight + 100) + ",50,50)";
+        this.ctx.fillStyle = "rgb(" + barHeight + ",50,50)";
         this.ctx.fillRect(
           x,
           this.canvas.height - barHeight / 2,
@@ -97,11 +96,11 @@ export default {
 
         if (this.expanded) x += this.barWidth + 1; //
       }
+
+      window.requestAnimationFrame(this.renderSpectrum);
     },
 
     renderWaveForm() {
-      window.requestAnimationFrame(this.renderWaveForm);
-
       this.bufferLength = this.analyser.frequencyBinCount;
       this.dataArray = new Uint8Array(this.bufferLength);
       this.analyser.getByteTimeDomainData(this.dataArray);
@@ -118,6 +117,7 @@ export default {
 
       for (var i = 0; i < this.bufferLength; i++) {
         var v = this.dataArray[i] / 128.0;
+
         var y = (v * this.canvas.height) / 2;
 
         if (i === 0) {
@@ -131,6 +131,8 @@ export default {
 
       this.ctx.lineTo(this.canvas.width, this.canvas.height / 2);
       this.ctx.stroke();
+
+      window.requestAnimationFrame(this.renderWaveForm);
     },
   },
 };

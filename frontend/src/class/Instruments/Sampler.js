@@ -80,8 +80,6 @@ class Sampler extends Node {
         minValue: 0,
         maxValue: 5,
         value: 0,
-        defaultValue: 0,
-        step: 0.01,
         set(v) { setOffset(v) }
       },
       {
@@ -91,8 +89,6 @@ class Sampler extends Node {
         minValue: 0,
         maxValue: 5,
         value: 0,
-        defaultValue: 0,
-        step: 0.01,
         set(v) { setDuration(v) }
       }
     ]

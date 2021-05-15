@@ -28,23 +28,23 @@ class Compressor extends Node {
     this.audioParams = [
       {
         name: 'threshold', displayName: 'treshold', unit: '',
-        minValue: -100, maxValue: 0, value: -24, defaultValue: -24, step: 0.01
+        minValue: -100, maxValue: 0, value: -24,
       },
       {
         name: 'knee', displayName: 'knee', unit: '',
-        minValue: 0, maxValue: 40, value: 30, defaultValue: 30, step: 0.01
+        minValue: 0, maxValue: 40, value: 30,
       },
       {
         name: 'ratio', displayName: 'ratio', unit: '',
-        minValue: 1, maxValue: 20, value: 12, defaultValue: 12, step: 0.01
+        minValue: 1, maxValue: 20, value: 12,
       },
       {
         name: 'attack', displayName: 'attack', unit: 's',
-        minValue: 0, maxValue: 1, value: 0, defaultValue: 0, step: 0.01
+        minValue: 0, maxValue: 1, value: 0,
       },
       {
         name: 'release', displayName: 'release', unit: 's',
-        minValue: 0, maxValue: 1, value: 0.3, defaultValue: 0.3, step: 0.01
+        minValue: 0, maxValue: 1, value: 0.3,
       },
     ]
   }
@@ -67,9 +67,7 @@ class Compressor extends Node {
       unit: '', //%
       minValue: 0,
       maxValue: 1,
-      defaultValue: 1,
       value: 1,
-      step: 0.01
     }
   }
 
@@ -86,6 +84,15 @@ class Compressor extends Node {
 
     this.dryGain = null
     this.wetGain = null
+  }
+
+  saveString() {
+    return JSON.stringify({
+      nodeType: this.nodeType,
+      gain: this.gain,
+      audioParams: this.this.audioParams,
+      dryWet: this.dryWet
+    })
   }
 }
 

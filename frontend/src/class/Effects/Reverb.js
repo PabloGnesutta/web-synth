@@ -11,7 +11,7 @@ class Reverb extends Node {
 
     this.name = "Reverb " + ++Reverb.reverbCount
     this.nodeType = "Reverb"
-    this.types = ['Five Columns', 'Bottle Hall', 'Deep Space', 'In The Silo', 'In The Other Silo', 'Chateau Outside', 'Damp Lg Room']
+    this.types = ['Five Columns', 'Bottle Hall', 'Deep Space', 'In The Silo', 'Chateau Outside', 'Damp Lg Room']
     this.type = 'In The Silo'
 
     this.convolver = Node.context.createConvolver()
@@ -26,11 +26,20 @@ class Reverb extends Node {
     this.wetGain.connect(this.outputNode)
 
     this.initDryWet()
-    this.initReverb(this.type)
+    this.setType(this.type)
+  }
+
+  saveString() {
+    return JSON.stringify({
+      nodeType: this.nodeType,
+      gain: this.gain,
+      type: this.type,
+      dryWet: this.dryWet
+    })
   }
 
   //se podrían cachear los buffers, o no...
-  initReverb(type) {
+  setType(type) {
     fetch(dirName + type + '.wav').then(res => { return res.arrayBuffer() })
       .then((arrayBuffer) => {
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
@@ -46,9 +55,7 @@ class Reverb extends Node {
       unit: '', //%
       minValue: 0,
       maxValue: 1,
-      defaultValue: 0.3,
-      value: 0,
-      step: 0.01
+      value: 0.3,
     }
   }
 

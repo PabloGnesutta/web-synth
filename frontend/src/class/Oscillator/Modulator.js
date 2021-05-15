@@ -31,11 +31,11 @@ class Modulator extends Oscillator {
     this.audioParams = [
       {
         name: 'frequency', displayName: 'freq', unit: 'hz',
-        minValue: 0, maxValue: 120, value: initialFrequency, defaultValue: initialFrequency, step: 0.1
+        minValue: 0, maxValue: 120, value: initialFrequency,
       },
       {
         name: 'detune', displayName: 'fine', unit: 'hz',
-        minValue: -detuneMax, maxValue: detuneMax, value: 0, defaultValue: 0, step: 0.1
+        minValue: -detuneMax, maxValue: detuneMax, value: 0,
       },
     ]
   }

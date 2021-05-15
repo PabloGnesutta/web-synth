@@ -157,25 +157,25 @@ class Looper extends Node {
     this.innerNodeAudioParams = [
       // {
       //   name: 'playbackRate', displayName: 'speed', unit: 'x', //%
-      //   minValue: 0, maxValue: 4, value: 1, defaultValue: 1, step: 0.01,
+      //   minValue: 0, maxValue: 4, value: 1,
       //   node: this.source, nodeAudioParam: 'playbackRate'
       // },
       // {
       //   name: 'detune', displayName: 'detune', unit: '', //%
-      //   minValue: -500, maxValue: 500, value: 0, defaultValue: 0, step: 0.01,
+      //   minValue: -500, maxValue: 500, value: 0,
       //   node: this.source, nodeAudioParam: 'detune'
       // },
       {
         name: 'feedback', displayName: 'feedback', unit: '', //%
-        minValue: 0, maxValue: 1, value: 1, defaultValue: 1, step: 0.01,
+        minValue: 0, maxValue: 1, value: 1,
         node: this.feedback, nodeAudioParam: 'gain'
       },
     ]
   }
 
-  setInnerNodeAudioParam(indexOrName, value) {
-    let index = indexOrName
-    if (typeof (indexOrName) !== 'number') index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
+  setInnerNodeAudioParam(index, value) {
+    // let index = indexOrName
+    // if (typeof (indexOrName) !== 'number') index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
 
     const innerNodeAudioParam = this.innerNodeAudioParams[index];
     innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);

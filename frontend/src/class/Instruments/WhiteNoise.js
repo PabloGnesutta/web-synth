@@ -20,7 +20,7 @@ class WhiteNoise extends Node {
     this.node.type = 'bandpass'
 
     this.mod = Node.context.createOscillator()
-    this.mod.type='triangle'
+    this.mod.type = 'triangle'
     this.modGain = Node.context.createGain()
     this.mod.connect(this.modGain)
     this.modGain.gain.value = 500
@@ -68,11 +68,11 @@ class WhiteNoise extends Node {
     this.audioParams = [
       {
         name: 'frequency', displayName: 'cutoff', unit: 'hz',
-        minValue: 20, maxValue: frequencyMax, value: frequencyMax, defaultValue: frequencyMax, step: 1
+        minValue: 20, maxValue: frequencyMax, value: frequencyMax,
       },
       {
         name: 'Q', displayName: 'res', unit: '',
-        minValue: -QMax, maxValue: QMax, value: 20, defaultValue: 20, step: 0.01
+        minValue: -QMax, maxValue: QMax, value: 20,
       },
     ]
   }
@@ -89,12 +89,12 @@ class WhiteNoise extends Node {
     this.innerNodeAudioParams = [
       {
         name: 'modFrequency', displayName: 'mod freq', unit: 'hz',
-        minValue: 0, maxValue: 500, value: 4, defaultValue: 8, step: 0.01,
+        minValue: 0, maxValue: 500, value: 4,
         node: this.mod, nodeAudioParam: 'frequency'
       },
       {
         name: 'modAmount', displayName: 'mod amt', unit: '', //%
-        minValue: 0, maxValue: 1000, value: 600, defaultValue: 600, step: 0.01,
+        minValue: 0, maxValue: 1000, value: 600,
         node: this.modGain, nodeAudioParam: 'gain'
       },
     ]

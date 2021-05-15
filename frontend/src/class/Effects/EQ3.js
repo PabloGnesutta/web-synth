@@ -49,44 +49,53 @@ class EQ3 extends Node {
     this.initDryWet()
   }
 
+  saveString() {
+    return JSON.stringify({
+      nodeType: this.nodeType,
+      gain: this.gain,
+      innerNodeAudioParams: this.this.innerNodeAudioParams,
+      dryWet: this.dryWet
+    })
+  }
+
   initInnerNodeAudioParams() {
     this.innerNodeAudioParams = [
       //low
       {
         name: 'lowFreq', displayName: '', unit: 'hz',
-        minValue: 0, maxValue: 500, value: 320, defaultValue: 320, step: 1,
+        minValue: 0, maxValue: 500, value: 320,
         node: this.low, nodeAudioParam: 'frequency'
       },
       {
         name: 'lowGain', displayName: 'gain', unit: '',
-        minValue: -30, maxValue: 30, value: 0, defaultValue: 0, step: 0.01,
+        minValue: -30, maxValue: 30, value: 0,
         node: this.low, nodeAudioParam: 'gain'
       },
       //mid
       {
         name: 'midFreq', displayName: '', unit: 'hz',
-        minValue: 800, maxValue: 1200, value: 1000, defaultValue: 1000, step: 1,
+        minValue: 800, maxValue: 1200, value: 1000,
         node: this.mid, nodeAudioParam: 'frequency'
       },
       {
         name: 'midGain', displayName: 'gain', unit: '',
-        minValue: -30, maxValue: 30, value: -12, defaultValue: -12, step: 0.01,
+        minValue: -30, maxValue: 30, value: -12,
         node: this.mid, nodeAudioParam: 'gain'
       },
       {
         name: 'midQ', displayName: 'res', unit: '',
-        minValue: -10, maxValue: 10, value: 0.5, defaultValue: 0.5, step: 0.01,
+        minValue: -10, maxValue: 10, value: 0.5,
         node: this.mid, nodeAudioParam: 'Q'
       },
       //high
       {
         name: 'highFreq', displayName: '', unit: 'hz',
-        minValue: 2000, maxValue: 4000, value: 3200, defaultValue: 3200, step: 1,
+        minValue: 2000, maxValue: 4000, value: 3200,
         node: this.high, nodeAudioParam: 'frequency'
       },
       {
         name: 'highGain', displayName: 'gain', unit: '',
-        minValue: -30, maxValue: 30, value: -12, defaultValue: -12, step: 0.01,
+        minValue: -30, maxValue: 30, value: -12,
         node: this.high, nodeAudioParam: 'gain'
       },
     ]
@@ -108,9 +117,7 @@ class EQ3 extends Node {
       unit: '', //%
       minValue: 0,
       maxValue: 1,
-      defaultValue: 1,
       value: 1,
-      step: 0.01
     }
   }
 

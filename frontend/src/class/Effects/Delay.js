@@ -40,16 +40,25 @@ class Delay extends Node {
     this.initDryWet()
   }
 
+  saveString() {
+    return JSON.stringify({
+      nodeType: this.nodeType,
+      gain: this.gain,
+      innerNodeAudioParams: this.this.innerNodeAudioParams,
+      dryWet: this.dryWet
+    })
+  }
+
   initInnerNodeAudioParams() {
     this.innerNodeAudioParams = [
       {
         name: 'delayTime', displayName: 'time', unit: 's',
-        minValue: minDelayTime, maxValue: maxDelayTime, value: initialDelayTime, defaultValue: initialDelayTime, step: 0.01,
+        minValue: minDelayTime, maxValue: maxDelayTime, value: initialDelayTime,
         node: this.delay, nodeAudioParam: 'delayTime'
       },
       {
         name: 'feedback', displayName: 'feedback', unit: '', //%
-        minValue: 0, maxValue: 1, value: initialFeddback, defaultValue: initialFeddback, step: 0.01,
+        minValue: 0, maxValue: 1, value: initialFeddback,
         node: this.feedbackGain, nodeAudioParam: 'gain'
       },
     ]
@@ -71,9 +80,7 @@ class Delay extends Node {
       unit: '', //%
       minValue: 0,
       maxValue: 1,
-      defaultValue: 0.3,
       value: 0,
-      step: 0.01
     }
   }
 
