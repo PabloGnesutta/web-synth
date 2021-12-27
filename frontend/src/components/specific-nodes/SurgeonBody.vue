@@ -1,20 +1,12 @@
 <template>
   <div class="SurgeonBody">
-    <div
-      v-for="(osc, o) in Node.oscillatorGroupProps"
-      :key="o"
-      class="oscillator"
-    >
+    <div v-for="(osc, o) in Node.oscillatorGroupProps" :key="o" class="oscillator">
       <div class="oscillator-inner">
         <div class="top">
           <div class="types">
             <span class="label">{{ osc.name }}</span>
             <select @input="setType(o, $event)">
-              <option
-                v-for="type in Node.oscTypes"
-                :key="type"
-                :selected="type === osc.type"
-              >
+              <option v-for="type in Node.oscTypes" :key="type" :selected="type === osc.type">
                 {{ type }}
               </option>
             </select>
@@ -29,11 +21,7 @@
             <div class="octave" :ref="o + 'octave'">
               <span>oct:</span> {{ groupOctaveTranspose[o].octave }}
             </div>
-            <div
-              :ref="o + 'transpose'"
-              class="transpose"
-              :class="{ selected: transposeSelected[o] }"
-            >
+            <div :ref="o + 'transpose'" class="transpose" :class="{ selected: transposeSelected[o] }">
               <span>transp:</span> {{ groupOctaveTranspose[o].transpose }}
             </div>
           </div>
@@ -54,13 +42,7 @@
           </div>
 
           <!-- Mute/Unmute -->
-          <div
-            class="mute-unmute"
-            :class="{ muted: osc.muted }"
-            @click="toggleMute(o)"
-          >
-            M
-          </div>
+          <div class="mute-unmute" :class="{ muted: osc.muted }" @click="toggleMute(o)">M</div>
         </div>
         <div class="custom-params params-container">
           <div
@@ -72,12 +54,7 @@
               {{ customParam.displayName }}
             </div>
 
-            <div
-              class="knob-wrapper"
-              @click="
-                knobClicked(Node.name + '-osc-' + o + '-' + customParam.name)
-              "
-            >
+            <div class="knob-wrapper" @click="knobClicked(Node.name + '-osc-' + o + '-' + customParam.name)">
               <Knob
                 :ref="Node.name + '-osc-' + o + '-' + customParam.name"
                 :unit="customParam.unit"
@@ -95,11 +72,11 @@
 </template>
 
 <script>
-import Knob from "../Knob";
+import Knob from '../Knob';
 export default {
-  name: "SurgeonBody",
+  name: 'SurgeonBody',
   components: { Knob },
-  props: ["Node"],
+  props: ['Node'],
 
   data() {
     return {
@@ -113,7 +90,7 @@ export default {
   },
 
   created() {
-    this.groupOctaveTranspose = this.Node.oscillatorGroupProps.map((props) => {
+    this.groupOctaveTranspose = this.Node.oscillatorGroupProps.map(props => {
       return {
         octave: props.octave,
         transpose: props.transpose,
@@ -122,25 +99,25 @@ export default {
   },
 
   beforeDestroy() {
-    window.removeEventListener("keyup", this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyDown);
   },
 
   methods: {
     selectOsc(o) {
-      window.addEventListener("keydown", this.onKeyDown);
+      window.addEventListener('keydown', this.onKeyDown);
       this.currentOsc = o;
     },
 
     deselectOsc(o) {
       this.currentOsc = null;
-      window.removeEventListener("keydown", this.onKeyDown);
+      window.removeEventListener('keydown', this.onKeyDown);
     },
 
     onKeyDown(e) {
       e.preventDefault(); //avoid triggering blur
 
       let val = 0;
-      let param = "octave";
+      let param = 'octave';
       switch (e.keyCode) {
         case 38: //up
           val = 1;
@@ -150,11 +127,11 @@ export default {
           break;
         case 37: //left
           val = -1;
-          param = "transpose";
+          param = 'transpose';
           break;
         case 39: //right
           val = 1;
-          param = "transpose";
+          param = 'transpose';
           break;
 
         default:
@@ -171,11 +148,8 @@ export default {
     },
 
     setOscillatorTarget(o, event) {
-      const { minValue, maxValue, value } = this.Node.setOscillatorTarget(
-        o,
-        event.target.value
-      );
-      let refName = this.Node.name + "-osc-" + o + "-S";
+      const { minValue, maxValue, value } = this.Node.setOscillatorTarget(o, event.target.value);
+      let refName = this.Node.name + '-osc-' + o + '-S';
 
       let ref = this.$refs[refName][0];
       ref.setParamContraints(minValue, maxValue, value);
@@ -195,7 +169,7 @@ export default {
 
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
-      this.$emit("knobClicked", knobRef);
+      this.$emit('knobClicked', knobRef);
     },
   },
 };

@@ -1,8 +1,8 @@
 <template>
   <div class="container">
-    <div 
-      :ref="Node.name" 
-      class="node" 
+    <div
+      :ref="Node.name"
+      class="node"
       :class="[Node.nodeType, getCssNodeName(Node.name), { folded: folded }]"
     >
       <!-- Top Bar -->
@@ -13,14 +13,9 @@
             class="instrument-enabler"
             @click="toggleInstrumentEnabled"
           >
-            <div
-              class="instrument-enabler-inner"
-              :class="{ enabled: instrumentEnabled }"
-            ></div>
+            <div class="instrument-enabler-inner" :class="{ enabled: instrumentEnabled }"></div>
           </div>
-          <div v-if="Node.saveString" class="save-preset" @click="savePreset()">
-            Guardar
-          </div>
+          <div v-if="Node.saveString" class="save-preset" @click="savePreset()">Guardar</div>
         </div>
         <div class="top-right" v-if="Node.name !== 'Track Gain'">
           <div class="delete" @click="deleteNode()">X</div>
@@ -33,18 +28,14 @@
 
       <!-- Node Header -->
       <div class="node-header">
-        <div class="node-name" @click.stop="toggleFolded"> {{ Node.name }} </div>
+        <div class="node-name" @click.stop="toggleFolded">{{ Node.name }}</div>
       </div>
 
       <!-- Node Body -->
       <div class="node-body">
         <div class="types" v-if="Node.types">
           <select @input="setType($event)">
-            <option
-              v-for="type in Node.types"
-              :key="type"
-              :selected="type === Node.type"
-            >
+            <option v-for="type in Node.types" :key="type" :selected="type === Node.type">
               {{ type }}
             </option>
           </select>
@@ -68,13 +59,8 @@
         </div>
       </div>
 
-      <div
-        class="start-stop"
-        v-if="Node.nodeType === 'Carrier'"
-      >
-        <div class="start" @click="startOsc()" v-if="Node.status === 'STOPPED'">
-          START
-        </div>
+      <div class="start-stop" v-if="Node.nodeType === 'Carrier'">
+        <div class="start" @click="startOsc()" v-if="Node.status === 'STOPPED'">START</div>
         <div class="stop" v-else @click="stopOsc()">STOP</div>
       </div>
 
@@ -91,15 +77,9 @@
         </div>
 
         <!-- Dry/Wet -->
-        <div
-          v-if="Node.dryWet"
-          class="dry-wet"
-        >
+        <div v-if="Node.dryWet" class="dry-wet">
           <div class="param-name">dry/wet</div>
-          <div
-            class="knob-wrapper"
-            @click="knobClicked(Node.name + '-dry-wet')"
-          >
+          <div class="knob-wrapper" @click="knobClicked(Node.name + '-dry-wet')">
             <Knob
               :ref="Node.name + '-dry-wet'"
               :initVal="Node.dryWet.value"
@@ -126,13 +106,13 @@
       </div>
 
       <!-- Track Gain -->
-      <div v-if="Node.name === 'Track Gain'" class="node-controls" >
+      <div v-if="Node.name === 'Track Gain'" class="node-controls">
         <div class="rec-enabled-disabled" @click="toggleRecEnabled">
           <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
           <div v-else class="rec-btn rec-disabled">Rec disabled</div>
         </div>
         <div class="mute-unmute" @click="toggleMute">
-          <div v-if="Node.muted" class="unmute" >M</div>
+          <div v-if="Node.muted" class="unmute">M</div>
           <div v-else class="mute">M</div>
         </div>
       </div>
@@ -145,22 +125,22 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from "vuex";
+import { mapGetters, mapMutations } from 'vuex';
 
-import Knob from "./Knob";
-import AnalyserRender from "./AnalyserRender";
-import DelayBody from "./specific-nodes/DelayBody";
-import EQ3Body from "./specific-nodes/EQ3Body.vue";
-import LooperBody from "./specific-nodes/LooperBody.vue";
-import DuetteBody from "./specific-nodes/DuetteBody.vue";
-import SurgeonBody from "./specific-nodes/SurgeonBody.vue";
-import FemodBody from "./specific-nodes/FemodBody.vue";
-import SamplerBody from "./specific-nodes/SamplerBody.vue";
-import BiquadFilterBody from "./specific-nodes/BiquadFilterBody.vue";
-import BaseNodeBody from "./specific-nodes/BaseNodeBody.vue";
+import Knob from './Knob';
+import AnalyserRender from './AnalyserRender';
+import DelayBody from './specific-nodes/DelayBody';
+import EQ3Body from './specific-nodes/EQ3Body.vue';
+import LooperBody from './specific-nodes/LooperBody.vue';
+import DuetteBody from './specific-nodes/DuetteBody.vue';
+import SurgeonBody from './specific-nodes/SurgeonBody.vue';
+import FemodBody from './specific-nodes/FemodBody.vue';
+import SamplerBody from './specific-nodes/SamplerBody.vue';
+import BiquadFilterBody from './specific-nodes/BiquadFilterBody.vue';
+import BaseNodeBody from './specific-nodes/BaseNodeBody.vue';
 
 export default {
-  name: "NodeRender",
+  name: 'NodeRender',
   components: {
     Knob,
     EQ3Body,
@@ -174,30 +154,30 @@ export default {
     SamplerBody,
     BaseNodeBody,
   },
-  props: ["Node", "analyser", "recEnabled", "instrumentEnabled"],
+  props: ['Node', 'analyser', 'recEnabled', 'instrumentEnabled'],
 
   data() {
     return {
       folded: false,
       muted: false,
-      loopStatus: "CLEARED",
-      presetCandidates: ["Surgeon", "Femod"],
+      loopStatus: 'CLEARED',
+      presetCandidates: ['Surgeon', 'Femod'],
     };
   },
 
   computed: {
-    ...mapGetters(["context", "appConnecting", "originNode"]),
+    ...mapGetters(['context', 'appConnecting', 'originNode']),
   },
 
   mounted() {
-    console.log("NodeRender mounted", this.Node);
+    console.log('NodeRender mounted', this.Node);
   },
 
   methods: {
-    ...mapMutations(["setAppConnecting", "setOriginNode"]),
+    ...mapMutations(['setAppConnecting', 'setOriginNode']),
 
     toggleRecEnabled() {
-      this.$emit("toggleRecEnabled");
+      this.$emit('toggleRecEnabled');
     },
 
     toggleMute() {
@@ -210,42 +190,39 @@ export default {
     },
 
     setType(e) {
-      if (this.Node.nodeType === "Carrier") return;
+      if (this.Node.nodeType === 'Carrier') return;
 
       this.Node.setType(e.target.value);
       e.target.blur();
 
-      if (this.Node.audioParams)
-        this.setParamsConstraints(this.Node.audioParams);
+      if (this.Node.audioParams) this.setParamsConstraints(this.Node.audioParams);
     },
 
     setParamsConstraints(params) {
-      params.forEach((p) => {
-        const refName = this.Node.name + "-" + p.name;
+      params.forEach(p => {
+        const refName = this.Node.name + '-' + p.name;
         const ref = this.$refs[refName];
-        if (ref)
-          if (ref[0])
-            ref[0].setParamContraints(p.minValue, p.maxValue, p.defaultValue);
+        if (ref) if (ref[0]) ref[0].setParamContraints(p.minValue, p.maxValue, p.defaultValue);
       });
     },
 
     deleteNode() {
-      this.$emit("deleteNode");
+      this.$emit('deleteNode');
     },
 
     savePreset() {
-      const presetsKey = this.Node.nodeType + "-presets";
-      const namesKey = presetsKey + "-names";
+      const presetsKey = this.Node.nodeType + '-presets';
+      const namesKey = presetsKey + '-names';
 
       let names = localStorage.getItem(namesKey);
 
       if (!names) {
-        localStorage.setItem(presetsKey, "[]");
-        localStorage.setItem(namesKey, "[]");
-        names = "[]";
+        localStorage.setItem(presetsKey, '[]');
+        localStorage.setItem(namesKey, '[]');
+        names = '[]';
       }
 
-      const newPresetName = prompt("Nombre del preset a guardar");
+      const newPresetName = prompt('Nombre del preset a guardar');
       names = JSON.parse(names);
       //ver si existe
 
@@ -262,7 +239,7 @@ export default {
     },
 
     toggleInstrumentEnabled() {
-      this.$emit("toggleInstrumentEnabled");
+      this.$emit('toggleInstrumentEnabled');
     },
 
     setDryWet(value) {
@@ -275,11 +252,11 @@ export default {
 
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
-      this.$emit("knobClicked", knobRef);
+      this.$emit('knobClicked', knobRef);
     },
 
     knobClickedWithRef(knobRef) {
-      this.$emit("knobClicked", knobRef);
+      this.$emit('knobClicked', knobRef);
     },
 
     startOsc() {
@@ -291,7 +268,7 @@ export default {
     },
 
     getCssNodeName(name) {
-      return name.replace(new RegExp(" ", "g"), "-");
+      return name.replace(new RegExp(' ', 'g'), '-');
     },
   },
 };

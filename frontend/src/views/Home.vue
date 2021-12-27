@@ -86,6 +86,14 @@
         </div>
       </div>
 
+      <!-- xyPad -->
+      <Pad
+        @onPadTouchStart="onPadTouchStart"
+        @onPadTouchEnd="onPadTouchEnd"
+        @onPadTouchCancel="onPadTouchCancel"
+        @onPadTouchMove="onPadTouchMove"
+      />
+
       <!-- Main Gain -->
       <div class="section-inner Main-Gain">
         <h3>Main Gain</h3>
@@ -104,56 +112,64 @@
 </template>
 
 <script>
-const noteFrequencies = require("../data/noteFrequencies");
-const noteKeys = require("../data/noteKeys");
+const noteFrequencies = require('../data/noteFrequencies');
+const totalAmountOfNotes = noteFrequencies.length;
+const noteKeys = require('../data/noteKeys');
 
-const Node = require("../class/Node");
-const EQ3 = require("../class/Effects/EQ3");
-const Gain = require("../class/Effects/Gain");
-const Delay = require("../class/Effects/Delay");
-const Distortion = require("../class/Effects/Distortion");
-const Reverb = require("../class/Effects/Reverb");
-const Looper = require("../class/Effects/Looper");
-const Compressor = require("../class/Effects/Compressor");
-const BiquadFilter = require("../class/Effects/BiquadFilter");
-
-const Mic = require("../class/Instruments/Mic");
-const Femod = require("../class/Instruments/Femod");
-const Surgeon = require("../class/Instruments/Surgeon");
-const Carrier = require("../class/Instruments/Carrier");
-const Drumkit = require("../class/Instruments/Drumkit");
-const Sampler = require("../class/Instruments/Sampler");
-const WhiteNoise = require("../class/Instruments/WhiteNoise");
-
+const Node = require('../class/Node');
+// Instruments
+const Mic = require('../class/Instruments/Mic');
+const Femod = require('../class/Instruments/Femod');
+const Surgeon = require('../class/Instruments/Surgeon');
+const Carrier = require('../class/Instruments/Carrier');
+const Drumkit = require('../class/Instruments/Drumkit');
+const Sampler = require('../class/Instruments/Sampler');
+const WhiteNoise = require('../class/Instruments/WhiteNoise');
 const instrumentsDict = new Map([
-  ["Mic", Mic],
-  ["Femod", Femod],
-  ["Carrier", Carrier],
-  ["Drumkit", Drumkit],
-  ["Sampler", Sampler],
-  ["Surgeon", Surgeon],
-  ["WhiteNoise", WhiteNoise],
+  ['Mic', Mic],
+  ['Femod', Femod],
+  ['Carrier', Carrier],
+  ['Drumkit', Drumkit],
+  ['Sampler', Sampler],
+  ['Surgeon', Surgeon],
+  ['WhiteNoise', WhiteNoise],
 ]);
-
+// Effects
+const EQ3 = require('../class/Effects/EQ3');
+const Gain = require('../class/Effects/Gain');
+const Delay = require('../class/Effects/Delay');
+const Distortion = require('../class/Effects/Distortion');
+const Reverb = require('../class/Effects/Reverb');
+const Looper = require('../class/Effects/Looper');
+const Compressor = require('../class/Effects/Compressor');
+const BiquadFilter = require('../class/Effects/BiquadFilter');
 const effectsDict = new Map([
-  ["Gain", Gain],
-  ["EQ3", EQ3],
-  ["Delay", Delay],
-  ["Reverb", Reverb],
-  ["Looper", Looper],
-  ["Distortion", Distortion],
-  ["Compressor", Compressor],
-  ["BiquadFilter", BiquadFilter],
+  ['Gain', Gain],
+  ['EQ3', EQ3],
+  ['Delay', Delay],
+  ['Reverb', Reverb],
+  ['Looper', Looper],
+  ['Distortion', Distortion],
+  ['Compressor', Compressor],
+  ['BiquadFilter', BiquadFilter],
 ]);
 
-import { mapMutations, mapGetters } from "vuex";
-import NodeRender from "../components/NodeRender";
-import Header from "../components/Header";
-import Click from "../components/Click";
-import Knob from "../components/Knob";
+import { mapMutations, mapGetters } from 'vuex';
+import NodeRender from '../components/NodeRender';
+import Pad from '@/components/user-interface/Pad';
+import Header from '../components/Header';
+import Click from '../components/Click';
+import Knob from '../components/Knob';
 
 export default {
-  name: "Home",
+  name: 'Home',
+  components: {
+    Knob,
+    Pad,
+    Click,
+    Header,
+    NodeRender,
+  },
   data() {
     return {
       inited: false,
@@ -164,11 +180,12 @@ export default {
 
       mainGain: null,
       mixerGain: null,
-      mainGainKnob: 0.5,
+      mainGainKnob: 0.75,
 
       keyEnabled: [],
       keypressListeners: [],
       numpadListeners: [],
+      xyPadListeners: [],
 
       //MIDI
       maps: [],
@@ -207,45 +224,37 @@ export default {
   },
 
   computed: {
-    ...mapGetters(["context", "appIsMapping", "appConnecting"]),
+    ...mapGetters(['context', 'appIsMapping', 'appConnecting']),
   },
 
   mounted() {
     this.keyEnabled = Array(222).fill(true);
     if (navigator.requestMIDIAccess) {
-      navigator
-        .requestMIDIAccess()
-        .then(this.onMIDISuccess, this.onMIDIFailure);
+      navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
     }
 
-    document.querySelector(".Home").addEventListener("click", this.init);
+    document.querySelector('.Home').addEventListener('click', this.init);
   },
 
   methods: {
-    ...mapMutations(["setAppIsMapping", "setContext"]),
+    ...mapMutations(['setAppIsMapping', 'setContext']),
 
     toggleRecEnabled(t) {
       this.tracks[t].recEnabled = !this.tracks[t].recEnabled;
     },
 
-    // forkTrack(t) {
-    //   const newGain = new Gain(this.tracks[t].instrument.name + " Fork");
-    //   this.tracks[t].trackGain.connect(newGain);
-    //   this.createTrack(newGain);
-    // },
-
     init() {
       this.addConfirmLeaveHandler();
-      document.querySelector(".Home").removeEventListener("click", this.init);
+      document.querySelector('.Home').removeEventListener('click', this.init);
       this.setContext(new (window.AudioContext || window.webkitAudioContext)());
       Node.context = this.context;
 
       this.createMainGain();
-      // this.createTrack(new Surgeon());
+      this.createTrack(new Surgeon());
       // this.insertEffect(new Distortion())
 
-      window.addEventListener("keyup", this.onKeyup);
-      window.addEventListener("keydown", this.onKeydown);
+      window.addEventListener('keyup', this.onKeyup);
+      window.addEventListener('keydown', this.onKeydown);
 
       this.inited = true;
     },
@@ -253,7 +262,7 @@ export default {
     //REC
 
     startRec() {
-      const recordingTracks = this.tracks.filter((t) => t.recEnabled);
+      const recordingTracks = this.tracks.filter(t => t.recEnabled);
       const total = recordingTracks.length;
       let c = 0;
 
@@ -267,17 +276,15 @@ export default {
       this.exportDestination = this.context.createMediaStreamDestination();
       this.mainGain.connect(this.exportDestination);
 
-      this.exportMediaRecorder = new MediaRecorder(
-        this.exportDestination.stream
-      );
+      this.exportMediaRecorder = new MediaRecorder(this.exportDestination.stream);
 
-      this.exportMediaRecorder.ondataavailable = (evt) => {
+      this.exportMediaRecorder.ondataavailable = evt => {
         this.chunks.push(evt.data);
       };
 
       this.exportMediaRecorder.onstop = () => {
         const blob = new Blob(this.chunks, {
-          type: "audio/ogg; codecs=opus",
+          type: 'audio/ogg; codecs=opus',
         });
 
         this.exportBlobs.push(blob);
@@ -292,7 +299,7 @@ export default {
         exportFileReader.onloadend = () => {
           const arrayBuffer = exportFileReader.result;
 
-          this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
+          this.context.decodeAudioData(arrayBuffer, audioBuffer => {
             this.exports.push({ id: this.recordingCount, audioBuffer });
           });
         };
@@ -302,7 +309,7 @@ export default {
 
       this.exportMediaRecorder.start();
 
-      console.log("rec start");
+      console.log('rec start');
 
       //record each track
 
@@ -314,12 +321,12 @@ export default {
         let mediaRecorder = new MediaRecorder(dest.stream);
         this.mediaRecorders.push(mediaRecorder);
 
-        mediaRecorder.ondataavailable = (evt) => {
+        mediaRecorder.ondataavailable = evt => {
           chunks.push(evt.data);
         };
 
-        mediaRecorder.onstop = (evt) => {
-          const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+        mediaRecorder.onstop = evt => {
+          const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
           chunks = null;
 
           const fileReader = new FileReader();
@@ -327,7 +334,7 @@ export default {
           fileReader.onloadend = () => {
             const arrayBuffer = fileReader.result;
 
-            this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
+            this.context.decodeAudioData(arrayBuffer, audioBuffer => {
               this.scene.push({ audioBuffer, blob, trackId: t.id });
               // t.trackGain.disconnectNativeNode(dest)
               dest = null;
@@ -347,7 +354,7 @@ export default {
       this.exportDestination = null;
       this.exportMediaRecorder.stop();
       this.exportMediaRecorder = null;
-      this.mediaRecorders.forEach((mr) => {
+      this.mediaRecorders.forEach(mr => {
         mr.stop();
       });
       this.mediaRecorders = [];
@@ -355,10 +362,7 @@ export default {
     },
 
     recordingsReady() {
-      const name = prompt(
-        "Recording Name",
-        "Recording Nº " + this.recordingCount
-      );
+      const name = prompt('Recording Name', 'Recording Nº ' + this.recordingCount);
       this.recordings.push({
         id: this.recordingCount,
         name,
@@ -370,24 +374,15 @@ export default {
 
     downloadExport() {
       const length = this.recordings.length;
-      let index = prompt(
-        "Which recording do you want to download? Choose number: 1 to " +
-          length,
-        1
-      );
+      let index = prompt('Which recording do you want to download? Choose number: 1 to ' + length, 1);
       index = parseInt(index);
 
-      if (!index) return alert("Only numers from 1 to " + length);
+      if (!index) return alert('Only numers from 1 to ' + length);
 
-      if (index > length || index < 1)
-        return alert("There is no such recording!");
+      if (index > length || index < 1) return alert('There is no such recording!');
 
-      let fileName =
-        "websynth_export_" +
-        index +
-        " - " +
-        new Date().toLocaleDateString("es-AR");
-      fileName = prompt("Export name: ", fileName);
+      let fileName = 'websynth_export_' + index + ' - ' + new Date().toLocaleDateString('es-AR');
+      fileName = prompt('Export name: ', fileName);
       if (!fileName) return;
 
       index--;
@@ -397,17 +392,14 @@ export default {
 
     playExport() {
       let index = prompt(
-        "Which recording do you want to play? Choose number: 1 to " +
-          this.recordings.length,
+        'Which recording do you want to play? Choose number: 1 to ' + this.recordings.length,
         1
       );
       index = parseInt(index);
 
-      if (!index)
-        return alert("Only numers from 1 to " + this.recordings.length);
+      if (!index) return alert('Only numers from 1 to ' + this.recordings.length);
 
-      if (index > this.recordings.length || index < 1)
-        return alert("There is no such recording!");
+      if (index > this.recordings.length || index < 1) return alert('There is no such recording!');
 
       index--;
 
@@ -426,17 +418,12 @@ export default {
     },
 
     playAllTracks(index) {
-      this.recordings[index].scene.forEach((s) => {
+      this.recordings[index].scene.forEach(s => {
         // const source = this.context.createBufferSource();
         // source.buffer = s.audioBuffer;
         // source.connect(this.mainGain);
         // source.start();
-        console.log(
-          "trackId: " +
-            s.trackId +
-            " - download URL: " +
-            URL.createObjectURL(s.blob)
-        );
+        console.log('trackId: ' + s.trackId + ' - download URL: ' + URL.createObjectURL(s.blob));
       });
     },
 
@@ -446,28 +433,24 @@ export default {
     },
 
     downloadBlob(blob, fileName) {
-      const a = document.createElement("a");
-      a.setAttribute("href", URL.createObjectURL(blob));
-      a.setAttribute("download", fileName);
+      const a = document.createElement('a');
+      a.setAttribute('href', URL.createObjectURL(blob));
+      a.setAttribute('download', fileName);
       a.click();
     },
 
     createTrack(instrument) {
-      //track gain
-      const trackGain = new Gain("Track Gain");
-      trackGain.connectNativeNode(this.mixerGain, "Mixer Gain");
-
+      const trackGain = new Gain('Track Gain');
       const trackGainAnalyser = this.context.createAnalyser();
-      trackGain.connectNativeNode(trackGainAnalyser, "Analyser");
 
-      //instrument
       instrument.connect(trackGain);
+      trackGain.connectNativeNode(this.mixerGain, 'Mixer Gain');
+      trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
 
-      //track
       this.tracks.push({
         id: ++this.trackCount,
-        name: "Track " + this.trackCount,
-        displayName: "Track " + this.trackCount,
+        name: 'Track ' + this.trackCount,
+        displayName: 'Track ' + this.trackCount,
         instrument,
         effects: [],
         trackGain,
@@ -479,13 +462,17 @@ export default {
       this.currentTrackIndex = this.tracks.length - 1;
       this.currentTrack = this.tracks[this.currentTrackIndex];
 
-      if (instrument.nodeType !== "Gain")
-        this.keypressListeners.push({
-          instrument,
-          trackName: this.currentTrack.name,
-        });
+      // Listeners
+      this.keypressListeners.push({
+        instrument,
+        trackName: this.currentTrack.name,
+      });
+      this.xyPadListeners.push({
+        instrument,
+        trackName: this.currentTrack.name,
+      });
 
-      if (instrument.nodeType === "Drumkit")
+      if (instrument.nodeType === 'Drumkit')
         this.numpadListeners.push({
           instrument,
           trackName: this.currentTrack.name,
@@ -500,22 +487,22 @@ export default {
       let track = this.tracks[t];
 
       //remove from keypressListeners
-      let index = this.keypressListeners.findIndex(
-        (listener) => listener.trackName === track.name
-      );
+      let index = this.keypressListeners.findIndex(listener => listener.trackName === track.name);
       if (index !== -1) this.keypressListeners.splice(index, 1);
+
       //remove from numpadListeners
-      index = this.numpadListeners.findIndex(
-        (listener) => listener.trackName === track.name
-      );
+      index = this.numpadListeners.findIndex(listener => listener.trackName === track.name);
       if (index !== -1) this.numpadListeners.splice(index, 1);
+      //remove from xyPadListeners
+      index = this.xyPadListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) this.xyPadListeners.splice(index, 1);
 
       //remove track
       track.instrument.destroy();
       track.instrument = null;
       track.trackGain.destroy();
       track.trackGain = null;
-      track.effects.forEach((e) => {
+      track.effects.forEach(e => {
         e.destroy();
         e = null;
       });
@@ -535,13 +522,11 @@ export default {
           instrument: track.instrument,
           trackName: track.name,
         });
-        if (track.instrument.name === "Mic") track.instrument.setMute(false);
+        if (track.instrument.name === 'Mic') track.instrument.setMute(false);
       } else {
-        const i = this.keypressListeners.findIndex(
-          (kpl) => kpl.trackName === track.name
-        );
+        const i = this.keypressListeners.findIndex(kpl => kpl.trackName === track.name);
         this.keypressListeners.splice(i, 1);
-        if (track.instrument.name === "Mic") track.instrument.setMute(true);
+        if (track.instrument.name === 'Mic') track.instrument.setMute(true);
       }
     },
 
@@ -554,7 +539,7 @@ export default {
       prev.disconnect().connect(Node).connect(next);
       effects.push(Node);
       this.$nextTick(() => {
-        const trackInnerClass = ".track-inner_" + this.currentTrackIndex;
+        const trackInnerClass = '.track-inner_' + this.currentTrackIndex;
         const trackInner = document.querySelector(trackInnerClass);
         trackInner.scrollTo(trackInner.offsetWidth, 0);
       });
@@ -595,11 +580,8 @@ export default {
           that.createTrack(new Mic(stream));
         })
         .catch(function (err) {
-          console.log("err", err);
-          alert(
-            "Couldn't get user media, continuing without mic input. Error: " +
-              err
-          );
+          console.log('err', err);
+          alert("Couldn't get user media, continuing without mic input. Error: " + err);
         });
     },
 
@@ -622,18 +604,44 @@ export default {
       this.mainGain.gain.setValueAtTime(val, 0);
     },
 
+    // User Interface (UI):
+
+    // Touch
+    onPadTouchStart(currentIndex) {
+      const noteKeyIndex = currentIndex;
+      let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+      this.xyPadListeners.forEach(scaleInterface => {
+        scaleInterface.instrument.playNote(noteIndex);
+      });
+    },
+
+    onPadTouchEnd(currentIndex) {
+      const noteKeyIndex = currentIndex;
+      let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+      this.xyPadListeners.forEach(scaleInterface => {
+        scaleInterface.instrument.stopNote(noteIndex);
+      });
+    },
+
+    onPadTouchCancel(e) {
+      console.log('onPadTouchCancel', e);
+    },
+    onPadTouchMove(e) {
+      console.log('onPadTouchMove', e);
+    },
+
     onKeydown(e) {
       if (!this.keyEnabled[e.keyCode]) return;
       this.keyEnabled[e.keyCode] = false;
 
-      const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk[0]);
+      const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
 
       if (noteKeyIndex !== -1) {
         let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
         if (noteIndex < 0) noteIndex = 0;
-        if (noteIndex > noteFrequencies.length - 1) noteIndex = noteFrequencies.length - 1;
+        if (noteIndex > totalAmountOfNotes - 1) noteIndex = totalAmountOfNotes - 1;
 
-        this.keypressListeners.forEach((scaleInterface) => {
+        this.keypressListeners.forEach(scaleInterface => {
           scaleInterface.instrument.playNote(noteIndex);
         });
       } else {
@@ -643,12 +651,12 @@ export default {
 
     onKeyup(e) {
       this.keyEnabled[e.keyCode] = true;
-      const noteKeyIndex = noteKeys.findIndex((nk) => e.key === nk[0]);
+      const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
 
       if (noteKeyIndex !== -1) {
         let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
 
-        this.keypressListeners.forEach((scaleInterface) => {
+        this.keypressListeners.forEach(scaleInterface => {
           scaleInterface.instrument.stopNote(noteIndex);
         });
       } else {
@@ -663,7 +671,7 @@ export default {
       else if (keyCode === 17) this.ctrl_pressed = true;
       //1 a 9 numpad:
       else if (keyCode >= 97 && keyCode <= 105) {
-        this.numpadListeners.forEach((scaleInterface) => {
+        this.numpadListeners.forEach(scaleInterface => {
           scaleInterface.instrument.playNote(parseInt(key));
         });
       }
@@ -673,8 +681,7 @@ export default {
       // console.log(keyCode);
       //1 a 9
       if (keyCode >= 49 && keyCode <= 57) {
-        if (this.m_pressed) 
-          this.tracks[+key - 1].trackGain.toggleMute();
+        if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
       } else {
         switch (keyCode) {
           case 77: //m
@@ -709,13 +716,13 @@ export default {
     // MIDI
 
     triggerNoteOn(note, channel) {
-      this.keypressListeners.forEach((scaleInterface) => {
+      this.keypressListeners.forEach(scaleInterface => {
         scaleInterface.instrument.playNote(note);
       });
     },
 
     triggerNoteOff(note, channel) {
-      this.keypressListeners.forEach((scaleInterface) => {
+      this.keypressListeners.forEach(scaleInterface => {
         scaleInterface.instrument.stopNote(note);
       });
     },
@@ -749,7 +756,7 @@ export default {
 
       if (this.mapping) {
         let refName = this.refBeignMapped.$vnode.data.ref;
-        const existingMap = this.maps.find((m) => m.refName === refName);
+        const existingMap = this.maps.find(m => m.refName === refName);
         if (!existingMap) {
           this.maps.push({
             ref: this.refBeignMapped,
@@ -769,15 +776,13 @@ export default {
         const channel = parseInt(binary.substr(4, 4), 2) + 1;
 
         //note on / note off / sustain pedal
-        if (command === "1001") this.triggerNoteOn(note, channel);
-        else if (command === "1000") this.triggerNoteOff(note, channel);
+        if (command === '1001') this.triggerNoteOn(note, channel);
+        else if (command === '1000') this.triggerNoteOff(note, channel);
         // else if (command === "1011")
         //   console.log("sustain pedal pressed", value);
         else {
           //turn knob
-          const mappedItem = this.maps.find(
-            (m) => m.cmd === status && m.note === note
-          );
+          const mappedItem = this.maps.find(m => m.cmd === status && m.note === note);
           if (!mappedItem) return;
           const knob = mappedItem.ref;
           knob.receiveMidi(value);
@@ -786,7 +791,7 @@ export default {
     },
 
     onMIDISuccess(midiAccess) {
-      console.log("MIDI Access:", midiAccess);
+      console.log('MIDI Access:', midiAccess);
       this.inputs = midiAccess.inputs;
       this.outputs = midiAccess.outputs;
 
@@ -796,33 +801,32 @@ export default {
     },
 
     onMIDIFailure() {
-      console.log("Could not access your MIDI devices.");
+      console.log('Could not access your MIDI devices.');
     },
 
     //Waveforms:
 
     renderWaveforms() {
-      for (let i = 0; i < this.recordings.length; i++)
-        this.renderWaveform(this.recordings[i]);
+      for (let i = 0; i < this.recordings.length; i++) this.renderWaveform(this.recordings[i]);
       this.renderFinished = true;
-      console.log("finished rendering");
+      console.log('finished rendering');
     },
 
     renderWaveform({ audioBuffer, track }) {
-      console.log("rendering waveform", track);
-      let canvas = document.createElement("canvas");
+      console.log('rendering waveform', track);
+      let canvas = document.createElement('canvas');
       canvas.width = audioBuffer.duration * 100;
 
       const canvasWidth = canvas.width;
       const canvasHeight = 150;
-      const context = canvas.getContext("2d");
+      const context = canvas.getContext('2d');
       var leftChannel = audioBuffer.getChannelData(0); // Float32Array describing left channel
 
       context.save();
-      context.fillStyle = "#222";
+      context.fillStyle = '#222';
       context.fillRect(0, 0, canvasWidth, canvasHeight);
-      context.strokeStyle = "#122";
-      context.globalCompositeOperation = "lighter";
+      context.strokeStyle = '#122';
+      context.globalCompositeOperation = 'lighter';
       context.translate(0, canvasHeight / 2);
       context.globalAlpha = 0.06; // lineOpacity ;
       for (var i = 0; i < leftChannel.length; i++) {
@@ -834,22 +838,22 @@ export default {
         context.stroke();
       }
       context.restore();
-      console.log("done");
-      document.querySelector(".canvases").appendChild(canvas);
+      console.log('done');
+      document.querySelector('.canvases').appendChild(canvas);
     },
 
     loadSave(tracks) {
-      tracks.forEach((t) => {
+      tracks.forEach(t => {
         this.loadInstrument(t.instrument);
 
-        t.effects.forEach((savedEffect) => {
+        t.effects.forEach(savedEffect => {
           this.loadEffect(savedEffect);
         });
       });
     },
 
     loadPreset(saveString) {
-      if (saveString.nodeRol === "Instrument") this.loadInstrument(saveString);
+      if (saveString.nodeRol === 'Instrument') this.loadInstrument(saveString);
       else this.loadEffect(saveString);
     },
 
@@ -907,8 +911,8 @@ export default {
           instrument.setSurgeonParam(o, 4, state.detune);
           instrument.setSurgeonParam(o, 5, state.gain);
 
-          instrument.setOctaveTranspose(o, "octave", state.octave);
-          instrument.setOctaveTranspose(o, "transpose", state.transpose);
+          instrument.setOctaveTranspose(o, 'octave', state.octave);
+          instrument.setOctaveTranspose(o, 'transpose', state.transpose);
 
           instrument.setMute(o, state.muted);
         }
@@ -944,15 +948,15 @@ export default {
     },
 
     getCssNodeName(name) {
-      return name.replace(new RegExp(" ", "g"), "-");
+      return name.replace(new RegExp(' ', 'g'), '-');
     },
 
     addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {
         if (1 == 2) {
           e = e || window.event;
-          if (e) e.returnValue = "Sure?";
-          return "Sure?";
+          if (e) e.returnValue = 'Sure?';
+          return 'Sure?';
         }
       };
     },
@@ -960,15 +964,8 @@ export default {
 
   beforeDestroy() {
     this.setContext(null);
-    window.removeEventListener("keyup", this.onKeyup);
-    window.removeEventListener("keydown", this.onKeydown);
-  },
-
-  components: {
-    Knob,
-    Click,
-    Header,
-    NodeRender,
+    window.removeEventListener('keyup', this.onKeyup);
+    window.removeEventListener('keydown', this.onKeydown);
   },
 };
 </script>
@@ -979,9 +976,9 @@ export default {
 }
 
 .top-section {
-  position: fixed;
-  top: 2px;
-  width: 100%;
+  // position: fixed;
+  // top: 2px;
+  // width: 100%;
   z-index: 1;
 }
 
@@ -998,7 +995,7 @@ export default {
 }
 
 .tracks {
-  margin: 6em 0 1em;
+  // margin: 6em 0 1em;
   border: 4px solid transparent;
 }
 
@@ -1090,6 +1087,9 @@ export default {
 }
 
 .Main-Gain {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
   margin: 1em auto 0;
   color: #f3f3f3;
   max-width: 300px;

@@ -1,11 +1,8 @@
 <template>
   <div class="FilterBody">
-      <!-- Audio Params -->
+    <!-- Audio Params -->
     <div class="audio-params params-container">
-      <div
-        v-for="(audioParam, apIndex) in Node.audioParams"
-        :key="audioParam.name"
-      >
+      <div v-for="(audioParam, apIndex) in Node.audioParams" :key="audioParam.name">
         <div
           class="audio-param param"
           v-if="
@@ -21,10 +18,7 @@
             {{ audioParam.displayName }}
           </div>
 
-          <div
-            class="knob-wrapper"
-            @click="knobClicked(Node.name + '-' + audioParam.name)"
-          >
+          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + audioParam.name)">
             <Knob
               :ref="Node.name + '-' + audioParam.name"
               :minVal="audioParam.minValue"
@@ -43,11 +37,7 @@
       <div class="select-wrapper">
         <span>LFO</span>
         <select @input="setModType($event)">
-          <option
-            v-for="modType in Node.modTypes"
-            :key="modType"
-            :selected="modType === Node.modType"
-          >
+          <option v-for="modType in Node.modTypes" :key="modType" :selected="modType === Node.modType">
             {{ modType }}
           </option>
         </select>
@@ -64,10 +54,7 @@
             {{ innerNodeAudioParam.displayName }}
           </div>
 
-          <div
-            class="knob-wrapper"
-            @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)"
-          >
+          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
             <Knob
               :ref="Node.name + '-' + innerNodeAudioParam.name"
               :unit="innerNodeAudioParam.unit"
@@ -82,9 +69,7 @@
 
       <!-- Sync -->
       <div class="sync-container">
-        <div class="sync" @click="toggleSync" :class="{ synced: sync }">
-          Sync
-        </div>
+        <div class="sync" @click="toggleSync" :class="{ synced: sync }">Sync</div>
         <div class="sync-buttons" v-show="sync">
           <div
             class="sync-button"
@@ -105,37 +90,37 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from "vuex";
-import Knob from "../Knob";
+import { mapGetters, mapMutations } from 'vuex';
+import Knob from '../Knob';
 export default {
-  name: "BiquadFilterBody",
+  name: 'BiquadFilterBody',
   components: { Knob },
-  props: ["Node"],
+  props: ['Node'],
 
   data() {
     return {
       sync: false,
       syncButtonSelected: 1,
       syncButtons: [
-        { display: "1/2", value: 0.5 },
-        { display: "1", value: 1 },
-        { display: "2", value: 2 },
-        { display: "3", value: 3 },
-        { display: "4", value: 4 },
-        { display: "5", value: 5 },
-        { display: "6", value: 6 },
-        { display: "8", value: 8 },
-        { display: "12", value: 12 },
+        { display: '1/2', value: 0.5 },
+        { display: '1', value: 1 },
+        { display: '2', value: 2 },
+        { display: '3', value: 3 },
+        { display: '4', value: 4 },
+        { display: '5', value: 5 },
+        { display: '6', value: 6 },
+        { display: '8', value: 8 },
+        { display: '12', value: 12 },
       ],
     };
   },
 
   computed: {
-    ...mapGetters(["secondsPerBeat", "tempo"]),
+    ...mapGetters(['secondsPerBeat', 'tempo']),
   },
 
   methods: {
-    ...mapMutations(["setTempo", "setSecondsPerBeat"]),
+    ...mapMutations(['setTempo', 'setSecondsPerBeat']),
 
     setAudioParam(apIndex, value, callerIsSetSync) {
       // if (inapIndex === 0 && !callerIsSetSync) {
@@ -167,8 +152,7 @@ export default {
       const frequency = this.secondsPerBeat * 2 * this.syncButtons[i].value;
 
       console.log(frequency);
-      if (this.sync)
-        this.Node.setInnerNodeAudioParam("modFrequency", frequency);
+      if (this.sync) this.Node.setInnerNodeAudioParam('modFrequency', frequency);
     },
 
     toggleSync() {
@@ -180,7 +164,7 @@ export default {
 
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
-      this.$emit("knobClicked", knobRef);
+      this.$emit('knobClicked', knobRef);
     },
   },
 };

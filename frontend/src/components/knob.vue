@@ -3,11 +3,9 @@
     class="knob"
     :class="{ mapping: thisIsMapping, appIsMapping }"
     @mousedown="onMouseDown"
+    @touchstart="onTouchStart"
   >
-    <div
-      class="knob-inner"
-      :style="`transform: rotate(${deg}deg); border-color: ${trackColor};`"
-    >
+    <div class="knob-inner" :style="`transform: rotate(${deg}deg); border-color: ${trackColor};`">
       <div class="knob-handle"></div>
     </div>
     <div class="mapped-cmd" v-if="appIsMapping">
@@ -20,7 +18,7 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapGetters } from 'vuex';
 export default {
   data() {
     return {
@@ -36,12 +34,11 @@ export default {
       displayValue: 0,
 
       calib: 2,
-      ctrlPressed: false,
       fineTuneStep: 0.1,
       finerTuneStep: 0.01,
 
       deg: 0,
-      trackColor: "#111",
+      trackColor: '#111',
       maxTurningDeg: 235,
       min_v: 0,
       max_v: 127,
@@ -52,10 +49,10 @@ export default {
     };
   },
 
-  props: ["minVal", "maxVal", "initVal", "unit"],
+  props: ['minVal', 'maxVal', 'initVal', 'unit'],
 
   computed: {
-    ...mapGetters(["appIsMapping"]),
+    ...mapGetters(['appIsMapping']),
   },
 
   mounted() {
@@ -63,10 +60,8 @@ export default {
   },
 
   beforeDestroy() {
-    window.removeEventListener("mousemove", this.moveKnob);
-    window.removeEventListener("mouseup", this.onMouseUp);
-    window.removeEventListener("keydown", this.onKeydown);
-    window.removeEventListener("keyup", this.onKeyup);
+    window.removeEventListener('mousemove', this.moveKnob);
+    window.removeEventListener('mouseup', this.onMouseUp);
   },
 
   methods: {
@@ -83,35 +78,34 @@ export default {
     },
 
     emitAndSetEmitValueWithKnobValue(knobValue) {
-      this.emitValue = knobValue
-        .map(0, this.maxKnobVal, this.min_v, this.max_v)
-        .toFixed(2);
+      this.emitValue = knobValue.map(0, this.maxKnobVal, this.min_v, this.max_v).toFixed(2);
       this.processDisplayValue();
-      this.$emit("knobTurned", this.emitValue);
+      this.$emit('knobTurned', this.emitValue);
     },
 
     emitAndSetEmitValueWithRawValue(value) {
       this.emitValue = value.toFixed(2);
       this.processDisplayValue();
-      this.$emit("knobTurned", this.emitValue);
+      this.$emit('knobTurned', this.emitValue);
     },
 
     moveKnob(e) {
-      // console.log(this.ctrlPressed, this.shiftPressed)
-      let translation = this.lastYPos - e.clientY;
+      let translation = this.lastYPos - (e.clientY || e.touches[0].clientY);
+
       if (translation < this.calib && translation > -this.calib) return;
-      this.lastYPos = e.clientY;
+
+      this.lastYPos = e.clientY || e.touches[0].clientY;
 
       let amount = 1;
-      if (this.ctrlPressed || this.shiftPressed) {
+
+      if (e.ctrlKey || e.shiftKey) {
         amount = this.fineTuneStep;
-        if (this.ctrlPressed && this.shiftPressed) {
+        if (this.ctrlKey && this.shiftKey) {
           amount = 0.05;
         }
       }
 
-      let knobValue =
-        translation > 0 ? this.knobValue + amount : this.knobValue - amount;
+      let knobValue = translation > 0 ? this.knobValue + amount : this.knobValue - amount;
 
       if (knobValue < this.minKnobVal) knobValue = this.minKnobVal;
       else if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
@@ -127,7 +121,7 @@ export default {
       this.thisIsMapping = false;
     },
     assignMap(cmd, note) {
-      this.mappedCmd = cmd + "/" + note;
+      this.mappedCmd = cmd + '/' + note;
     },
 
     receiveMidi(value) {
@@ -144,9 +138,7 @@ export default {
       this.min_v = parseFloat(minVal);
       this.max_v = parseFloat(maxVal);
 
-      this.knobValue = Math.round(
-        initValue.map(this.min_v, this.max_v, this.minKnobVal, this.maxKnobVal)
-      );
+      this.knobValue = Math.round(initValue.map(this.min_v, this.max_v, this.minKnobVal, this.maxKnobVal));
 
       this.defaultValue = initValue;
       this.initknobValue = this.knobValue;
@@ -155,7 +147,7 @@ export default {
       this.emitValue = initValue.toFixed(2);
       this.processDisplayValue();
       this.setKnobValueAndPosition(this.knobValue);
-      this.$emit("knobTurned", this.emitValue);
+      this.$emit('knobTurned', this.emitValue);
     },
 
     processDisplayValue() {
@@ -170,10 +162,10 @@ export default {
       // } else {
       this.displayValue =
         this.emitValue >= 1000
-          ? (this.emitValue / 1000).toFixed(2) + "k"
+          ? (this.emitValue / 1000).toFixed(2) + 'k'
           : parseFloat(this.emitValue).toFixed(2);
 
-      this.displayValue = this.displayValue + (this.unit || "");
+      this.displayValue = this.displayValue + (this.unit || '');
       // }
     },
 
@@ -181,32 +173,26 @@ export default {
       return Math.log(Math.abs(x)) / Math.LN10;
     },
 
+    onTouchStart(e) {
+      window.addEventListener('touchmove', this.moveKnob);
+      window.addEventListener('touchend', this.onTouchEnd);
+    },
+
     onMouseDown(e) {
       this.startY = e.clientY;
       this.lastYPos = e.clientY;
-      window.addEventListener("mousemove", this.moveKnob);
-      window.addEventListener("mouseup", this.onMouseUp);
-      window.addEventListener("keydown", this.onKeydown);
-      window.addEventListener("keyup", this.onKeyup);
+      window.addEventListener('mousemove', this.moveKnob);
+      window.addEventListener('mouseup', this.onMouseUp);
     },
 
     onMouseUp() {
-      window.removeEventListener("mousemove", this.moveKnob);
-      window.removeEventListener("mouseup", this.onMouseUp);
-      window.removeEventListener("keydown", this.onKeydown);
-      window.removeEventListener("keyup", this.onKeyup);
-      // this.ctrlPressed = false;
-      // this.shiftPressed = false;
+      window.removeEventListener('mousemove', this.moveKnob);
+      window.removeEventListener('mouseup', this.onMouseUp);
     },
 
-    onKeydown(e) {
-      if (e.key === "Control") this.ctrlPressed = true;
-      if (e.key === "Shift") this.shiftPressed = true;
-    },
-
-    onKeyup(e) {
-      if (e.key === "Control") this.ctrlPressed = false;
-      if (e.key === "Shift") this.shiftPressed = false;
+    onTouchEnd() {
+      window.removeEventListener('touchmove', this.moveKnob);
+      window.removeEventListener('touchend', this.onMouseUp);
     },
   },
 };

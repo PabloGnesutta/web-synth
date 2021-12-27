@@ -1,10 +1,6 @@
 <template>
   <div class="AnalyserRender">
-    <canvas
-      ref="canvas"
-      :class="{ expanded: expanded }"
-      @click.self="canvasClicked"
-    ></canvas>
+    <canvas ref="canvas" :class="{ expanded: expanded }" @click.self="canvasClicked"></canvas>
     <div class="switch" v-if="expanded" @click="switchMode">
       {{ mode }}
     </div>
@@ -15,7 +11,7 @@
 //fftSize = 2048; //osciloscopio
 //fftSize = 256; //freq bars
 export default {
-  props: ["analyser"],
+  props: ['analyser'],
 
   data() {
     return {
@@ -29,7 +25,7 @@ export default {
 
       expanded: false,
 
-      mode: "spectrum",
+      mode: 'spectrum',
     };
   },
 
@@ -38,9 +34,9 @@ export default {
     this.bufferLength = this.analyser.frequencyBinCount;
     this.dataArray = new Uint8Array(this.bufferLength);
 
-    const refname = "canvas";
+    const refname = 'canvas';
     this.canvas = this.$refs[refname];
-    this.ctx = this.canvas.getContext("2d");
+    this.ctx = this.canvas.getContext('2d');
 
     if (this.expanded) this.barWidth = this.canvas.width / this.bufferLength;
     else this.barWidth = this.canvas.width;
@@ -55,10 +51,10 @@ export default {
 
   methods: {
     switchMode() {
-      if (this.mode === "spectrum") this.mode = "waveshape";
-      else this.mode = "spectrum";
+      if (this.mode === 'spectrum') this.mode = 'waveshape';
+      else this.mode = 'spectrum';
 
-      if (this.mode === "spectrum") {
+      if (this.mode === 'spectrum') {
         window.cancelAnimationFrame(this.renderWaveForm);
         this.renderSpectrum();
       } else {
@@ -71,8 +67,7 @@ export default {
       window.cancelAnimationFrame(this.renderSpectrum);
       window.cancelAnimationFrame(this.renderWaveForm);
       this.expanded = !this.expanded;
-      if (this.expanded)
-        this.barWidth = (this.canvas.width / this.bufferLength) * 2.5;
+      if (this.expanded) this.barWidth = (this.canvas.width / this.bufferLength) * 2.5;
       else this.barWidth = this.canvas.width;
     },
 
@@ -86,13 +81,8 @@ export default {
 
       for (var i = 0; i < this.bufferLength; i++) {
         barHeight = this.dataArray[i];
-        this.ctx.fillStyle = "rgb(" + barHeight + ",50,50)";
-        this.ctx.fillRect(
-          x,
-          this.canvas.height - barHeight / 2,
-          this.barWidth,
-          barHeight / 2
-        );
+        this.ctx.fillStyle = 'rgb(' + barHeight + ',50,50)';
+        this.ctx.fillRect(x, this.canvas.height - barHeight / 2, this.barWidth, barHeight / 2);
 
         if (this.expanded) x += this.barWidth + 1; //
       }
@@ -104,11 +94,11 @@ export default {
       this.bufferLength = this.analyser.frequencyBinCount;
       this.dataArray = new Uint8Array(this.bufferLength);
       this.analyser.getByteTimeDomainData(this.dataArray);
-      this.ctx.fillStyle = "rgb(200, 200, 200)";
+      this.ctx.fillStyle = 'rgb(200, 200, 200)';
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
       this.ctx.lineWidth = 2;
-      this.ctx.strokeStyle = "rgb(2, 2, 2)";
+      this.ctx.strokeStyle = 'rgb(2, 2, 2)';
 
       this.ctx.beginPath();
 

@@ -7,49 +7,31 @@
     </div>
 
     <div class="signature">
-      <div class="signature-control" @click="substractFromTimeSignature" >-</div>
-      <div class="current-signature">
-        {{ totalBeats }}/{{ beatSubdivition }}
-      </div>
-      <div class="signature-control" @click="addToTimeSignature" >+</div>
+      <div class="signature-control" @click="substractFromTimeSignature">-</div>
+      <div class="current-signature">{{ totalBeats }}/{{ beatSubdivition }}</div>
+      <div class="signature-control" @click="addToTimeSignature">+</div>
     </div>
 
     <div class="slider-container">
       <span class="label tempo">{{ tempo }} bpm</span>
-      <input
-        v-model="tempoKnobValue"
-        type="range"
-        min="30"
-        max="300"
-        step="1"
-        @input="setTempoWithSlider"
-      />
+      <input v-model="tempoKnobValue" type="range" min="30" max="300" step="1" @input="setTempoWithSlider" />
     </div>
 
     <div class="slider-container">
       <span class="label volume">vol: {{ clickLevel }}</span>
-      <input
-        v-model="clickLevel"
-        type="range"
-        min="0"
-        max="3"
-        step="0.1"
-        @input="setClickLevel"
-      />
+      <input v-model="clickLevel" type="range" min="0" max="3" step="0.1" @input="setClickLevel" />
     </div>
 
-    <div class="mute-unmute" :class="{ muted: muted }" @click="toggleMute">
-      M
-    </div>
+    <div class="mute-unmute" :class="{ muted: muted }" @click="toggleMute">M</div>
   </div>
 </template>
 
 <script>
-import { mapGetters, mapMutations } from "vuex";
-const Node = require("../class/Node");
+import { mapGetters, mapMutations } from 'vuex';
+const Node = require('../class/Node');
 
 export default {
-  name: "Click",
+  name: 'Click',
   data() {
     return {
       lookahead: 25.0,
@@ -72,7 +54,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(["context", "tempo", "totalBeats", "secondsPerBeat"]),
+    ...mapGetters(['context', 'tempo', 'totalBeats', 'secondsPerBeat']),
   },
 
   mounted() {
@@ -85,13 +67,7 @@ export default {
   },
 
   methods: {
-    ...mapMutations([
-      "setTempo",
-      "setTotalBeats",
-      "setCurrentBeat",
-      "setNextBeatTime",
-      "setSecondsPerBeat",
-    ]),
+    ...mapMutations(['setTempo', 'setTotalBeats', 'setCurrentBeat', 'setNextBeatTime', 'setSecondsPerBeat']),
 
     turnOff() {
       window.clearTimeout(this.timerID);
@@ -162,10 +138,7 @@ export default {
     },
 
     scheduler() {
-      while (
-        this.nextBeatTime <
-        this.context.currentTime + this.scheduleAheadTime
-      ) {
+      while (this.nextBeatTime < this.context.currentTime + this.scheduleAheadTime) {
         this.sheduleClickNote(this.nextBeatTime);
         this.nextNote();
       }
@@ -176,22 +149,22 @@ export default {
       const that = this;
 
       const request1 = new XMLHttpRequest();
-      request1.open("GET", "/audio/click1.wav");
-      request1.responseType = "arraybuffer";
+      request1.open('GET', '/audio/click1.wav');
+      request1.responseType = 'arraybuffer';
 
       request1.onload = function () {
-        that.context.decodeAudioData(request1.response, (audioBuffer) => {
+        that.context.decodeAudioData(request1.response, audioBuffer => {
           that.clickBuffer1 = audioBuffer;
         });
       };
       request1.send();
 
       const request2 = new XMLHttpRequest();
-      request2.open("GET", "/audio/click2.wav");
-      request2.responseType = "arraybuffer";
+      request2.open('GET', '/audio/click2.wav');
+      request2.responseType = 'arraybuffer';
 
       request2.onload = function () {
-        that.context.decodeAudioData(request2.response, (audioBuffer) => {
+        that.context.decodeAudioData(request2.response, audioBuffer => {
           that.clickBuffer2 = audioBuffer;
         });
       };

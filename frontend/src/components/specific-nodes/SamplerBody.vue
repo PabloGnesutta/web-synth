@@ -3,7 +3,7 @@
     <div class="sample-controls">
       <!-- Upload -->
       <div class="upload-loop">
-        <div class="label">{{ fileName || "Drop Sample" }}</div>
+        <div class="label">{{ fileName || 'Drop Sample' }}</div>
         <input type="file" accept="audio/*" @change="loadBuffer" />
       </div>
     </div>
@@ -18,10 +18,7 @@
           {{ customParam.displayName }}
         </div>
 
-        <div
-          class="knob-wrapper"
-          @click="knobClicked(Node.name + '-' + customParam.name)"
-        >
+        <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + customParam.name)">
           <Knob
             :ref="Node.name + '-' + customParam.name"
             :unit="customParam.unit"
@@ -40,19 +37,19 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import Knob from "../Knob";
+import { mapGetters } from 'vuex';
+import Knob from '../Knob';
 export default {
   components: { Knob },
-  props: ["Node"],
+  props: ['Node'],
   data() {
     return {
-      fileName: "",
+      fileName: '',
     };
   },
 
   computed: {
-    ...mapGetters([ "context" ]),
+    ...mapGetters(['context']),
   },
 
   methods: {
@@ -65,7 +62,7 @@ export default {
       fileReader.onloadend = () => {
         const arrayBuffer = fileReader.result;
 
-        this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
+        this.context.decodeAudioData(arrayBuffer, audioBuffer => {
           this.Node.loadBuffer(audioBuffer);
         });
       };
@@ -83,7 +80,7 @@ export default {
 
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
-      this.$emit("knobClicked", knobRef);
+      this.$emit('knobClicked', knobRef);
     },
   },
 };

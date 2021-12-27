@@ -11,17 +11,10 @@
       </div>
       <div class="buttons">
         <!-- Instruments -->
-        <div v-if="!recording" class="menu instruments" >
-          <div class="btn label" @click="toggleInstrumentsMenu">
-            Instrumentos
-          </div>
+        <div v-if="!recording" class="menu instruments">
+          <div class="btn label" @click="toggleInstrumentsMenu">Instrumentos</div>
           <div class="dropdown" :class="{ hidden: !menuInstrumentsVisible }">
-            <div
-              class="btn btn-instrument dropdown-item"
-              @click="createInstrument('Drumkit')"
-            >
-              Drumkit
-            </div>
+            <div class="btn btn-instrument dropdown-item" @click="createInstrument('Drumkit')">Drumkit</div>
             <div
               class="btn btn-instrument dropdown-item"
               @click.self="createInstrument('Surgeon')"
@@ -29,10 +22,7 @@
               @mouseleave="showSurgeonPresets = false"
             >
               Surgeon
-              <div
-                class="sub-dropdown"
-                :class="{ hidden: !showSurgeonPresets }"
-              >
+              <div class="sub-dropdown" :class="{ hidden: !showSurgeonPresets }">
                 <div
                   v-for="(preset, p) in surgeonPresets"
                   :key="p"
@@ -61,27 +51,10 @@
                 </div>
               </div>
             </div>
-            <div class="btn btn-instrument dropdown-item" @click="createMic()">
-              Mic
-            </div>
-            <div
-              class="btn btn-instrument dropdown-item"
-              @click="createInstrument('WhiteNoise')"
-            >
-              Noise
-            </div>
-            <div
-              class="btn btn-instrument dropdown-item"
-              @click="createInstrument('Carrier')"
-            >
-              Oscil
-            </div>
-            <div
-              class="btn btn-instrument dropdown-item"
-              @click="createInstrument('Sampler')"
-            >
-              Sampler
-            </div>
+            <div class="btn btn-instrument dropdown-item" @click="createMic()">Mic</div>
+            <div class="btn btn-instrument dropdown-item" @click="createInstrument('WhiteNoise')">Noise</div>
+            <div class="btn btn-instrument dropdown-item" @click="createInstrument('Carrier')">Oscil</div>
+            <div class="btn btn-instrument dropdown-item" @click="createInstrument('Sampler')">Sampler</div>
           </div>
         </div>
 
@@ -89,21 +62,10 @@
         <div class="menu effects">
           <div class="btn label" @click="toggleEffectsMenu">Efectos</div>
           <div class="dropdown" :class="{ hidden: !menuEffectsVisible }">
-            <div class="btn btn-effect" @click="createEffect('Compressor')">
-              Compresor
-            </div>
-            <div class="btn btn-effect" @click="createEffect('Delay')">
-              Delay
-            </div>
-            <div class="btn btn-effect" @click="createEffect('Distortion')">
-              Distorción
-            </div>
-            <div
-              class="btn btn-effect dropdown-item"
-              @click="createEffect('EQ3')"
-            >
-              EQ3
-            </div>
+            <div class="btn btn-effect" @click="createEffect('Compressor')">Compresor</div>
+            <div class="btn btn-effect" @click="createEffect('Delay')">Delay</div>
+            <div class="btn btn-effect" @click="createEffect('Distortion')">Distorción</div>
+            <div class="btn btn-effect dropdown-item" @click="createEffect('EQ3')">EQ3</div>
             <div
               class="btn btn-effect dropdown-item"
               @click.self="createEffect('BiquadFilter')"
@@ -122,12 +84,8 @@
                 </div>
               </div>
             </div>
-            <div class="btn btn-effect" @click="createEffect('Looper')">
-              Looper
-            </div>
-            <div class="btn btn-effect" @click="createEffect('Reverb')">
-              Reverb
-            </div>
+            <div class="btn btn-effect" @click="createEffect('Looper')">Looper</div>
+            <div class="btn btn-effect" @click="createEffect('Reverb')">Reverb</div>
             <!-- <div class="btn btn-effect" @click="createEffect('Gain')">Gain</div> -->
             <!-- Modulator -->
             <!-- <div class="btn btn-modulator" @click="createModulator">Mod</div> -->
@@ -135,39 +93,15 @@
         </div>
 
         <!-- REC -->
-        <div
-          v-if="!recording && !playing"
-          class="btn btn-2 rec"
-          @click="startRec"
-        >
-          REC
-        </div>
-        <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">
-          STOP REC
-        </div>
+        <div v-if="!recording && !playing" class="btn btn-2 rec" @click="startRec">REC</div>
+        <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">STOP REC</div>
 
         <!-- PLAY/STOP -->
         <div class="play-stop" v-if="recordingsAvailable">
-          <div
-            v-if="!playing && !recording"
-            class="btn start-playing"
-            @click="playExport"
-          >
-            Play
-          </div>
-          <div
-            v-if="playing"
-            class="btn stop-playing"
-            @click="stopPlayingExport"
-          >
-            Stop
-          </div>
+          <div v-if="!playing && !recording" class="btn start-playing" @click="playExport">Play</div>
+          <div v-if="playing" class="btn stop-playing" @click="stopPlayingExport">Stop</div>
         </div>
-        <div
-          v-if="recordingsAvailable && !recording"
-          class="btn btn-export-download"
-          @click="downloadExport"
-        >
+        <div v-if="recordingsAvailable && !recording" class="btn btn-export-download" @click="downloadExport">
           Descargar
         </div>
 
@@ -185,11 +119,7 @@
           >
             <div>Cargar</div>
             <div class="saved-works" :class="{ hidden: !showSavedWorks }">
-              <div
-                v-for="(savedWork, s) in saveNames"
-                :key="s"
-                class="saved-work"
-              >
+              <div v-for="(savedWork, s) in saveNames" :key="s" class="saved-work">
                 <div class="saved-work-name" @click="loadSave(s)">
                   {{ savedWork.name }}
                 </div>
@@ -208,8 +138,7 @@
               <span> instrumento</span>
             </div>
             <div class="dropdown-item">
-              Al agregar seleccionar un <span> efecto</span>, éste se agregará
-              al track seleccionado
+              Al agregar seleccionar un <span> efecto</span>, éste se agregará al track seleccionado
             </div>
             <!-- <div class="dropdown-item">
               0 (zero): <span>Trigger all Loopers</span>
@@ -218,34 +147,21 @@
               Tocar notas con teclas <span> AWSEDFTGYHUJKOLP</span> o con un
               <span> dispositivo MIDI</span>
             </div>
-            <div class="dropdown-item">
-              Tocar Drumkit con: <span>teclas 1 a 9 del Numpad</span>
-            </div>
+            <div class="dropdown-item">Tocar Drumkit con: <span>teclas 1 a 9 del Numpad</span></div>
 
             <div class="dropdown-item">z: <span>Subir octava</span></div>
             <div class="dropdown-item">x: <span>Bajar octava</span></div>
-            <div class="dropdown-item">
-              c: <span>Transponer 1 semitono arriba</span>
-            </div>
-            <div class="dropdown-item">
-              v: <span>Transponer 1 semitono abajo</span>
-            </div>
+            <div class="dropdown-item">c: <span>Transponer 1 semitono arriba</span></div>
+            <div class="dropdown-item">v: <span>Transponer 1 semitono abajo</span></div>
+
+            <div class="dropdown-item">Ctrl + m: <span>Silenciar tracl actual</span></div>
+            <div class="dropdown-item">m + (1..9): <span>Silenciar track 1 a 9</span></div>
+            <div class="dropdown-item">ctrl + q: <span>Borrar track actual</span></div>
 
             <div class="dropdown-item">
-              Ctrl + m: <span>Silenciar tracl actual</span>
-            </div>
-            <div class="dropdown-item">
-              m + (1..9): <span>Silenciar track 1 a 9</span>
-            </div>
-            <div class="dropdown-item">
-              ctrl + q: <span>Borrar track actual</span>
-            </div>
-
-            <div class="dropdown-item">
-              Se pueden guardar las sesiones y reanudarlas. Por el momento esta
-              funcionalidad es limitada, y sólo se guardan los instrumentos y
-              los efectos y sus estados. No así los archivos de audio como loops
-              o grabaciones.
+              Se pueden guardar las sesiones y reanudarlas. Por el momento esta funcionalidad es limitada, y
+              sólo se guardan los instrumentos y los efectos y sus estados. No así los archivos de audio como
+              loops o grabaciones.
             </div>
           </div>
         </div>
@@ -256,11 +172,11 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from "vuex";
+import { mapGetters, mapMutations } from 'vuex';
 
 export default {
-  name: "Header",
-  props: ["tracks", "recording", "playing", "recordingsAvailable"],
+  name: 'Header',
+  props: ['tracks', 'recording', 'playing', 'recordingsAvailable'],
   data() {
     return {
       menuInstrumentsVisible: false,
@@ -283,28 +199,24 @@ export default {
   },
 
   computed: {
-    ...mapGetters(["tempo", "totalBeats"]),
+    ...mapGetters(['tempo', 'totalBeats']),
   },
 
   mounted() {
-    this.saves = JSON.parse(localStorage.getItem("websynth-saves"));
-    this.saveNames = JSON.parse(localStorage.getItem("websynth-savenames"));
+    this.saves = JSON.parse(localStorage.getItem('websynth-saves'));
+    this.saveNames = JSON.parse(localStorage.getItem('websynth-savenames'));
 
-    this.femodPresets = JSON.parse(localStorage.getItem("Femod-presets-names"));
-    this.surgeonPresets = JSON.parse(
-      localStorage.getItem("Surgeon-presets-names")
-    );
+    this.femodPresets = JSON.parse(localStorage.getItem('Femod-presets-names'));
+    this.surgeonPresets = JSON.parse(localStorage.getItem('Surgeon-presets-names'));
 
-    this.filterPresets = JSON.parse(
-      localStorage.getItem("BiquadFilter-presets-names")
-    );
+    this.filterPresets = JSON.parse(localStorage.getItem('BiquadFilter-presets-names'));
   },
 
   methods: {
-    ...mapMutations(["setTempo", "setTotalBeats"]),
+    ...mapMutations(['setTempo', 'setTotalBeats']),
 
     toggleMapping() {
-      this.$emit("toggleMapping");
+      this.$emit('toggleMapping');
     },
 
     toggleInstrumentsMenu() {
@@ -332,46 +244,46 @@ export default {
     },
 
     createInstrument(className) {
-      this.$emit("createInstrument", className);
+      this.$emit('createInstrument', className);
       this.menuInstrumentsVisible = false;
     },
     createMic() {
-      this.$emit("createMic");
+      this.$emit('createMic');
       this.menuInstrumentsVisible = false;
     },
     createEffect(className) {
-      this.$emit("createEffect", className);
+      this.$emit('createEffect', className);
       this.menuEffectsVisible = false;
     },
     createModulator() {
-      this.$emit("createModulator");
+      this.$emit('createModulator');
       this.menuEffectsVisible = false;
     },
 
     //presets
 
     selectPreset(nodeName, p) {
-      const store = localStorage.getItem(nodeName + "-presets");
+      const store = localStorage.getItem(nodeName + '-presets');
       const preset = JSON.parse(store)[p];
       const saveString = JSON.parse(preset.saveString);
-      this.$emit("loadPreset", saveString);
+      this.$emit('loadPreset', saveString);
     },
 
     startRec() {
       if (this.recording) return;
-      this.$emit("startRec");
+      this.$emit('startRec');
     },
     stopRec() {
-      this.$emit("stopRec");
+      this.$emit('stopRec');
     },
     playExport() {
-      this.$emit("playExport");
+      this.$emit('playExport');
     },
     stopPlayingExport() {
-      this.$emit("stopPlayingExport");
+      this.$emit('stopPlayingExport');
     },
     downloadExport() {
-      this.$emit("downloadExport");
+      this.$emit('downloadExport');
     },
 
     save() {
@@ -380,12 +292,12 @@ export default {
 
     saveAs() {
       //qué pasa en caso de primera interacción? count anda?
-      let count = localStorage.getItem("websynth-count");
+      let count = localStorage.getItem('websynth-count');
 
-      if (!count) localStorage.setItem("websynth-count", 0);
-      localStorage.setItem("websynth-count", ++count);
+      if (!count) localStorage.setItem('websynth-count', 0);
+      localStorage.setItem('websynth-count', ++count);
 
-      const name = prompt("Nombre del trabajo", "Sin título " + count);
+      const name = prompt('Nombre del trabajo', 'Sin título ' + count);
       if (!name) return;
 
       //ver, saves no tiene que estar en memoria, sólo names
@@ -393,14 +305,13 @@ export default {
         this.saves = [];
         this.saveNames = [];
 
-        localStorage.setItem("websynth-saves", "[]");
-        localStorage.setItem("websynth-savenames", "[]");
+        localStorage.setItem('websynth-saves', '[]');
+        localStorage.setItem('websynth-savenames', '[]');
       }
 
       const existingSaveIndex = this.nameExists(name);
       if (existingSaveIndex !== -1) {
-        if (confirm("Ese nombre ya existe, querés sobreescribir?"))
-          this.overWrite(existingSaveIndex);
+        if (confirm('Ese nombre ya existe, querés sobreescribir?')) this.overWrite(existingSaveIndex);
       } else {
         this.saveNew(count, name);
       }
@@ -414,10 +325,10 @@ export default {
 
       const saves = this.getSaves();
 
-      this.tracks.forEach((track) => {
-        console.log("track", track.instrument.saveString());
-        track.effects.forEach((effect) => {
-          console.log("effect", effect);
+      this.tracks.forEach(track => {
+        console.log('track', track.instrument.saveString());
+        track.effects.forEach(effect => {
+          console.log('effect', effect);
         });
       });
 
@@ -434,14 +345,11 @@ export default {
 
       this.updateSaves(saves);
 
-      localStorage.setItem(
-        "websynth-savenames",
-        JSON.stringify(this.saveNames)
-      );
+      localStorage.setItem('websynth-savenames', JSON.stringify(this.saveNames));
 
       this.currentSaveIndex = this.saveNames.length - 1;
       this.currentSave = this.saveNames[this.currentSaveIndex];
-      alert("New work saved");
+      alert('New work saved');
     },
 
     overWrite(existingSaveIndex) {
@@ -453,7 +361,7 @@ export default {
 
       this.updateSaves(saves);
 
-      alert("Trabajo guardado");
+      alert('Trabajo guardado');
       // if (this.currentSaveIndex === existingSaveIndex) alert("Trabajo guardado");
       // else alert("Trabajo sobreescrito");
 
@@ -462,19 +370,19 @@ export default {
     },
 
     getSaves() {
-      return JSON.parse(localStorage.getItem("websynth-saves"));
+      return JSON.parse(localStorage.getItem('websynth-saves'));
     },
 
     updateSaves(saves) {
       this.saves = saves;
-      localStorage.setItem("websynth-saves", JSON.stringify(saves));
+      localStorage.setItem('websynth-saves', JSON.stringify(saves));
     },
 
     loadSave(s) {
       // if (!confirm('Load ' + this.saveNames[s].name + '? Unsaved changes will be lost.')) return
 
       const tracks = JSON.parse(this.saves[s].tracks);
-      this.$emit("loadSave", tracks);
+      this.$emit('loadSave', tracks);
       this.setTempo(this.saves[s].tempo);
       this.setTotalBeats(this.saves[s].totalBeats);
       this.currentSaveIndex = s;
@@ -482,19 +390,15 @@ export default {
     },
 
     deleteSave(s) {
-      if (!confirm("Segur@ que querés borrar " + this.saves[s].name + "?"))
-        return;
+      if (!confirm('Segur@ que querés borrar ' + this.saves[s].name + '?')) return;
       this.saves.splice(s, 1);
       this.saveNames.splice(s, 1);
-      localStorage.setItem("websynth-saves", JSON.stringify(this.saves));
-      localStorage.setItem(
-        "websynth-savenames",
-        JSON.stringify(this.saveNames)
-      );
+      localStorage.setItem('websynth-saves', JSON.stringify(this.saves));
+      localStorage.setItem('websynth-savenames', JSON.stringify(this.saveNames));
     },
 
     nameExists(name) {
-      return this.saveNames.findIndex((sv) => sv.name === name);
+      return this.saveNames.findIndex(sv => sv.name === name);
     },
   },
 };

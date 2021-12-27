@@ -11,10 +11,7 @@
           {{ customParam.displayName }}
         </div>
 
-        <div
-          class="knob-wrapper"
-          @click="knobClicked(Node.name + '-' + customParam.name)"
-        >
+        <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + customParam.name)">
           <Knob
             :ref="Node.name + '-' + customParam.name"
             :unit="customParam.unit"
@@ -28,16 +25,13 @@
     </div>
 
     <!-- Modulation Params -->
-    <div
-      class="modulation-params params-container"
-      v-if="Node.modulationParams"
-    >
+    <div class="modulation-params params-container" v-if="Node.modulationParams">
       <div
         v-for="(motulationParam, mpIndex) in Node.modulationParams"
         :key="motulationParam.name"
         class="modulation-param param"
       >
-        <div class="param-name"> {{ motulationParam.displayName }} </div>
+        <div class="param-name">{{ motulationParam.displayName }}</div>
 
         <div
           v-if="motulationParam.name !== 'type'"
@@ -53,7 +47,7 @@
             @knobTurned="setModulationParam(mpIndex, $event)"
           />
         </div>
-        <div v-else class="select-wrapper" >
+        <div v-else class="select-wrapper">
           <select @input="setModType(mpIndex, $event)">
             <option
               :key="type"
@@ -70,11 +64,11 @@
 </template>
 
 <script>
-import Knob from "../Knob";
+import Knob from '../Knob';
 export default {
-  name: "FemodBody",
+  name: 'FemodBody',
   components: { Knob },
-  props: ["Node"],
+  props: ['Node'],
 
   methods: {
     setCustomParam(cpIndex, value) {
@@ -92,7 +86,7 @@ export default {
 
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
-      this.$emit("knobClicked", knobRef);
+      this.$emit('knobClicked', knobRef);
     },
   },
 };

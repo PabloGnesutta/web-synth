@@ -25,18 +25,14 @@
         <div
           class="param-container"
           v-if="
-            innerNodeAudioParam.name !== 'delayTime' ||
-            (innerNodeAudioParam.name === 'delayTime' && !sync)
+            innerNodeAudioParam.name !== 'delayTime' || (innerNodeAudioParam.name === 'delayTime' && !sync)
           "
         >
           <div class="param-name">
             {{ innerNodeAudioParam.displayName }}
           </div>
 
-          <div
-            class="knob-wrapper"
-            @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)"
-          >
+          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
             <Knob
               :ref="Node.name + '-' + innerNodeAudioParam.name"
               :unit="innerNodeAudioParam.unit"
@@ -60,10 +56,7 @@
           {{ customParam.displayName }}
         </div>
 
-        <div
-          class="knob-wrapper"
-          @click="knobClicked(Node.name + '-' + customParam.name)"
-        >
+        <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + customParam.name)">
           <div class="knob-wrapper">
             <Knob
               :ref="Node.name + '-' + customParam.name"
@@ -84,32 +77,32 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from "vuex";
-import Knob from "../Knob";
+import { mapGetters, mapMutations } from 'vuex';
+import Knob from '../Knob';
 export default {
   data() {
     return {
       sync: false,
       syncButtonSelected: 1,
       syncButtons: [
-        { display: "1/2", value: 0.5 },
-        { display: "1", value: 1 },
-        { display: "2", value: 2 },
-        { display: "3", value: 3 },
-        { display: "4", value: 4 },
-        { display: "6", value: 6 },
+        { display: '1/2', value: 0.5 },
+        { display: '1', value: 1 },
+        { display: '2', value: 2 },
+        { display: '3', value: 3 },
+        { display: '4', value: 4 },
+        { display: '6', value: 6 },
       ],
       delayTimeKnobValue: 0,
     };
   },
 
-  props: ["Node"],
+  props: ['Node'],
   computed: {
-    ...mapGetters(["secondsPerBeat"]),
+    ...mapGetters(['secondsPerBeat']),
   },
 
   methods: {
-    ...mapMutations(["setTempo", "setSecondsPerBeat"]),
+    ...mapMutations(['setTempo', 'setSecondsPerBeat']),
 
     setSync(i) {
       this.syncButtonSelected = i;
@@ -118,14 +111,14 @@ export default {
       delayTime -= delayTime * 0.01;
       // delayTime -= 0.01;
 
-      if (this.sync) this.setInnerNodeAudioParam("delayTime", delayTime, true);
+      if (this.sync) this.setInnerNodeAudioParam('delayTime', delayTime, true);
     },
 
     toggleSync() {
       this.sync = !this.sync;
 
       if (this.sync) this.setSync(this.syncButtonSelected);
-      else this.setInnerNodeAudioParam("delayTime", this.delayTimeKnobValue);
+      else this.setInnerNodeAudioParam('delayTime', this.delayTimeKnobValue);
     },
 
     setAsTempo() {
@@ -149,11 +142,11 @@ export default {
 
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
-      this.$emit("knobClicked", knobRef);
+      this.$emit('knobClicked', knobRef);
     },
 
     getCssNodeName(name) {
-      return name.replace(new RegExp(" ", "g"), "-");
+      return name.replace(new RegExp(' ', 'g'), '-');
     },
   },
 

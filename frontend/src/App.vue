@@ -11,14 +11,8 @@ Number.prototype.map = function (in_min, in_max, out_min, out_max) {
 
 export default {
   data() {
-    return {
-      inputs: null,
-      outputs: null,
-    };
+    return {};
   },
-  mounted() {},
-
-  methods: {},
 };
 </script>
 
@@ -68,6 +62,8 @@ select:focus {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
+  width: 100vw;
+  overflow-x: hidden;
 }
 
 .pointer {

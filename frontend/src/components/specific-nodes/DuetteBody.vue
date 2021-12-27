@@ -5,22 +5,12 @@
         <div class="top">
           <div class="types">
             <select @input="setType(o, $event)">
-              <option
-                :key="type"
-                v-for="type in Node.oscTypes"
-                :selected="type === osc.type"
-              >
+              <option :key="type" v-for="type in Node.oscTypes" :selected="type === osc.type">
                 {{ type }}
               </option>
             </select>
           </div>
-          <div
-            class="mute-unmute"
-            @click="toggleMute(o)"
-            :class="{ muted: osc.muted }"
-          >
-            M
-          </div>
+          <div class="mute-unmute" @click="toggleMute(o)" :class="{ muted: osc.muted }">M</div>
         </div>
         <div class="custom-params params-container">
           <div
@@ -33,10 +23,7 @@
               {{ customParam.displayName }}
             </div>
 
-            <div
-              class="knob-wrapper"
-              @click="knobClicked(Node.name + '-' + customParam.name)"
-            >
+            <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + customParam.name)">
               <Knob
                 :ref="Node.name + '-' + customParam.name"
                 :unit="customParam.unit"
@@ -54,9 +41,9 @@
 </template>
 
 <script>
-import Knob from "../Knob";
+import Knob from '../Knob';
 export default {
-  props: ["Node"],
+  props: ['Node'],
 
   methods: {
     toggleMute(index) {
@@ -73,11 +60,11 @@ export default {
 
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
-      this.$emit("knobClicked", knobRef);
+      this.$emit('knobClicked', knobRef);
     },
 
     getCssNodeName(name) {
-      return name.replace(new RegExp(" ", "g"), "-");
+      return name.replace(new RegExp(' ', 'g'), '-');
     },
   },
 

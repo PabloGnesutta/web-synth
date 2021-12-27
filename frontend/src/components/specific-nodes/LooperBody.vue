@@ -19,13 +19,7 @@
         >
           REC
         </div>
-        <div
-          v-if="Node.recording"
-          class="control-btn stop-rec"
-          @click="scheduleLoopStopRecording"
-        >
-          PLAY
-        </div>
+        <div v-if="Node.recording" class="control-btn stop-rec" @click="scheduleLoopStopRecording">PLAY</div>
         <div
           v-if="Node.status === 'PLAYING' && !Node.recording"
           class="control-btn pause-loop"
@@ -51,13 +45,11 @@
       <!-- Upload -->
 
       <div class="upload-loop">
-        <div class="label">{{ loopFileName || "Load Loop" }}</div>
+        <div class="label">{{ loopFileName || 'Load Loop' }}</div>
         <input type="file" @change="loadLoopBuffer" />
       </div>
       <div class="download-loop">
-        <span v-if="Node.loopAvailable" class="label" @click="downloadLoop">
-          Download
-        </span>
+        <span v-if="Node.loopAvailable" class="label" @click="downloadLoop"> Download </span>
         <span v-else class="invisible">.</span>
       </div>
     </div>
@@ -65,47 +57,38 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import Knob from "../Knob";
+import { mapGetters } from 'vuex';
+import Knob from '../Knob';
 export default {
-  name: "LooperBody",
+  name: 'LooperBody',
   components: { Knob },
-  props: ["Node"],
+  props: ['Node'],
 
   data() {
     return {
-      loopFileName: "",
+      loopFileName: '',
     };
   },
 
   computed: {
-    ...mapGetters([
-      "context",
-      "tempo",
-      "totalBeats",
-      "currentBeat",
-      "nextBeatTime",
-      "secondsPerBeat",
-    ]),
+    ...mapGetters(['context', 'tempo', 'totalBeats', 'currentBeat', 'nextBeatTime', 'secondsPerBeat']),
   },
 
   mounted() {
-    window.addEventListener("keyup", this.processLoopKeyup);
+    window.addEventListener('keyup', this.processLoopKeyup);
   },
 
   methods: {
     scheduleLoopStartRecording() {
       const beatsRemainingTo1 = this.totalBeats - this.currentBeat;
-      const nextBeatTime =
-        this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
+      const nextBeatTime = this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
 
       this.Node.startRecording(nextBeatTime);
     },
 
     scheduleLoopStopRecording() {
       const beatsRemainingTo1 = this.totalBeats - this.currentBeat;
-      const nextBeatTime =
-        this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
+      const nextBeatTime = this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
 
       // this.Node.nextBeatTime = nextBeatTime;
       this.Node.stopRecording(nextBeatTime);
@@ -122,12 +105,12 @@ export default {
     },
 
     downloadLoop() {
-      const a = document.createElement("a");
-      let fileName = "New Loop - " + this.tempo + "bpm";
-      fileName = prompt("File name: ", fileName);
+      const a = document.createElement('a');
+      let fileName = 'New Loop - ' + this.tempo + 'bpm';
+      fileName = prompt('File name: ', fileName);
       if (!fileName) return;
-      a.setAttribute("href", URL.createObjectURL(this.Node.looperBlob));
-      a.setAttribute("download", fileName);
+      a.setAttribute('href', URL.createObjectURL(this.Node.looperBlob));
+      a.setAttribute('download', fileName);
       a.click();
     },
 
@@ -151,16 +134,16 @@ export default {
     processLoopKeyup(e) {
       if (e.keyCode != 48) return; //0 key
       switch (this.Node.status) {
-        case "CLEARED":
+        case 'CLEARED':
           this.scheduleLoopStartRecording();
           break;
-        case "RECORDING":
+        case 'RECORDING':
           this.scheduleLoopStopRecording();
           break;
-        case "PLAYING":
+        case 'PLAYING':
           this.stopLoop();
           break;
-        case "STOPPED":
+        case 'STOPPED':
           this.startLoop();
           break;
       }

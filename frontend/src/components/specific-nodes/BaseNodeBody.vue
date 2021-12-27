@@ -2,22 +2,17 @@
   <div class="BaseNodeBody">
     <div class="node-body-inner">
       <!-- Audio Params -->
-      <div v-if="Node.audioParams" class="audio-params params-container" >
+      <div v-if="Node.audioParams" class="audio-params params-container">
         <div
           v-for="(audioParam, apIndex) in Node.audioParams"
           :key="audioParam.name"
           class="audio-param param"
         >
-          <div
-            class="param-name"
-          >
+          <div class="param-name">
             {{ audioParam.displayName }}
           </div>
 
-          <div
-            class="knob-wrapper"
-            @click="knobClicked(Node.name + '-' + audioParam.name)"
-          >
+          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + audioParam.name)">
             <Knob
               :ref="Node.name + '-' + audioParam.name"
               :minVal="audioParam.minValue"
@@ -31,10 +26,7 @@
       </div>
 
       <!-- Inner Node Audio Params -->
-      <div
-        v-if="Node.innerNodeAudioParams"
-        class="inner-node-audio-params params-container"
-      >
+      <div v-if="Node.innerNodeAudioParams" class="inner-node-audio-params params-container">
         <div
           v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
           :key="innerNodeAudioParam.name"
@@ -44,10 +36,7 @@
             {{ innerNodeAudioParam.displayName }}
           </div>
 
-          <div
-            class="knob-wrapper"
-            @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)"
-          >
+          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
             <Knob
               :ref="Node.name + '-' + innerNodeAudioParam.name"
               :unit="innerNodeAudioParam.unit"
@@ -71,10 +60,7 @@
             {{ customParam.displayName }}
           </div>
 
-          <div
-            class="knob-wrapper"
-            @click="knobClicked(Node.name + '-' + customParam.name)"
-          >
+          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + customParam.name)">
             <Knob
               :ref="Node.name + '-' + customParam.name"
               :unit="customParam.unit"
@@ -91,10 +77,10 @@
 </template>
 
 <script>
-import Knob from "../Knob";
+import Knob from '../Knob';
 export default {
   components: { Knob },
-  props: ["Node"],
+  props: ['Node'],
 
   methods: {
     setAudioParam(apIndex, value) {
@@ -111,7 +97,7 @@ export default {
 
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
-      this.$emit("knobClicked", knobRef);
+      this.$emit('knobClicked', knobRef);
     },
   },
 };
