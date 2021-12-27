@@ -1,78 +1,76 @@
 class Node {
-  static context = null
-  static nextBeatTime = 0
-  static lastBeatTime = 0
+  static context = null;
 
-  constructor(initialGain) {
-    this.muted = false
-    this.inputNode = Node.context.createGain()
-    this.outputNode = Node.context.createGain()
-    this.outputs = []
+  constructor(initialGain, nodeRole, nodeType) {
+    this.gain = initialGain;
+    this.minGain = 0;
+    this.maxGain = 3;
+    this.gainStep = 0.01;
+    this.muted = false;
 
-    this.initGain(initialGain)
-  }
+    this.nodeRol = nodeRole;  //Instrument/Effect
+    this.nodeType = nodeType; //The specific node
 
-  initGain(initialGain) {
-    this.gain = initialGain
-    this.outputNode.gain.value = initialGain
+    this.saveParams = [
+      { name: 'nodeRol', value: this.nodeRol },
+      { name: 'nodeType', value: this.nodeType },
+      { name: 'gain', value: this.gain },
+    ];
+    this.destroyers = [];
 
-    this.minGain = 0
-    this.maxGain = 3
-    this.gainStep = 0.01
+    this.inputNode = Node.context.createGain();
+    this.outputNode = Node.context.createGain();
+
+    this.outputNode.gain.value = initialGain;
   }
 
   destroy() {
-    this.disconnect()
+    this.outputNode.disconnect();
+    this.outputNode = null;
 
-    if (this.audioParams) this.audioParams = null
-    if (this.customParams) this.customParams = null
-    if (this.modulationParams) this.modulationParams = null
-    if (this.innerNodeAudioParams) this.innerNodeAudioParams = null
-
-
+    //habia problemas con poner y quitar un effecto, dejaba de sonar... chequear
     if (this.node) {
-      //habia problemas con poner y quitar un effecto, dejaba de sonar... chequear
-      this.node.disconnect()
-      this.node = null
+      this.node.disconnect();
+      this.node = null;
     }
 
-    this.inputNode.disconnect()
-    this.inputNode = null
-    this.outputNode = null
+    this.inputNode.disconnect();
+    this.inputNode = null;
+
+    if (this.customParams) this.customParams = null;
+    if (this.modulationParams) this.modulationParams = null;
+
+    this.destroyers.forEach(destroyer => {
+      destroyer();
+    });
   }
 
   connect(Node) {
-    this.outputNode.connect(Node.inputNode)
-    this.outputs.push({ name: Node.name, node: Node.inputNode })
-    return Node
+    this.outputNode.connect(Node.inputNode);
+    return Node;
   }
 
   disconnect() {
-    this.outputs.forEach(o => {
-      this.outputNode.disconnect(o.inputNode)
-    })
-    this.outputNode.disconnect()
-    this.outputs = []
-
-    return this
+    this.outputNode.disconnect();
+    return this;
   }
 
   setGain(value) {
-    this.gain = value
+    this.gain = value;
     if (!this.muted)
-      this.outputNode.gain.setValueAtTime(value, 0)
+      this.outputNode.gain.setValueAtTime(value, 0);
   }
 
   setMute(muted) {
-    this.muted = muted
-    if (muted) this.outputNode.gain.setValueAtTime(0, 0)
-    else this.outputNode.gain.setValueAtTime(this.gain, 0)
+    this.muted = muted;
+    if (muted) this.outputNode.gain.setValueAtTime(0, 0);
+    else this.outputNode.gain.setValueAtTime(this.gain, 0);
   }
 
   toggleMute() {
-    this.muted = !this.muted
-    this.setMute(this.muted)
+    this.muted = !this.muted;
+    this.setMute(this.muted);
   }
 }
 
-module.exports = Node
+module.exports = Node;

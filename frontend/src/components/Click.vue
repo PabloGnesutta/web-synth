@@ -2,26 +2,26 @@
   <div class="Click">
     Click
     <div class="on-off" :class="{ 'click-on': clickActive }">
-      <div class="on" v-if="clickActive" @click="turnOff">ON</div>
-      <div class="off" v-if="!clickActive" @click="turnOn">OFF</div>
+      <div v-if="clickActive" class="on" @click="turnOff">ON</div>
+      <div v-if="!clickActive" class="off" @click="turnOn">OFF</div>
     </div>
 
     <div class="signature">
-      <div @click="substractFromTimeSignature" class="signature-control">-</div>
+      <div class="signature-control" @click="substractFromTimeSignature" >-</div>
       <div class="current-signature">
         {{ totalBeats }}/{{ beatSubdivition }}
       </div>
-      <div @click="addToTimeSignature" class="signature-control">+</div>
+      <div class="signature-control" @click="addToTimeSignature" >+</div>
     </div>
 
     <div class="slider-container">
       <span class="label tempo">{{ tempo }} bpm</span>
       <input
+        v-model="tempoKnobValue"
         type="range"
         min="30"
         max="300"
         step="1"
-        v-model="tempoKnobValue"
         @input="setTempoWithSlider"
       />
     </div>
@@ -29,10 +29,10 @@
     <div class="slider-container">
       <span class="label volume">vol: {{ clickLevel }}</span>
       <input
+        v-model="clickLevel"
         type="range"
         min="0"
         max="3"
-        v-model="clickLevel"
         step="0.1"
         @input="setClickLevel"
       />
@@ -45,9 +45,11 @@
 </template>
 
 <script>
-const Node = require("../class/Node");
 import { mapGetters, mapMutations } from "vuex";
+const Node = require("../class/Node");
+
 export default {
+  name: "Click",
   data() {
     return {
       lookahead: 25.0,

@@ -13,7 +13,6 @@
         class="custom-param param"
         v-for="(customParam, cpIndex) in Node.customParams"
         :key="customParam.name"
-        :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
       >
         <div class="param-name">
           {{ customParam.displayName }}
@@ -44,23 +43,16 @@
 import { mapGetters } from "vuex";
 import Knob from "../Knob";
 export default {
+  components: { Knob },
+  props: ["Node"],
   data() {
     return {
       fileName: "",
     };
   },
 
-  props: ["Node"],
-
   computed: {
-    ...mapGetters([
-      "context",
-      // "tempo",
-      // "totalBeats",
-      // "currentBeat",
-      // "nextBeatTime",
-      // "secondsPerBeat",
-    ]),
+    ...mapGetters([ "context" ]),
   },
 
   methods: {
@@ -93,14 +85,6 @@ export default {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
       this.$emit("knobClicked", knobRef);
     },
-
-    getCssNodeName(name) {
-      return name.replace(new RegExp(" ", "g"), "-");
-    },
-  },
-
-  components: {
-    Knob,
   },
 };
 </script>

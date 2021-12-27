@@ -14,7 +14,6 @@
       {{ mappedCmd }}
     </div>
     <div class="value set-default-value pointer" @click="valueClicked">
-      <!-- <div>{{ knobValue }}</div> -->
       <div>{{ displayValue }}</div>
     </div>
   </div>
@@ -56,7 +55,7 @@ export default {
   props: ["minVal", "maxVal", "initVal", "unit"],
 
   computed: {
-    ...mapGetters(["appIsMapping", "appConnecting"]),
+    ...mapGetters(["appIsMapping"]),
   },
 
   mounted() {
@@ -72,7 +71,6 @@ export default {
 
   methods: {
     valueClicked() {
-      if (this.appConnecting) return;
       this.setKnobValueAndPosition(parseFloat(this.initknobValue));
       this.emitAndSetEmitValueWithRawValue(this.defaultValue);
     },
@@ -197,8 +195,8 @@ export default {
       window.removeEventListener("mouseup", this.onMouseUp);
       window.removeEventListener("keydown", this.onKeydown);
       window.removeEventListener("keyup", this.onKeyup);
-      this.ctrlPressed = false;
-      this.shiftPressed = false;
+      // this.ctrlPressed = false;
+      // this.shiftPressed = false;
     },
 
     onKeydown(e) {
@@ -220,14 +218,11 @@ export default {
   margin: 0 auto;
   background: transparent;
   user-select: none;
-  // border: 2px solid transparent;
   border-radius: 5px;
   position: relative;
-  // z-index: 3;
 }
 
 .knob.mapping {
-  // border-color: yellow;
   background: yellow;
 }
 

@@ -1,27 +1,23 @@
 const Node = require("../Node");
-const initialGain = 1
+const hasDryWet = require("../../composition/hasDryWet");
+const hasAudioParams = require("../../composition/hasAudioParams");
+
+const initialGain = 1;
 
 class Compressor extends Node {
-  static compressorCount = 0
+  static compressorCount = 0;
   constructor() {
-    super(initialGain)
+    super(initialGain, "Effect", "Compressor");
 
-    this.name = "Comp " + ++Compressor.compressorCount
-    this.nodeType = "Compressor"
+    this.name = "Comp " + ++Compressor.compressorCount;
 
-    this.node = Node.context.createDynamicsCompressor()
-    this.dryGain = Node.context.createGain()
-    this.wetGain = Node.context.createGain()
+    this.node = Node.context.createDynamicsCompressor();
 
-    this.inputNode.connect(this.node)
-    this.inputNode.connect(this.dryGain)
-    this.node.connect(this.wetGain)
+    this.inputNode.connect(this.node);
 
-    this.dryGain.connect(this.outputNode)
-    this.wetGain.connect(this.outputNode)
+    this.initAudioParams();
 
-    this.initAudioParams()
-    this.initDryWet()
+    hasDryWet(this);
   }
 
   initAudioParams() {
@@ -46,54 +42,22 @@ class Compressor extends Node {
         name: 'release', displayName: 'release', unit: 's',
         minValue: 0, maxValue: 1, value: 0.3,
       },
-    ]
-  }
-
-  setAudioParam(indexOrName, value) {
-    let index = indexOrName
-    if (typeof (indexOrName) !== 'number') index = this.audioParams.findIndex(ap => ap.name === indexOrName)
-
-    let curvedValue = parseFloat(value)
-
-    const param = this.audioParams[index];
-    this.node[param.name].setValueAtTime(curvedValue, 0);
-    this.audioParams[index].value = parseFloat(value);
-  }
-
-  initDryWet() {
-    this.dryWet = {
-      name: "dry/wet",
-      displayName: "dry/wet",
-      unit: '', //%
-      minValue: 0,
-      maxValue: 1,
-      value: 1,
-    }
-  }
-
-  setDryWet(value) {
-    this.wetGain.gain.value = value
-    this.dryGain.gain.value = value - 1
-    this.dryWet.value = value
-  }
-
-  destroy() {
-    super.destroy()
-    this.dryGain.disconnect()
-    this.wetGain.disconnect()
-
-    this.dryGain = null
-    this.wetGain = null
+    ];
+    hasAudioParams(this);
   }
 
   saveString() {
-    return JSON.stringify({
-      nodeType: this.nodeType,
-      gain: this.gain,
-      audioParams: this.this.audioParams,
-      dryWet: this.dryWet
-    })
+    const jsonString = {};
+    this.saveParams.forEach(param => {
+      jsonString[param.name] = param.value;
+    });
+
+    return JSON.stringify(jsonString);
+  }
+
+  destroy() {
+    super.destroy();
   }
 }
 
-module.exports = Compressor
+module.exports = Compressor;

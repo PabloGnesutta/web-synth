@@ -1,9 +1,9 @@
 <template>
   <div class="SurgeonBody">
     <div
-      class="oscillator"
       v-for="(osc, o) in Node.oscillatorGroupProps"
       :key="o"
+      class="oscillator"
     >
       <div class="oscillator-inner">
         <div class="top">
@@ -11,8 +11,8 @@
             <span class="label">{{ osc.name }}</span>
             <select @input="setType(o, $event)">
               <option
-                :key="type"
                 v-for="type in Node.oscTypes"
+                :key="type"
                 :selected="type === osc.type"
               >
                 {{ type }}
@@ -20,18 +20,18 @@
             </select>
           </div>
           <div
-            class="octave-transpose"
             tabindex="1"
+            class="octave-transpose"
+            :class="{ selected: currentOsc === o }"
             @focus="selectOsc(o)"
             @blur="deselectOsc(o)"
-            :class="{ selected: currentOsc === o }"
           >
             <div class="octave" :ref="o + 'octave'">
               <span>oct:</span> {{ groupOctaveTranspose[o].octave }}
             </div>
             <div
-              class="transpose"
               :ref="o + 'transpose'"
+              class="transpose"
               :class="{ selected: transposeSelected[o] }"
             >
               <span>transp:</span> {{ groupOctaveTranspose[o].transpose }}
@@ -43,9 +43,9 @@
             <span class="label">Dest</span>
             <select @input="setOscillatorTarget(o, $event)">
               <option
-                :selected="dest[1] === osc.destination"
                 v-for="(dest, d) in osc.destinations"
                 :key="d"
+                :selected="dest[1] === osc.destination"
                 :value="dest[1]"
               >
                 {{ dest[0] }}
@@ -56,18 +56,17 @@
           <!-- Mute/Unmute -->
           <div
             class="mute-unmute"
-            @click="toggleMute(o)"
             :class="{ muted: osc.muted }"
+            @click="toggleMute(o)"
           >
             M
           </div>
         </div>
         <div class="custom-params params-container">
           <div
-            class="custom-param param"
             v-for="(customParam, paramIndex) in Node.surgeonParams"
             :key="customParam.name"
-            :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
+            class="custom-param param"
           >
             <div class="param-name">
               {{ customParam.displayName }}
@@ -98,6 +97,10 @@
 <script>
 import Knob from "../Knob";
 export default {
+  name: "SurgeonBody",
+  components: { Knob },
+  props: ["Node"],
+
   data() {
     return {
       octaveSelected: [false, false, false],
@@ -108,53 +111,55 @@ export default {
       groupOctaveTranspose: [],
     };
   },
-  props: ["Node"],
 
   created() {
-    this.groupOctaveTranspose = this.Node.oscillatorGroupProps.map((ot) => {
+    this.groupOctaveTranspose = this.Node.oscillatorGroupProps.map((props) => {
       return {
-        octave: ot.octave,
-        transpose: ot.transpose,
+        octave: props.octave,
+        transpose: props.transpose,
       };
     });
   },
 
   beforeDestroy() {
-    window.removeEventListener("keyup", this.onKeyUp);
+    window.removeEventListener("keyup", this.onKeyDown);
   },
 
   methods: {
     selectOsc(o) {
-      window.addEventListener("keyup", this.onKeyUp);
+      window.addEventListener("keydown", this.onKeyDown);
       this.currentOsc = o;
     },
 
     deselectOsc(o) {
       this.currentOsc = null;
-      window.removeEventListener("keyup", this.onKeyUp);
+      window.removeEventListener("keydown", this.onKeyDown);
     },
 
-    onKeyUp(e) {
+    onKeyDown(e) {
+      e.preventDefault(); //avoid triggering blur
+
       let val = 0;
       let param = "octave";
       switch (e.keyCode) {
+        case 38: //up
+          val = 1;
+          break;
+        case 40: //down
+          val = -1;
+          break;
         case 37: //left
           val = -1;
           param = "transpose";
-          break;
-        case 38: //up
-          val = 1;
           break;
         case 39: //right
           val = 1;
           param = "transpose";
           break;
-        case 40: //bottom
-          val = -1;
-          break;
-      }
 
-      if (val === 0) return;
+        default:
+          return;
+      }
 
       this.Node.addToOctaveTranspose(this.currentOsc, param, val);
 
@@ -192,14 +197,6 @@ export default {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
       this.$emit("knobClicked", knobRef);
     },
-
-    getCssNodeName(name) {
-      return name.replace(new RegExp(" ", "g"), "-");
-    },
-  },
-
-  components: {
-    Knob,
   },
 };
 </script>

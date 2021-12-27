@@ -1,5 +1,6 @@
 <template>
   <div class="DelayBody">
+    <!-- Sync -->
     <div class="sync-container">
       <div class="sync" @click="toggleSync" :class="{ synced: sync }">Sync</div>
       <div class="sync-buttons" v-show="sync">
@@ -14,15 +15,12 @@
         </div>
       </div>
     </div>
+    <!-- Inner node audio params -->
     <div class="inner-node-audio-params params-container">
       <div
-        class="inner-node-audio-param param"
         v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
         :key="innerNodeAudioParam.name"
-        :class="[
-          getCssNodeName(Node.name + ' ' + innerNodeAudioParam.name),
-          getCssNodeName(innerNodeAudioParam.name),
-        ]"
+        class="inner-node-audio-param param"
       >
         <div
           class="param-container"
@@ -54,10 +52,9 @@
 
     <div class="custom-params params-container">
       <div
-        class="custom-param param"
         v-for="(customParam, cpIndex) in Node.customParams"
         :key="customParam.name"
-        :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
+        class="custom-param param"
       >
         <div class="param-name">
           {{ customParam.displayName }}

@@ -1,7 +1,7 @@
 <template>
   <div class="AnalyserRender">
     <canvas
-      :ref="'canvas-' + parent"
+      ref="canvas"
       :class="{ expanded: expanded }"
       @click.self="canvasClicked"
     ></canvas>
@@ -15,6 +15,8 @@
 //fftSize = 2048; //osciloscopio
 //fftSize = 256; //freq bars
 export default {
+  props: ["analyser"],
+
   data() {
     return {
       ctx: null,
@@ -31,14 +33,12 @@ export default {
     };
   },
 
-  props: ["analyser", "parent"],
-
   mounted() {
     this.analyser.fftSize = this.fftSize;
     this.bufferLength = this.analyser.frequencyBinCount;
     this.dataArray = new Uint8Array(this.bufferLength);
 
-    const refname = "canvas-" + this.parent;
+    const refname = "canvas";
     this.canvas = this.$refs[refname];
     this.ctx = this.canvas.getContext("2d");
 

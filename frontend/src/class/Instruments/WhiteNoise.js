@@ -1,68 +1,65 @@
-const Node = require("../Node")
-const initialGain = 1
-const QMax = 30
-const frequencyMax = 7000
+const Node = require("../Node");
+const hasAudioParams = require("../../composition/hasAudioParams");
+const hasInnerNodeAudioParams = require("../../composition/hasInnerNodeAudioParams");
+
+const QMax = 30;
+const frequencyMax = 7000;
+
+const initialGain = 1;
 
 class WhiteNoise extends Node {
-  static noiseCount = 0
+  static noiseCount = 0;
 
   constructor() {
-    super(initialGain)
+    super(initialGain);
 
-    this.name = name || "Noise " + ++WhiteNoise.noiseCount
-    this.nodeType = "WhiteNoise"
-    this.nodeRol = "Instrument"
+    this.name = name || "Noise " + ++WhiteNoise.noiseCount;
+    this.nodeType = "WhiteNoise";
+    this.nodeRol = "Instrument";
 
-    this.playing = false
+    this.playing = false;
 
-    this.createWhiteNoiseBuffer()
-    this.node = Node.context.createBiquadFilter()
-    this.node.type = 'bandpass'
+    this.createWhiteNoiseBuffer();
+    this.node = Node.context.createBiquadFilter();
+    this.node.type = 'bandpass';
 
-    this.mod = Node.context.createOscillator()
-    this.mod.type = 'triangle'
-    this.modGain = Node.context.createGain()
-    this.mod.connect(this.modGain)
-    this.modGain.gain.value = 500
-    this.mod.start()
-    this.modGain.connect(this.node.frequency)
+    this.mod = Node.context.createOscillator();
+    this.mod.type = 'triangle';
+    this.modGain = Node.context.createGain();
+    this.mod.connect(this.modGain);
+    this.mod.start();
+    this.modGain.gain.value = 500;
+    this.modGain.connect(this.node.frequency);
 
-    this.node.connect(this.outputNode)
-    this.inputNode.connect(this.outputNode)
+    this.node.connect(this.outputNode);
+    this.inputNode.connect(this.outputNode);
 
-    this.initAudioParams()
-    this.initInnerNodeAudioParams()
-  }
-
-  destroy() {
-    super.destroy()
-    this.mod.disconnect()
-    this.modGain.disconnect()
+    this.initAudioParams();
+    this.initInnerNodeAudioParams();
   }
 
   playNote(i) {
-    if (this.playing) return
+    if (this.playing) return;
     const filterFreq = i.map(30, 90, 0, frequencyMax);
-    this.node.frequency.setValueAtTime(filterFreq, 0)
+    this.node.frequency.setValueAtTime(filterFreq, 0);
 
     this.whiteNoise = Node.context.createBufferSource();
     this.whiteNoise.buffer = this.noiseBuffer;
     this.whiteNoise.loop = true;
 
-    this.whiteNoise.start(0)
-    this.whiteNoise.connect(this.node)
-    this.playing = true
+    this.whiteNoise.connect(this.node);
+    this.whiteNoise.start(0);
+    this.playing = true;
   }
 
   stopNote(i) {
-    if (!this.playing) return
-    this.whiteNoise.disconnect()
-    this.whiteNoise.stop()
-    this.playing = false
+    if (!this.playing) return;
+    this.whiteNoise.disconnect();
+    this.whiteNoise.stop();
+    this.playing = false;
   }
 
-  onOtherKeyup(key) {
-  }
+  onOtherKeyup(key) { }
 
   initAudioParams() {
     this.audioParams = [
@@ -74,15 +71,9 @@ class WhiteNoise extends Node {
         name: 'Q', displayName: 'res', unit: '',
         minValue: -QMax, maxValue: QMax, value: 20,
       },
-    ]
-  }
+    ];
 
-  setAudioParam(index, value) {
-    let curvedValue = parseFloat(value)
-
-    const param = this.audioParams[index];
-    this.node[param.name].setValueAtTime(curvedValue, 0);
-    this.audioParams[index].value = parseFloat(value);
+    hasAudioParams(this);
   }
 
   initInnerNodeAudioParams() {
@@ -97,16 +88,9 @@ class WhiteNoise extends Node {
         minValue: 0, maxValue: 1000, value: 600,
         node: this.modGain, nodeAudioParam: 'gain'
       },
-    ]
-  }
+    ];
 
-  setInnerNodeAudioParam(indexOrName, value) {
-    let index = indexOrName
-    if (typeof (indexOrName) !== 'number') index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
-
-    const innerNodeAudioParam = this.innerNodeAudioParams[index];
-    innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
-    this.innerNodeAudioParams[index].value = parseFloat(value);
+    hasInnerNodeAudioParams(this);
   }
 
   createWhiteNoiseBuffer() {
@@ -118,8 +102,17 @@ class WhiteNoise extends Node {
     );
 
     const output = this.noiseBuffer.getChannelData(0);
-    for (var i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+    for (var i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+  }
+
+  destroy() {
+    super.destroy();
+
+    this.mod.disconnect();
+    this.modGain.disconnect();
   }
 }
 
-module.exports = WhiteNoise
+module.exports = WhiteNoise;

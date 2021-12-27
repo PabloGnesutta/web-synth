@@ -1,23 +1,24 @@
 <template>
   <div class="container">
-    <div
-      class="node"
+    <div 
+      :ref="Node.name" 
+      class="node" 
       :class="[Node.nodeType, getCssNodeName(Node.name), { folded: folded }]"
-      :ref="Node.name"
     >
+      <!-- Top Bar -->
       <div class="top-bar">
         <div class="top-left">
           <div
+            v-if="Node.nodeRol === 'Instrument'"
             class="instrument-enabler"
             @click="toggleInstrumentEnabled"
-            v-if="Node.nodeRol === 'Instrument'"
           >
             <div
               class="instrument-enabler-inner"
               :class="{ enabled: instrumentEnabled }"
             ></div>
           </div>
-          <div class="save-preset" @click="savePreset()" v-if="Node.saveString">
+          <div v-if="Node.saveString" class="save-preset" @click="savePreset()">
             Guardar
           </div>
         </div>
@@ -26,25 +27,22 @@
         </div>
       </div>
 
-      <div class="backdrop" v-if="folded" @click="toggleFold">
-        <div class="folded-name">{{ Node.name }}</div>
+      <div v-if="folded" class="backdrop" @click.stop="toggleFolded">
+        <div class="name-folded">{{ Node.name }}</div>
       </div>
 
-      <!-- Node Name -->
+      <!-- Node Header -->
       <div class="node-header">
-        <div class="node-name" @click="nodeClicked()">
-          {{ Node.name }}
-        </div>
+        <div class="node-name" @click.stop="toggleFolded"> {{ Node.name }} </div>
       </div>
-      <!-- /node-header -->
 
+      <!-- Node Body -->
       <div class="node-body">
-        <!-- Types -->
         <div class="types" v-if="Node.types">
           <select @input="setType($event)">
             <option
-              :key="type"
               v-for="type in Node.types"
+              :key="type"
               :selected="type === Node.type"
             >
               {{ type }}
@@ -52,41 +50,10 @@
           </select>
         </div>
 
-        <div v-if="Node.nodeType === 'Delay'" class="delay-body-wrapper">
-          <DelayBody :Node="Node" @knobClicked="knobClickedWithRef" />
-        </div>
-        <div v-else-if="Node.nodeType === 'EQ3'" class="eq3-body-wrapper">
-          <EQ3Body :Node="Node" @knobClicked="knobClickedWithRef" />
-        </div>
-        <div v-else-if="Node.nodeType === 'Looper'" class="looper-body-wrapper">
-          <LooperBody :Node="Node" />
-        </div>
-        <div
-          v-else-if="Node.nodeType === 'Sampler'"
-          class="sampler-body-wrapper"
-        >
-          <SamplerBody :Node="Node" @knobClicked="knobClickedWithRef" />
-        </div>
-        <div v-else-if="Node.nodeType === 'Duette'" class="duette-body-wrapper">
-          <DuetteBody :Node="Node" @knobClicked="knobClickedWithRef" />
-        </div>
-        <div
-          v-else-if="Node.nodeType === 'Surgeon'"
-          class="duette-body-wrapper"
-        >
-          <SurgeonBody :Node="Node" @knobClicked="knobClickedWithRef" />
-        </div>
-        <div v-else-if="Node.nodeType === 'Femod'" class="femod-body-wrapper">
-          <FemodBody :Node="Node" @knobClicked="knobClickedWithRef" />
-        </div>
-        <div
-          v-else-if="Node.nodeType === 'BiquadFilter'"
-          class="femod-body-wrapper"
-        >
-          <FilterBody :Node="Node" @knobClicked="knobClickedWithRef" />
+        <div class="body-wrapper">
+          <component :is="`${Node.nodeType}Body`" :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
 
-        <!-- The rest -->
         <div
           v-if="
             Node.nodeType !== 'Delay' &&
@@ -94,114 +61,16 @@
             Node.nodeType !== 'Femod' &&
             Node.nodeType !== 'Sampler' &&
             Node.nodeType !== 'BiquadFilter' &&
-            Node.nodeType !== 'Surgeon' &&
-            Node.nodeType !== 'Duette'
+            Node.nodeType !== 'Surgeon'
           "
-          class="node-body-inner"
         >
-          <div class="audio-params params-container" v-if="Node.audioParams">
-            <!-- Audio Params -->
-            <div
-              class="audio-param param"
-              :key="audioParam.name"
-              v-for="(audioParam, apIndex) in Node.audioParams"
-              :class="[getCssNodeName(Node.name + ' ' + audioParam.name)]"
-            >
-              <div
-                class="param-name connectable"
-                @click="audioParamClicked(audioParam)"
-              >
-                {{ audioParam.displayName }}
-              </div>
-
-              <div
-                class="knob-wrapper"
-                @click="knobClicked(Node.name + '-' + audioParam.name)"
-              >
-                <Knob
-                  :ref="Node.name + '-' + audioParam.name"
-                  :minVal="audioParam.minValue"
-                  :maxVal="audioParam.maxValue"
-                  :initVal="audioParam.value"
-                  :unit="audioParam.unit"
-                  @knobTurned="setAudioParam(apIndex, $event)"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Inner Node Audio Params -->
-          <div
-            class="inner-node-audio-params params-container"
-            v-if="Node.innerNodeAudioParams"
-          >
-            <div
-              class="inner-node-audio-param param"
-              v-for="(
-                innerNodeAudioParam, inapIndex
-              ) in Node.innerNodeAudioParams"
-              :key="innerNodeAudioParam.name"
-              :class="[
-                getCssNodeName(Node.name + ' ' + innerNodeAudioParam.name),
-                getCssNodeName(innerNodeAudioParam.name),
-              ]"
-            >
-              <div class="param-name connectable">
-                {{ innerNodeAudioParam.displayName }}
-              </div>
-
-              <div
-                class="knob-wrapper"
-                @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)"
-              >
-                <Knob
-                  :ref="Node.name + '-' + innerNodeAudioParam.name"
-                  :unit="innerNodeAudioParam.unit"
-                  :minVal="innerNodeAudioParam.minValue"
-                  :maxVal="innerNodeAudioParam.maxValue"
-                  :initVal="innerNodeAudioParam.value"
-                  @knobTurned="setInnerNodeAudioParam(inapIndex, $event)"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Custom Params -->
-          <div class="custom-params params-container" v-if="Node.customParams">
-            <div
-              class="custom-param param"
-              v-for="(customParam, cpIndex) in Node.customParams"
-              :key="customParam.name"
-              :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
-            >
-              <div class="param-name">
-                {{ customParam.displayName }}
-              </div>
-
-              <div
-                class="knob-wrapper"
-                @click="knobClicked(Node.name + '-' + customParam.name)"
-              >
-                <Knob
-                  :ref="Node.name + '-' + customParam.name"
-                  :unit="customParam.unit"
-                  :minVal="customParam.minValue"
-                  :maxVal="customParam.maxValue"
-                  :initVal="customParam.value"
-                  @knobTurned="setCustomParam(cpIndex, $event, customParam)"
-                />
-              </div>
-            </div>
-          </div>
+          <BaseNodeBody :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
-        <!-- /node-body-inner -->
       </div>
-      <!-- /node-body -->
 
-      <!-- Start/Stop -->
       <div
         class="start-stop"
-        v-if="Node.nodeType === 'Carrier' || Node.nodeType === 'ADSROscillator'"
+        v-if="Node.nodeType === 'Carrier'"
       >
         <div class="start" @click="startOsc()" v-if="Node.status === 'STOPPED'">
           START
@@ -209,26 +78,8 @@
         <div class="stop" v-else @click="stopOsc()">STOP</div>
       </div>
 
+      <!-- Node Footer -->
       <div class="node-footer">
-        <!-- Connections -->
-        <div class="connections" v-if="Node.nodeType === 'Modulator'">
-          <div class="outputs" v-if="Node.outputs.length > 0">
-            <h5>Outputs</h5>
-            <div
-              class="output"
-              @click="disconnect(output)"
-              v-for="output in Node.outputs"
-              @mouseenter="onMouseEnterOutput(output)"
-              @mouseleave="onMouseLeaveOutput(output)"
-              :key="output.name"
-            >
-              <span>
-                {{ output.name }}
-              </span>
-            </div>
-          </div>
-        </div>
-
         <!-- Octave/Transpose -->
         <div class="octave-transpose" v-if="Node.octave || Node.transpose">
           <div class="octave" v-if="Node.octave">
@@ -241,11 +92,10 @@
 
         <!-- Dry/Wet -->
         <div
-          class="dry-wet"
           v-if="Node.dryWet"
-          :class="getCssNodeName(Node.name + ' dry-wet')"
+          class="dry-wet"
         >
-          <div class="param-name connectable">dry/wet</div>
+          <div class="param-name">dry/wet</div>
           <div
             class="knob-wrapper"
             @click="knobClicked(Node.name + '-dry-wet')"
@@ -261,12 +111,8 @@
         </div>
 
         <!-- Level -->
-        <div
-          class="level"
-          @click="levelClicked"
-          :class="getCssNodeName(Node.name + ' Level')"
-        >
-          <div class="param-name connectable">Level</div>
+        <div class="level">
+          <div class="param-name">Level</div>
           <div class="knob-wrapper" @click="knobClicked(Node.name + '-level')">
             <Knob
               :ref="Node.name + '-level'"
@@ -278,25 +124,22 @@
           </div>
         </div>
       </div>
-      <!-- /node-footer -->
 
-      <!-- Track Gain controls -->
-      <div class="node-controls" v-if="Node.name === 'Track Gain'">
-        <div class="fork" @click="forkTrack">FORK</div>
+      <!-- Track Gain -->
+      <div v-if="Node.name === 'Track Gain'" class="node-controls" >
         <div class="rec-enabled-disabled" @click="toggleRecEnabled">
           <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
           <div v-else class="rec-btn rec-disabled">Rec disabled</div>
         </div>
         <div class="mute-unmute" @click="toggleMute">
-          <div class="unmute" v-if="Node.muted">M</div>
-          <div class="mute" v-else>M</div>
+          <div v-if="Node.muted" class="unmute" >M</div>
+          <div v-else class="mute">M</div>
         </div>
       </div>
     </div>
-    <!-- /node -->
 
     <div class="analyser-wrapper" v-if="analyser">
-      <AnalyserRender :analyser="analyser" :parent="Node.name" />
+      <AnalyserRender :analyser="analyser" />
     </div>
   </div>
 </template>
@@ -313,18 +156,34 @@ import DuetteBody from "./specific-nodes/DuetteBody.vue";
 import SurgeonBody from "./specific-nodes/SurgeonBody.vue";
 import FemodBody from "./specific-nodes/FemodBody.vue";
 import SamplerBody from "./specific-nodes/SamplerBody.vue";
-import FilterBody from "./specific-nodes/FilterBody.vue";
+import BiquadFilterBody from "./specific-nodes/BiquadFilterBody.vue";
+import BaseNodeBody from "./specific-nodes/BaseNodeBody.vue";
+
 export default {
+  name: "NodeRender",
+  components: {
+    Knob,
+    EQ3Body,
+    DelayBody,
+    LooperBody,
+    DuetteBody,
+    SurgeonBody,
+    FemodBody,
+    BiquadFilterBody,
+    AnalyserRender,
+    SamplerBody,
+    BaseNodeBody,
+  },
+  props: ["Node", "analyser", "recEnabled", "instrumentEnabled"],
+
   data() {
     return {
-      loopStatus: "CLEARED",
       folded: false,
       muted: false,
+      loopStatus: "CLEARED",
       presetCandidates: ["Surgeon", "Femod"],
     };
   },
-
-  props: ["Node", "analyser", "recEnabled", "instrumentEnabled"],
 
   computed: {
     ...mapGetters(["context", "appConnecting", "originNode"]),
@@ -337,8 +196,6 @@ export default {
   methods: {
     ...mapMutations(["setAppConnecting", "setOriginNode"]),
 
-    // Track Gain
-
     toggleRecEnabled() {
       this.$emit("toggleRecEnabled");
     },
@@ -348,18 +205,16 @@ export default {
       this.Node.toggleMute();
     },
 
-    forkTrack() {
-      this.$emit("forkTrack");
-    },
-
-    toggleFold() {
+    toggleFolded() {
       this.folded = !this.folded;
     },
 
     setType(e) {
+      if (this.Node.nodeType === "Carrier") return;
+
       this.Node.setType(e.target.value);
       e.target.blur();
-      if (this.Node.nodeType === "Carrier") return;
+
       if (this.Node.audioParams)
         this.setParamsConstraints(this.Node.audioParams);
     },
@@ -410,74 +265,9 @@ export default {
       this.$emit("toggleInstrumentEnabled");
     },
 
-    setAudioParam(apIndex, value) {
-      this.Node.setAudioParam(apIndex, value);
-    },
-
-    setInnerNodeAudioParam(inapIndex, value) {
-      this.Node.setInnerNodeAudioParam(inapIndex, value);
-    },
-
-    setInnerNodeAudioParamFromChild({ inapIndex, value }) {
-      this.setInnerNodeAudioParam(inapIndex, value);
-    },
-
-    setCustomParam(cpIndex, value) {
-      this.Node.setCustomParam(cpIndex, value);
-    },
-
-    setCustomParamFromChild({ cpIndex, value }) {
-      this.setCustomParam(cpIndex, value);
-    },
-
-    // CONNECTIONS
-
-    startConnect() {
-      this.setAppConnecting(true);
-      this.setOriginNode(this.Node);
-      this.$refs[this.Node.name].classList.add("current-node");
-      console.log("Connecting...");
-    },
-
-    nodeClicked() {
-      console.log("nodeclicked", this.Node);
-      if (this.Node.nodeType !== "Modulator") return this.toggleFold();
-      if (!this.appConnecting) return this.startConnect();
-
-      if (this.Node.name === this.originNode.name)
-        return this.stopConnect("Cancel connect");
-    },
-
-    audioParamClicked(audioParam) {
-      if (!this.appConnecting) return;
-
-      if (this.Node.name === this.originNode.name)
-        return this.stopConnect("Cannot connect to itself");
-
-      this.originNode.connectAudioParam(this.Node, audioParam);
-      this.stopConnect("Connected");
-    },
-
-    levelClicked() {
-      if (!this.appConnecting) return;
-      if (this.Node.name === this.originNode.name)
-        return this.stopConnect("Cannot connect to itself");
-
-      this.originNode.connectLevel(this.Node);
-      this.stopConnect("Connected");
-    },
-
-    stopConnect(msg) {
-      this.setAppConnecting(false);
-      this.$refs[this.Node.name].classList.remove("current-node");
-      console.log(msg);
-    },
-
     setDryWet(value) {
       this.Node.setDryWet(parseFloat(value));
     },
-
-    //level
 
     setNodeGain(value) {
       this.Node.setGain(value);
@@ -500,40 +290,9 @@ export default {
       this.Node.stop(0);
     },
 
-    //outputs
-
-    disconnect(output) {
-      if (this.appConnecting) return;
-      this.Node.disconnectOutput(output);
-      this.onMouseLeaveOutput(output);
-    },
-
-    onMouseEnterOutput(output) {
-      var el = document.querySelector("." + this.getCssNodeName(output.name));
-      el.classList.add("is-connection-destination");
-    },
-
-    onMouseLeaveOutput(output) {
-      var el = document.querySelector("." + this.getCssNodeName(output.name));
-      el.classList.remove("is-connection-destination");
-    },
-
     getCssNodeName(name) {
       return name.replace(new RegExp(" ", "g"), "-");
     },
-  },
-
-  components: {
-    Knob,
-    EQ3Body,
-    DelayBody,
-    LooperBody,
-    DuetteBody,
-    SurgeonBody,
-    FemodBody,
-    FilterBody,
-    AnalyserRender,
-    SamplerBody,
   },
 };
 </script>
@@ -582,7 +341,7 @@ export default {
     background: rgba(0, 0, 0, 0.9);
     z-index: 1;
     cursor: pointer;
-    .folded-name {
+    .name-folded {
       transform: rotate(-90deg) translateX(-100%);
       position: inherit;
       bottom: 50%;
@@ -698,7 +457,6 @@ export default {
 }
 
 .Carrier,
-.Modulator,
 .WhiteNoise,
 .Drumkit {
   width: 160px;
@@ -752,10 +510,6 @@ export default {
   gap: 0.5em;
 }
 
-.connections {
-  cursor: default;
-}
-
 .octave-transpose {
   user-select: none;
   text-align: right;
@@ -778,34 +532,30 @@ export default {
   border: 1px solid red;
 }
 
-.outputs {
-  text-align: left;
-  margin-top: 0.5em;
-}
+// .outputs {
+//   text-align: left;
+//   margin-top: 0.5em;
+// }
 
-.output {
-  cursor: pointer;
-  padding: 0.2em;
-  font-size: 0.9rem;
-  color: var(--color-1);
-  margin-bottom: 0.4em;
-}
+// .output {
+//   cursor: pointer;
+//   padding: 0.2em;
+//   font-size: 0.9rem;
+//   color: var(--color-1);
+//   margin-bottom: 0.4em;
+// }
 
-.output:hover {
-  color: var(--color-2);
-}
+// .output:hover {
+//   color: var(--color-2);
+// }
 
-.param.is-connection-destination,
-.level.is-connection-destination {
-  border: 2px solid white;
-  background: var(--color-2);
-}
+// .param.is-connection-destination,
+// .level.is-connection-destination {
+//   border: 2px solid white;
+//   background: var(--color-2);
+// }
 
 // Track gain
-.fork {
-  padding: 1em;
-  margin-bottom: 0.5em;
-}
 .rec-enabled-disabled {
   cursor: pointer;
   margin-bottom: 1em;

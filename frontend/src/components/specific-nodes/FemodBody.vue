@@ -3,10 +3,9 @@
     <!-- Custom Params -->
     <div class="custom-params params-container">
       <div
-        class="custom-param param"
         v-for="(customParam, cpIndex) in Node.customParams"
         :key="customParam.name"
-        :class="[getCssNodeName(Node.name + ' ' + customParam.name)]"
+        class="custom-param param"
       >
         <div class="param-name">
           {{ customParam.displayName }}
@@ -34,41 +33,36 @@
       v-if="Node.modulationParams"
     >
       <div
-        class="modulation-param param"
-        :key="motulationParam.name"
         v-for="(motulationParam, mpIndex) in Node.modulationParams"
-        :class="[getCssNodeName(Node.name + ' ' + motulationParam.name)]"
+        :key="motulationParam.name"
+        class="modulation-param param"
       >
-        <div class="param-name">
-          {{ motulationParam.displayName }}
-        </div>
+        <div class="param-name"> {{ motulationParam.displayName }} </div>
 
-        <div class="knob-wrapper">
-          <div
-            class="knob-wrapper"
-            v-if="motulationParam.name !== 'type'"
-            @click="knobClicked(Node.name + '-' + motulationParam.name)"
-          >
-            <Knob
-              :ref="Node.name + '-' + motulationParam.name"
-              :unit="motulationParam.unit"
-              :minVal="motulationParam.minValue"
-              :maxVal="motulationParam.maxValue"
-              :initVal="motulationParam.value"
-              @knobTurned="setModulationParam(mpIndex, $event)"
-            />
-          </div>
-          <div class="select-wrapper" v-else>
-            <select @input="setModType(mpIndex, $event)">
-              <option
-                :key="type"
-                v-for="type in motulationParam.types"
-                :selected="type === motulationParam.value"
-              >
-                {{ type }}
-              </option>
-            </select>
-          </div>
+        <div
+          v-if="motulationParam.name !== 'type'"
+          class="knob-wrapper"
+          @click="knobClicked(Node.name + '-' + motulationParam.name)"
+        >
+          <Knob
+            :ref="Node.name + '-' + motulationParam.name"
+            :unit="motulationParam.unit"
+            :minVal="motulationParam.minValue"
+            :maxVal="motulationParam.maxValue"
+            :initVal="motulationParam.value"
+            @knobTurned="setModulationParam(mpIndex, $event)"
+          />
+        </div>
+        <div v-else class="select-wrapper" >
+          <select @input="setModType(mpIndex, $event)">
+            <option
+              :key="type"
+              v-for="type in motulationParam.types"
+              :selected="type === motulationParam.value"
+            >
+              {{ type }}
+            </option>
+          </select>
         </div>
       </div>
     </div>
@@ -78,6 +72,8 @@
 <script>
 import Knob from "../Knob";
 export default {
+  name: "FemodBody",
+  components: { Knob },
   props: ["Node"],
 
   methods: {
@@ -98,53 +94,11 @@ export default {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
       this.$emit("knobClicked", knobRef);
     },
-
-    getCssNodeName(name) {
-      return name.replace(new RegExp(" ", "g"), "-");
-    },
-  },
-
-  components: {
-    Knob,
   },
 };
 </script>
 
 <style lang="scss" scoped>
-.oscillator {
-  display: flex;
-  .oscillator-inner {
-    width: 100%;
-    background: #272727;
-    .node-name {
-      margin: 0;
-    }
-    .top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .types {
-      text-align: left;
-      margin: 0;
-    }
-    .mute-unmute {
-      align-self: flex-start;
-      font-size: 0.9rem;
-      background: #444;
-      padding: 0 0.2em;
-      &.muted {
-        background: crimson;
-      }
-    }
-  }
-  margin-bottom: 0.3em;
-}
-
-.oscillator:last-child {
-  margin-bottom: 0;
-}
-
 .params-container {
   .param {
     min-width: 50px;

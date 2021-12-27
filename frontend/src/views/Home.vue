@@ -11,7 +11,6 @@
           <Header
             :ref="'header'"
             @createInstrument="createInstrument"
-            @createModulator="createModulator"
             @createEffect="createEffect"
             @createMic="createMic"
             @startRec="startRec"
@@ -20,8 +19,8 @@
             @downloadExport="downloadExport"
             @stopPlayingExport="stopPlayingExport"
             @loadSave="loadSave"
-            @toggleMapping="toggleMapping"
             @loadPreset="loadPreset"
+            @toggleMapping="toggleMapping"
             :tracks="tracks"
             :playing="playing"
             :recording="recording"
@@ -32,6 +31,7 @@
           <Click ref="click" />
         </div>
       </div>
+
       <!-- TRACKS -->
       <div class="tracks" :class="{ mapping: mapping }">
         <div
@@ -44,17 +44,7 @@
           }"
           @click="trackClicked(t)"
         >
-          <!-- Modulators -->
           <div class="track-inner" :class="'track-inner_' + t">
-            <!-- <div class="track-modulators">
-              <NodeRender
-                v-for="(Mod, m) in track.modulators"
-                :Node="Mod"
-                :key="m"
-                @deleteNode="deleteModulator(t, m)"
-              />
-            </div> -->
-
             <!-- Instrument -->
             <div class="track-instrument">
               <NodeRender
@@ -82,6 +72,7 @@
               <div class="track-right-placeholder"></div>
             </div>
           </div>
+
           <!-- Track Gain -->
           <div class="track-gain">
             <NodeRender
@@ -89,7 +80,6 @@
               :analyser="track.trackGainAnalyser"
               :recEnabled="track.recEnabled"
               @toggleRecEnabled="toggleRecEnabled(t)"
-              @forkTrack="forkTrack(t)"
               @knobClicked="knobClicked"
             />
           </div>
@@ -114,7 +104,7 @@
 </template>
 
 <script>
-const notes = require("../data/notes");
+const noteFrequencies = require("../data/noteFrequencies");
 const noteKeys = require("../data/noteKeys");
 
 const Node = require("../class/Node");
@@ -129,14 +119,11 @@ const BiquadFilter = require("../class/Effects/BiquadFilter");
 
 const Mic = require("../class/Instruments/Mic");
 const Femod = require("../class/Instruments/Femod");
-// const Duette = require("../class/Instruments/old/Duette");
 const Surgeon = require("../class/Instruments/Surgeon");
 const Carrier = require("../class/Instruments/Carrier");
 const Drumkit = require("../class/Instruments/Drumkit");
 const Sampler = require("../class/Instruments/Sampler");
 const WhiteNoise = require("../class/Instruments/WhiteNoise");
-
-const Modulator = require("../class/Oscillator/Modulator");
 
 const instrumentsDict = new Map([
   ["Mic", Mic],
@@ -144,7 +131,6 @@ const instrumentsDict = new Map([
   ["Carrier", Carrier],
   ["Drumkit", Drumkit],
   ["Sampler", Sampler],
-  // ["Duette", Duette],
   ["Surgeon", Surgeon],
   ["WhiteNoise", WhiteNoise],
 ]);
@@ -237,15 +223,16 @@ export default {
 
   methods: {
     ...mapMutations(["setAppIsMapping", "setContext"]),
+
     toggleRecEnabled(t) {
       this.tracks[t].recEnabled = !this.tracks[t].recEnabled;
     },
 
-    forkTrack(t) {
-      const newGain = new Gain(this.tracks[t].instrument.name + " Fork");
-      this.tracks[t].trackGain.connect(newGain);
-      this.createTrack(newGain);
-    },
+    // forkTrack(t) {
+    //   const newGain = new Gain(this.tracks[t].instrument.name + " Fork");
+    //   this.tracks[t].trackGain.connect(newGain);
+    //   this.createTrack(newGain);
+    // },
 
     init() {
       this.addConfirmLeaveHandler();
@@ -254,7 +241,6 @@ export default {
       Node.context = this.context;
 
       this.createMainGain();
-      this.createTrack(new Sampler());
       // this.createTrack(new Surgeon());
       // this.insertEffect(new Distortion())
 
@@ -296,6 +282,11 @@ export default {
 
         this.exportBlobs.push(blob);
 
+        // PARA UPLOAD:
+        // const audioFile = new File([blob], "audio.ogg", {
+        //   type: 'audio/ogg; codecs="opus"',
+        // });
+
         const exportFileReader = new FileReader();
 
         exportFileReader.onloadend = () => {
@@ -310,6 +301,7 @@ export default {
       };
 
       this.exportMediaRecorder.start();
+
       console.log("rec start");
 
       //record each track
@@ -477,7 +469,6 @@ export default {
         name: "Track " + this.trackCount,
         displayName: "Track " + this.trackCount,
         instrument,
-        modulators: [],
         effects: [],
         trackGain,
         trackGainAnalyser,
@@ -583,26 +574,17 @@ export default {
       effects.splice(n, 1);
     },
 
-    deleteModulator(t, m) {
-      // const trackModulators = this.tracks[t].modulators;
-      // trackModulators[m].destroy();
-      // trackModulators.splice(m, 1);
-    },
-
     // CREATE NODES
     createInstrument(className) {
       const Node = new (instrumentsDict.get(className))();
       this.createTrack(Node);
       return Node;
     },
+
     createEffect(className) {
       const Node = new (effectsDict.get(className))();
       this.insertEffect(Node);
       return Node;
-    },
-    createModulator() {
-      // const track = this.tracks[this.currentTrackIndex];
-      // track.modulators.push(new Modulator("sawtooth"));
     },
 
     createMic() {
@@ -649,7 +631,7 @@ export default {
       if (noteKeyIndex !== -1) {
         let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
         if (noteIndex < 0) noteIndex = 0;
-        if (noteIndex > notes.length - 1) noteIndex = notes.length - 1;
+        if (noteIndex > noteFrequencies.length - 1) noteIndex = noteFrequencies.length - 1;
 
         this.keypressListeners.forEach((scaleInterface) => {
           scaleInterface.instrument.playNote(noteIndex);
@@ -691,7 +673,8 @@ export default {
       // console.log(keyCode);
       //1 a 9
       if (keyCode >= 49 && keyCode <= 57) {
-        if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
+        if (this.m_pressed) 
+          this.tracks[+key - 1].trackGain.toggleMute();
       } else {
         switch (keyCode) {
           case 77: //m
@@ -966,9 +949,11 @@ export default {
 
     addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {
-        e = e || window.event;
-        if (e) e.returnValue = "Sure?";
-        return "Sure?";
+        if (1 == 2) {
+          e = e || window.event;
+          if (e) e.returnValue = "Sure?";
+          return "Sure?";
+        }
       };
     },
   },

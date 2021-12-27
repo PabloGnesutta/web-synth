@@ -6,44 +6,44 @@
       </div>
       <div class="control-btns params-container">
         <div
+          v-if="!Node.recording && Node.playing"
           class="control-btn rec-btn"
           @click="scheduleLoopStartRecording"
-          v-if="!Node.recording && Node.playing"
         >
           OVERDUB
         </div>
         <div
+          v-if="!Node.recording && !Node.playing && !Node.loopAvailable"
           class="control-btn rec-btn"
           @click="scheduleLoopStartRecording"
-          v-if="!Node.recording && !Node.playing && !Node.loopAvailable"
         >
           REC
         </div>
         <div
+          v-if="Node.recording"
           class="control-btn stop-rec"
           @click="scheduleLoopStopRecording"
-          v-if="Node.recording"
         >
           PLAY
         </div>
         <div
+          v-if="Node.status === 'PLAYING' && !Node.recording"
           class="control-btn pause-loop"
           @click="stopLoop"
-          v-if="Node.status === 'PLAYING' && !Node.recording"
         >
           PAUSE
         </div>
         <div
+          v-if="Node.loopAvailable && !Node.playing && !Node.recording"
           class="control-btn play-loop"
           @click="startLoop"
-          v-if="Node.loopAvailable && !Node.playing && !Node.recording"
         >
           PLAY
         </div>
         <div
+          v-if="Node.loopAvailable && Node.status === 'STOPPED'"
           class="control-btn clear-btn"
           @click="clearLoop"
-          v-if="Node.loopAvailable && Node.status === 'STOPPED'"
         >
           CLEAR
         </div>
@@ -55,7 +55,7 @@
         <input type="file" @change="loadLoopBuffer" />
       </div>
       <div class="download-loop">
-        <span class="label" v-if="Node.loopAvailable" @click="downloadLoop">
+        <span v-if="Node.loopAvailable" class="label" @click="downloadLoop">
           Download
         </span>
         <span v-else class="invisible">.</span>
@@ -68,13 +68,15 @@
 import { mapGetters } from "vuex";
 import Knob from "../Knob";
 export default {
+  name: "LooperBody",
+  components: { Knob },
+  props: ["Node"],
+
   data() {
     return {
       loopFileName: "",
     };
   },
-
-  props: ["Node"],
 
   computed: {
     ...mapGetters([
@@ -164,17 +166,11 @@ export default {
       }
     },
   },
-
-  components: {
-    Knob,
-  },
 };
 </script>
 
 <style lang="scss" scoped>
 .status {
-  // background: #777;
-  // padding: .2em 0;
   margin-bottom: 0.4em;
   color: lightgreen;
 }

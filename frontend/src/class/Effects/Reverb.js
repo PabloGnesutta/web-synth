@@ -1,81 +1,54 @@
 const Node = require("../Node");
-const dirName = "/audio/impulse_responses/"
+const hasDryWet = require("../../composition/hasDryWet");
 
-const initialGain = 1
+const dirName = "/audio/impulse_responses/";
+
+const initialGain = 1;
 
 class Reverb extends Node {
-  static reverbCount = 0
+  static reverbCount = 0;
 
-  constructor() {
-    super(initialGain)
+  constructor(name) {
+    super(initialGain, "Effect", "Reverb");
 
-    this.name = "Reverb " + ++Reverb.reverbCount
-    this.nodeType = "Reverb"
-    this.types = ['Five Columns', 'Bottle Hall', 'Deep Space', 'In The Silo', 'Chateau Outside', 'Damp Lg Room']
-    this.type = 'In The Silo'
+    this.name = name || "Reverb " + ++Reverb.reverbCount;
+    this.types = ['Five Columns', 'Bottle Hall', 'Deep Space', 'In The Silo', 'Chateau Outside', 'Damp Lg Room'];
+    this.type = 'In The Silo';
 
-    this.convolver = Node.context.createConvolver()
-    this.dryGain = Node.context.createGain()
-    this.wetGain = Node.context.createGain()
+    this.node = Node.context.createConvolver();
 
-    this.inputNode.connect(this.convolver)
-    this.inputNode.connect(this.dryGain)
-    this.convolver.connect(this.wetGain)
+    this.inputNode.connect(this.node);
 
-    this.dryGain.connect(this.outputNode)
-    this.wetGain.connect(this.outputNode)
+    this.setType(this.type);
 
-    this.initDryWet()
-    this.setType(this.type)
-  }
-
-  saveString() {
-    return JSON.stringify({
-      nodeType: this.nodeType,
-      gain: this.gain,
-      type: this.type,
-      dryWet: this.dryWet
-    })
+    hasDryWet(this);
   }
 
   //se podrían cachear los buffers, o no...
   setType(type) {
-    fetch(dirName + type + '.wav').then(res => { return res.arrayBuffer() })
+    fetch(dirName + type + '.wav').then(res => { return res.arrayBuffer(); })
       .then((arrayBuffer) => {
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
-          this.convolver.buffer = audioBuffer
+          this.node.buffer = audioBuffer;
         });
-      })
+      });
   }
 
-  initDryWet() {
-    this.dryWet = {
-      name: "dry/wet",
-      displayName: "dry/wet",
-      unit: '', //%
-      minValue: 0,
-      maxValue: 1,
-      value: 0.3,
-    }
-  }
+  saveString() {
+    const jsonString = {
+      type: this.type,
+    };
 
-  setDryWet(value) {
-    this.wetGain.gain.value = value
-    this.dryGain.gain.value = value - 1
-    this.dryWet.value = value
+    this.saveParams.forEach(param => {
+      jsonString[param.name] = param.value;
+    });
+
+    return JSON.stringify(jsonString);
   }
 
   destroy() {
-    super.destroy()
-    this.dryGain.disconnect()
-    this.wetGain.disconnect()
-    this.convolver.disconnect()
-
-    this.dryGain = null
-    this.wetGain = null
-    this.convolver = null
+    super.destroy();
   }
-
 }
 
-module.exports = Reverb
+module.exports = Reverb;

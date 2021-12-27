@@ -1,33 +1,33 @@
-const Node = require("../Node")
-const dirName = "/audio/samples/"
-const drumSamples = require("../../data/drumSamples")
+const Node = require("../Node");
+const dirName = "/audio/samples/";
+const drumSamples = require("../../data/drumSamples");
 
-const initialGain = 1.2
+const initialGain = 1.2;
 
 class Drumkit extends Node {
-  static drumkitCount = 0
+  static drumkitCount = 0;
 
   constructor() {
-    super(initialGain)
+    super(initialGain);
 
-    this.name = "Drumkit " + ++Drumkit.drumkitCount
-    this.nodeType = "Drumkit"
-    this.nodeRol = "Instrument"
-    this.buffers = []
-    this.source = null
+    this.name = "Drumkit " + ++Drumkit.drumkitCount;
+    this.nodeType = "Drumkit";
+    this.nodeRol = "Instrument";
+    this.buffers = [];
+    this.source = null;
 
-    this.inputNode.connect(this.outputNode)
+    this.inputNode.connect(this.outputNode);
 
-    this.initSamplers()
+    this.initSamplers();
   }
 
   async initSamplers() {
-    let i = 0
+    let i = 0;
     for (const ds of drumSamples) {
-      let response = await fetch(dirName + drumSamples[i++])
-      let arrayBuffer = await response.arrayBuffer()
-      let audioBuffer = await Node.context.decodeAudioData(arrayBuffer)
-      this.buffers.push(audioBuffer)
+      let response = await fetch(dirName + drumSamples[i++]);
+      let arrayBuffer = await response.arrayBuffer();
+      let audioBuffer = await Node.context.decodeAudioData(arrayBuffer);
+      this.buffers.push(audioBuffer);
     }
   }
 
@@ -49,9 +49,9 @@ class Drumkit extends Node {
   }
 
   destroy() {
-    super.destroy()
-    this.buffers = []
+    super.destroy();
+    this.buffers = [];
   }
 }
 
-module.exports = Drumkit
+module.exports = Drumkit;

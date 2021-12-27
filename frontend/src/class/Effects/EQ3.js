@@ -1,22 +1,20 @@
-const Node = require("../Node")
+const Node = require("../Node");
+const hasDryWet = require("../../composition/hasDryWet");
+const hasInnerNodeAudioParams = require("../../composition/hasInnerNodeAudioParams");
 
-const initialGain = 1
+const initialGain = 1;
 
 class EQ3 extends Node {
-  static EQ3Count = 0
+  static EQ3Count = 0;
 
-  constructor() {
-    super(initialGain)
+  constructor(name) {
+    super(initialGain, 'Effect', 'EQ3');
 
-    this.name = name || "EQ3 " + ++EQ3.EQ3Count
-    this.nodeType = "EQ3"
+    this.name = name || "EQ3 " + ++EQ3.EQ3Count;
 
     this.high = Node.context.createBiquadFilter();
     this.mid = Node.context.createBiquadFilter();
-    this.low = Node.context.createBiquadFilter();
-
-    this.dryGain = Node.context.createGain()
-    this.wetGain = Node.context.createGain()
+    this.node = Node.context.createBiquadFilter();
 
     //high
     this.high.type = "highshelf";
@@ -28,34 +26,17 @@ class EQ3 extends Node {
     this.mid.frequency.value = 1000.0;
     this.mid.Q.value = 0.5;
     this.mid.gain.value = 0.0;
-    this.mid.connect(this.low);
+    this.mid.connect(this.node);
     //low (chain end)
-    this.low.type = "lowshelf";
-    this.low.frequency.value = 320.0;
-    this.low.gain.value = 0.0;
+    this.node.type = "lowshelf";
+    this.node.frequency.value = 320.0;
+    this.node.gain.value = 0.0;
 
-    this.low.connect(this.wetGain);
     this.inputNode.connect(this.high);
-    this.inputNode.connect(this.dryGain)
 
-    this.dryGain.connect(this.outputNode)
-    this.wetGain.connect(this.outputNode)
-    this.low.connect(this.wetGain)
+    this.initInnerNodeAudioParams();
 
-    this.dryGain.connect(this.outputNode)
-    this.wetGain.connect(this.outputNode)
-
-    this.initInnerNodeAudioParams()
-    this.initDryWet()
-  }
-
-  saveString() {
-    return JSON.stringify({
-      nodeType: this.nodeType,
-      gain: this.gain,
-      innerNodeAudioParams: this.this.innerNodeAudioParams,
-      dryWet: this.dryWet
-    })
+    hasDryWet(this);
   }
 
   initInnerNodeAudioParams() {
@@ -64,12 +45,12 @@ class EQ3 extends Node {
       {
         name: 'lowFreq', displayName: '', unit: 'hz',
         minValue: 0, maxValue: 500, value: 320,
-        node: this.low, nodeAudioParam: 'frequency'
+        node: this.node, nodeAudioParam: 'frequency'
       },
       {
         name: 'lowGain', displayName: 'gain', unit: '',
         minValue: -30, maxValue: 30, value: 0,
-        node: this.low, nodeAudioParam: 'gain'
+        node: this.node, nodeAudioParam: 'gain'
       },
       //mid
       {
@@ -98,49 +79,27 @@ class EQ3 extends Node {
         minValue: -30, maxValue: 30, value: -12,
         node: this.high, nodeAudioParam: 'gain'
       },
-    ]
+    ];
+    hasInnerNodeAudioParams(this);
   }
 
-  setInnerNodeAudioParam(indexOrName, value) {
-    let index = indexOrName
-    if (typeof (indexOrName) !== 'number') index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
+  saveString() {
+    const jsonString = {};
+    this.saveParams.forEach(param => {
+      jsonString[param.name] = param.value;
+    });
 
-    const innerNodeAudioParam = this.innerNodeAudioParams[index];
-    innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
-    this.innerNodeAudioParams[index].value = parseFloat(value);
-  }
-
-  initDryWet() {
-    this.dryWet = {
-      name: "dry/wet",
-      displayName: "dry/wet",
-      unit: '', //%
-      minValue: 0,
-      maxValue: 1,
-      value: 1,
-    }
-  }
-
-  setDryWet(value) {
-    this.wetGain.gain.value = value
-    this.dryGain.gain.value = value - 1
-    this.dryWet.value = value
+    return JSON.stringify(jsonString);
   }
 
   destroy() {
-    super.destroy()
-    this.low.disconnect()
-    this.mid.disconnect()
-    this.high.disconnect()
-    this.dryGain.disconnect()
-    this.wetGain.disconnect()
+    super.destroy();
 
-    this.low = null
-    this.mid = null
-    this.high = null
-    this.dryGain = null
-    this.wetGain = null
+    this.mid.disconnect();
+    this.mid = null;
+    this.high.disconnect();
+    this.high = null;
   }
 }
 
-module.exports = EQ3
+module.exports = EQ3;

@@ -1,53 +1,29 @@
 const Node = require("../Node");
+const hasDryWet = require("../../composition/hasDryWet");
 
 const initialGain = 1;
 
 class Distortion extends Node {
-  static distortionCount = 0
+  static distortionCount = 0;
 
   constructor(name) {
-    super(initialGain)
+    super(initialGain, "Effect", "Distortion");
 
-    this.name = name || "Distortion " + ++Distortion.distortionCount
-    this.nodeType = "Distortion"
+    this.name = name || "Distortion " + ++Distortion.distortionCount;
 
-    this.curveAmount = 30
-    this.harshAmount = 1.2
+    this.curveAmount = 30;
+    this.harshAmount = 1.2;
 
-    this.dryGain = Node.context.createGain()
-    this.wetGain = Node.context.createGain()
-
-    this.node = Node.context.createWaveShaper()
+    this.node = Node.context.createWaveShaper();
 
     this.node.curve = this.makeDistortionCurve(this.curveAmount, this.harshAmount);
     this.node.oversample = 'none'; //2x 4x
 
-    this.inputNode.connect(this.node)
-    this.inputNode.connect(this.dryGain)
-    this.node.connect(this.wetGain)
+    this.inputNode.connect(this.node);
 
-    this.dryGain.connect(this.outputNode)
-    this.wetGain.connect(this.outputNode)
+    this.initCustomParams();
 
-    this.initDryWet()
-    this.initCustomParams()
-  }
-
-  saveString() {
-    return JSON.stringify({
-      nodeType: this.nodeType,
-      gain: this.gain,
-      customParams: this.this.customParams,
-      dryWet: this.dryWet
-    })
-  }
-
-  destroy() {
-    super.destroy()
-    this.dryGain.disconnect()
-    this.wetGain.disconnect()
-    this.dryGain = null
-    this.wetGain = null
+    hasDryWet(this);
   }
 
   initCustomParams() {
@@ -60,24 +36,24 @@ class Distortion extends Node {
         name: 'harsh', displayName: 'harsh', unit: '', //%
         minValue: 0, maxValue: 3, value: this.harshAmount,
       },
-    ]
+    ];
   }
 
   setCustomParam(index, value) {
-    if (index === 0) this.setAmount(value)
-    else if (index === 1) this.setHarsh(value)
-    this.customParams[index].value = value
+    if (index === 0) this.setAmount(value);
+    else if (index === 1) this.setHarsh(value);
+    this.customParams[index].value = value;
   }
 
   setAmount(value) {
-    let val = value * 2
+    let val = value * 2;
     this.curveAmount = val;
     this.node.curve = this.makeDistortionCurve(val, this.harshAmount);
   }
 
   setHarsh(value) {
-    let val = Math.pow(10, value)
-    this.harshAmount = val
+    let val = Math.pow(10, value);
+    this.harshAmount = val;
     this.node.curve = this.makeDistortionCurve(this.curveAmount, val);
   }
 
@@ -92,7 +68,7 @@ class Distortion extends Node {
     for (let i = 0; i < n_samples; ++i) {
       x = i * 2 / n_samples - 1;
 
-      curve[i] = (3 + harsh) * x * k * (Math.PI / 180) / (Math.PI + harsh * Math.abs(x))
+      curve[i] = (3 + harsh) * x * k * (Math.PI / 180) / (Math.PI + harsh * Math.abs(x));
 
       // curve[i] = (3 + k) * x * harsh * deg / (Math.PI + k * Math.abs(x)); //esta va mas
 
@@ -102,21 +78,20 @@ class Distortion extends Node {
     return curve;
   };
 
-  initDryWet() {
-    this.dryWet = {
-      displayName: "dry/wet",
-      unit: '', //%
-      minValue: 0,
-      maxValue: 1,
-      value: 1,
-    }
+  saveString() {
+    const jsonString = {
+      customParams: this.customParams,
+    };
+
+    this.saveParams.forEach(param => {
+      jsonString[param.name] = param.value;
+    });
+
+    return JSON.stringify(jsonString);
   }
 
-  setDryWet(value) {
-    this.wetGain.gain.value = value
-    this.dryGain.gain.value = value - 1
-    this.dryWet.value = value
+  destroy() {
+    super.destroy();
   }
-
 }
-module.exports = Distortion
+module.exports = Distortion;

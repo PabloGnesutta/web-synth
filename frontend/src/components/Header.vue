@@ -2,16 +2,16 @@
   <div class="Header">
     <div class="header" :class="{ recording, playing }">
       <div
+        v-if="menuInstrumentsVisible || menuEffectsVisible || menuConfigVisible"
         class="backdrop"
         @click.self="hideMenues"
-        v-if="menuInstrumentsVisible || menuEffectsVisible || menuConfigVisible"
       ></div>
       <div v-if="currentSave" class="current-save-name">
         {{ currentSave.name }}
       </div>
       <div class="buttons">
         <!-- Instruments -->
-        <div class="menu instruments" v-if="!recording">
+        <div v-if="!recording" class="menu instruments" >
           <div class="btn label" @click="toggleInstrumentsMenu">
             Instrumentos
           </div>
@@ -34,9 +34,9 @@
                 :class="{ hidden: !showSurgeonPresets }"
               >
                 <div
-                  class="sub-dropdown-item"
                   v-for="(preset, p) in surgeonPresets"
                   :key="p"
+                  class="sub-dropdown-item"
                   @click.prevent="selectPreset('Surgeon', p)"
                 >
                   {{ preset }}
@@ -52,9 +52,9 @@
               Femod
               <div class="sub-dropdown" :class="{ hidden: !showFemodPresets }">
                 <div
-                  class="sub-dropdown-item"
                   v-for="(preset, p) in femodPresets"
                   :key="p"
+                  class="sub-dropdown-item"
                   @click.prevent="selectPreset('Femod', p)"
                 >
                   {{ preset }}
@@ -113,9 +113,9 @@
               Filtro
               <div class="sub-dropdown" :class="{ hidden: !showFilterPresets }">
                 <div
-                  class="sub-dropdown-item"
                   v-for="(preset, p) in filterPresets"
                   :key="p"
+                  class="sub-dropdown-item"
                   @click.prevent="selectPreset('BiquadFilter', p)"
                 >
                   {{ preset }}
@@ -136,8 +136,8 @@
 
         <!-- REC -->
         <div
-          class="btn btn-2 rec"
           v-if="!recording && !playing"
+          class="btn btn-2 rec"
           @click="startRec"
         >
           REC
@@ -150,22 +150,22 @@
         <div class="play-stop" v-if="recordingsAvailable">
           <div
             v-if="!playing && !recording"
-            @click="playExport"
             class="btn start-playing"
+            @click="playExport"
           >
             Play
           </div>
           <div
             v-if="playing"
-            @click="stopPlayingExport"
             class="btn stop-playing"
+            @click="stopPlayingExport"
           >
             Stop
           </div>
         </div>
         <div
-          class="btn btn-export-download"
           v-if="recordingsAvailable && !recording"
+          class="btn btn-export-download"
           @click="downloadExport"
         >
           Descargar
@@ -173,7 +173,7 @@
 
         <!-- SAVES -->
         <div class="saves-buttons" v-if="!recording">
-          <div class="btn" v-if="currentSave" @click="save">Guardar</div>
+          <div v-if="currentSave" class="btn" @click="save">Guardar</div>
           <div class="btn" @click="saveAs">
             <span v-if="currentSave">Guardar como</span>
             <span v-else>Guardar</span>
@@ -186,9 +186,9 @@
             <div>Cargar</div>
             <div class="saved-works" :class="{ hidden: !showSavedWorks }">
               <div
+                v-for="(savedWork, s) in saveNames"
                 :key="s"
                 class="saved-work"
-                v-for="(savedWork, s) in saveNames"
               >
                 <div class="saved-work-name" @click="loadSave(s)">
                   {{ savedWork.name }}
@@ -257,7 +257,10 @@
 
 <script>
 import { mapGetters, mapMutations } from "vuex";
+
 export default {
+  name: "Header",
+  props: ["tracks", "recording", "playing", "recordingsAvailable"],
   data() {
     return {
       menuInstrumentsVisible: false,
@@ -278,8 +281,6 @@ export default {
       filterPresets: [],
     };
   },
-
-  props: ["tracks", "recording", "playing", "recordingsAvailable"],
 
   computed: {
     ...mapGetters(["tempo", "totalBeats"]),
@@ -637,7 +638,6 @@ export default {
 }
 
 //Play/Stop recording
-
 .play-stop {
   .btn {
     background: #004b80;
@@ -645,7 +645,6 @@ export default {
 }
 
 //saves
-
 .saves-buttons {
   display: flex;
   align-items: center;

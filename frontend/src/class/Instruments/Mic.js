@@ -1,31 +1,22 @@
-const Node = require("../Node")
+const hasAudioParams = require("../../composition/hasAudioParams");
+const Node = require("../Node");
 
-const initialGain = 0.5
+const initialGain = 0.5;
 
 class Mic extends Node {
-  static micCount = 0
+  static micCount = 0;
 
   constructor(stream) {
-    super(initialGain)
+    super(initialGain, "Instrument", "Mic");
 
     this.name = "Mic " + ++Mic.micCount;
-    this.nodeType = "Mic"
-    this.nodeRol = "Instrument"
 
-    this.node = Node.context.createDynamicsCompressor()
+    this.node = Node.context.createDynamicsCompressor();
     this.mic = Node.context.createMediaStreamSource(stream);
     this.mic.connect(this.node);
-    this.node.connect(this.outputNode)
+    this.node.connect(this.outputNode);
 
-    this.initAudioParams()
-  }
-
-  setAudioParam(index, value) {
-    let curvedValue = parseFloat(value)
-
-    const param = this.audioParams[index];
-    this.node[param.name].setValueAtTime(curvedValue, 0);
-    this.audioParams[index].value = parseFloat(value);
+    this.initAudioParams();
   }
 
   initAudioParams() {
@@ -50,21 +41,20 @@ class Mic extends Node {
         name: 'release', displayName: 'release', unit: 's',
         minValue: 0, maxValue: 1, value: 0.3,
       },
-    ]
+    ];
+    hasAudioParams(this);
   }
 
-  playNote(i) {
-  }
+  playNote(i) { }
 
-  stopNote(i) {
-  }
+  stopNote(i) { }
 
   destroy() {
-    super.destroy()
-    this.mic.disconnect()
-    this.mic = null
+    super.destroy();
+    this.mic.disconnect();
+    this.mic = null;
   }
 
 }
 
-module.exports = Mic
+module.exports = Mic;

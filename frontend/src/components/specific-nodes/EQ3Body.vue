@@ -1,21 +1,18 @@
 <template>
   <div class="EQ3Body">
     <div
-      class="inner-node-audio-params params-container"
       v-if="Node.innerNodeAudioParams"
+      class="inner-node-audio-params params-container"
     >
       <div class="heading low">Low</div>
       <div class="heading mid">Mid</div>
       <div class="heading high">High</div>
-
+      
       <div
-        class="inner-node-audio-param param"
         v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
         :key="innerNodeAudioParam.name"
-        :class="[
-          getCssNodeName(Node.name + ' ' + innerNodeAudioParam.name),
-          getCssNodeName(innerNodeAudioParam.name),
-        ]"
+        class="inner-node-audio-param param"
+        :class="[ getCssNodeName(innerNodeAudioParam.name) ]"
       >
         <div class="param-container">
           <div class="param-name">
@@ -44,10 +41,8 @@
 <script>
 import Knob from "../Knob";
 export default {
-  data() {
-    return {};
-  },
-
+  name: "EQ3Body",
+  components: { Knob },
   props: ["Node"],
 
   methods: {
@@ -65,9 +60,7 @@ export default {
     },
   },
 
-  components: {
-    Knob,
-  },
+  
 };
 </script>
 

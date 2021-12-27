@@ -1,52 +1,36 @@
-const Node = require("../Node")
+const Node = require("../Node");
+const hasDryWet = require("../../composition/hasDryWet");
+const hasInnerNodeAudioParams = require("../../composition/hasInnerNodeAudioParams");
 
-const initialGain = 1
+const minDelayTime = 0.01;
+const maxDelayTime = 3;
+const initialDelayTime = 0.3;
+const initialFeddback = 0.5;
 
-const minDelayTime = 0.01
-const maxDelayTime = 3
-const initialDelayTime = 0.3
-const initialFeddback = 0.5
+const initialGain = 1;
 
 class Delay extends Node {
-  static delayCount = 0
+  static delayCount = 0;
 
   constructor() {
-    super(initialGain)
+    super(initialGain, "Effect", "Delay");
 
-    this.name = "Delay " + ++Delay.delayCount
-    this.nodeType = "Delay"
+    this.name = "Delay " + ++Delay.delayCount;
 
-    this.delay = Node.context.createDelay(maxDelayTime);
-    this.delay.delayTime.value = initialDelayTime;
+    this.node = Node.context.createDelay(maxDelayTime);
+    this.node.delayTime.value = initialDelayTime;
 
     this.feedbackGain = Node.context.createGain();
     this.feedbackGain.gain.value = initialFeddback;
 
-    this.wetGain = Node.context.createGain();
-    this.dryGain = Node.context.createGain();
+    this.node.connect(this.feedbackGain);
+    this.feedbackGain.connect(this.node);
 
-    this.delay.connect(this.feedbackGain);
-    this.feedbackGain.connect(this.delay);
+    this.inputNode.connect(this.feedbackGain);
 
-    this.delay.connect(this.wetGain);
+    this.initInnerNodeAudioParams();
 
-    this.inputNode.connect(this.feedbackGain)
-    this.inputNode.connect(this.dryGain)
-
-    this.dryGain.connect(this.outputNode)
-    this.wetGain.connect(this.outputNode);
-
-    this.initInnerNodeAudioParams()
-    this.initDryWet()
-  }
-
-  saveString() {
-    return JSON.stringify({
-      nodeType: this.nodeType,
-      gain: this.gain,
-      innerNodeAudioParams: this.this.innerNodeAudioParams,
-      dryWet: this.dryWet
-    })
+    hasDryWet(this);
   }
 
   initInnerNodeAudioParams() {
@@ -54,54 +38,35 @@ class Delay extends Node {
       {
         name: 'delayTime', displayName: 'time', unit: 's',
         minValue: minDelayTime, maxValue: maxDelayTime, value: initialDelayTime,
-        node: this.delay, nodeAudioParam: 'delayTime'
+        node: this.node, nodeAudioParam: 'delayTime'
       },
       {
         name: 'feedback', displayName: 'feedback', unit: '', //%
         minValue: 0, maxValue: 1, value: initialFeddback,
         node: this.feedbackGain, nodeAudioParam: 'gain'
       },
-    ]
+    ];
+
+    hasInnerNodeAudioParams(this);
   }
 
-  setInnerNodeAudioParam(indexOrName, value) {
-    let index = indexOrName
-    if (typeof (indexOrName) !== 'number') index = this.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName)
+  saveString() {
+    const jsonString = {
+      type: this.type,
+    };
 
-    const innerNodeAudioParam = this.innerNodeAudioParams[index];
-    innerNodeAudioParam.node[innerNodeAudioParam.nodeAudioParam].setValueAtTime(value, 0);
-    this.innerNodeAudioParams[index].value = parseFloat(value);
-  }
+    this.saveParams.forEach(param => {
+      jsonString[param.name] = param.value;
+    });
 
-  initDryWet() {
-    this.dryWet = {
-      name: "dry/wet",
-      displayName: "dry/wet",
-      unit: '', //%
-      minValue: 0,
-      maxValue: 1,
-      value: 0,
-    }
-  }
-
-  setDryWet(value) {
-    this.wetGain.gain.value = value
-    this.dryGain.gain.value = value - 1
-    this.dryWet.value = value
+    return JSON.stringify(jsonString);
   }
 
   destroy() {
-    super.destroy()
-    this.delay.disconnect()
-    this.dryGain.disconnect()
-    this.wetGain.disconnect()
-    this.feedbackGain.disconnect()
-
-    this.delay = null
-    this.dryGain = null
-    this.wetGain = null
-    this.feedbackGain = null
+    super.destroy();
+    this.feedbackGain.disconnect();
+    this.feedbackGain = null;
   }
 }
 
-module.exports = Delay
+module.exports = Delay;

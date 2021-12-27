@@ -1,4 +1,3 @@
-//note - freq - wavelength
 module.exports = [
   [16.35],
   [17.32],

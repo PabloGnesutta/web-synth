@@ -1,76 +1,73 @@
-const Node = require("../Node")
-const dirName = "/audio/samples/"
+const Node = require("../Node");
+const dirName = "/audio/samples/";
 
-const initialGain = 1.2
+const initialGain = 1.2;
 
 class Sampler extends Node {
-  static samplerCount = 0
+  static samplerCount = 0;
 
   constructor() {
-    super(initialGain)
+    super(initialGain, "Instrument", "Sampler");
 
-    this.name = "Sampler " + ++Sampler.samplerCount
-    this.nodeType = "Sampler"
-    this.nodeRol = "Instrument"
-    this.buffer = null
-    this.playing = false
+    this.name = "Sampler " + ++Sampler.samplerCount;
+    this.buffer = null;
+    this.playing = false;
 
     this.offset = 0;
     this.duration = 0;
     this.computedDuration = 0;
 
-    this.inputNode.connect(this.outputNode)
+    this.inputNode.connect(this.outputNode);
 
-    this.initSampler()
-    this.initCustomParams()
+    this.initSampler();
+    this.initCustomParams();
   }
 
   async initSampler() {
-    let response = await fetch(dirName + "snaredrum3.wav")
-    let arrayBuffer = await response.arrayBuffer()
-    this.buffer = await Node.context.decodeAudioData(arrayBuffer)
-    this.duration = this.buffer.duration
-    this.computedDuration = this.buffer.duration
+    let response = await fetch(dirName + "snaredrum3.wav");
+    let arrayBuffer = await response.arrayBuffer();
+    this.buffer = await Node.context.decodeAudioData(arrayBuffer);
+    this.duration = this.buffer.duration;
+    this.computedDuration = this.buffer.duration;
   }
 
   loadBuffer(audioBuffer) {
-    if (this.playing) this.buffer.stop(0)
-    this.buffer = audioBuffer
-    this.duration = this.buffer.duration
-    this.computedDuration = this.buffer.duration
+    if (this.playing) this.buffer.stop(0);
+    this.buffer = audioBuffer;
+    this.duration = this.buffer.duration;
+    this.computedDuration = this.buffer.duration;
   }
 
   playNote(i) {
-    this.source = Node.context.createBufferSource()
-    this.source.buffer = this.buffer
-    this.source.detune.value = 100 * i
+    this.source = Node.context.createBufferSource();
+    this.source.buffer = this.buffer;
+    this.source.detune.value = 100 * i;
 
     this.source.start(0, this.offset, this.computedDuration);
     this.source.connect(this.outputNode);
-    this.playing = true
+    this.playing = true;
     this.source.onended = () => {
-      this.playing = false
-      this.source.disconnect()
-    }
+      this.playing = false;
+      this.source.disconnect();
+    };
   }
 
   stopSample() {
-    this.source.stop(0)
-    this.source.disconnect()
+    this.source.stop(0);
+    this.source.disconnect();
   }
 
-  stopNote(i) {
-  }
+  stopNote(i) { }
 
   onOtherKeyup(key) { }
 
   initCustomParams() {
     const setOffset = (value) => {
-      this.offset = value
-    }
+      this.offset = value;
+    };
     const setDuration = (value) => {
-      this.computedDuration = this.duration - this.offset - value
-    }
+      this.computedDuration = this.duration - this.offset - value;
+    };
 
     this.customParams = [
       {
@@ -80,7 +77,7 @@ class Sampler extends Node {
         minValue: 0,
         maxValue: 5,
         value: 0,
-        set(v) { setOffset(v) }
+        set(v) { setOffset(v); }
       },
       {
         name: "duration",
@@ -89,21 +86,21 @@ class Sampler extends Node {
         minValue: 0,
         maxValue: 5,
         value: 0,
-        set(v) { setDuration(v) }
+        set(v) { setDuration(v); }
       }
-    ]
+    ];
   }
 
   setCustomParam(index, value) {
     const customParam = this.customParams[index];
-    customParam.value = value
-    customParam.set(parseFloat(value))
+    customParam.value = value;
+    customParam.set(parseFloat(value));
   }
 
   destroy() {
-    super.destroy()
-    this.buffer = null
+    super.destroy();
+    this.buffer = null;
   }
 }
 
-module.exports = Sampler
+module.exports = Sampler;

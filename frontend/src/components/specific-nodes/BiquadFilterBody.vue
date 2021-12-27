@@ -1,11 +1,10 @@
 <template>
   <div class="FilterBody">
-    <div class="audio-params params-container">
       <!-- Audio Params -->
+    <div class="audio-params params-container">
       <div
-        :key="audioParam.name"
         v-for="(audioParam, apIndex) in Node.audioParams"
-        :class="[getCssNodeName(Node.name + ' ' + audioParam.name)]"
+        :key="audioParam.name"
       >
         <div
           class="audio-param param"
@@ -18,7 +17,7 @@
             !(Node.type === 'highpass' && audioParam.name === 'gain')
           "
         >
-          <div class="param-name connectable">
+          <div class="param-name">
             {{ audioParam.displayName }}
           </div>
 
@@ -45,8 +44,8 @@
         <span>LFO</span>
         <select @input="setModType($event)">
           <option
-            :key="modType"
             v-for="modType in Node.modTypes"
+            :key="modType"
             :selected="modType === Node.modType"
           >
             {{ modType }}
@@ -57,15 +56,11 @@
       <!-- Inner Node Audio Params -->
       <div class="inner-node-audio-params">
         <div
-          class="inner-node-audio-param param"
           v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
           :key="innerNodeAudioParam.name"
-          :class="[
-            getCssNodeName(Node.name + ' ' + innerNodeAudioParam.name),
-            getCssNodeName(innerNodeAudioParam.name),
-          ]"
+          class="inner-node-audio-param param"
         >
-          <div class="param-name connectable">
+          <div class="param-name">
             {{ innerNodeAudioParam.displayName }}
           </div>
 
@@ -103,7 +98,7 @@
         </div>
       </div>
 
-      <!-- Set as TEmpo -->
+      <!-- Set as Tempo -->
       <div class="set-as-tempo" @click="setAsTempo">SET AS ROUGH TEMPO</div>
     </div>
   </div>
@@ -113,6 +108,10 @@
 import { mapGetters, mapMutations } from "vuex";
 import Knob from "../Knob";
 export default {
+  name: "BiquadFilterBody",
+  components: { Knob },
+  props: ["Node"],
+
   data() {
     return {
       sync: false,
@@ -131,7 +130,6 @@ export default {
     };
   },
 
-  props: ["Node"],
   computed: {
     ...mapGetters(["secondsPerBeat", "tempo"]),
   },
@@ -165,7 +163,6 @@ export default {
     },
 
     setSync(i) {
-      console.log("spb", this.secondsPerBeat, "tempo", this.tempo);
       this.syncButtonSelected = i;
       const frequency = this.secondsPerBeat * 2 * this.syncButtons[i].value;
 
@@ -185,14 +182,6 @@ export default {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
       this.$emit("knobClicked", knobRef);
     },
-
-    getCssNodeName(name) {
-      return name.replace(new RegExp(" ", "g"), "-");
-    },
-  },
-
-  components: {
-    Knob,
   },
 };
 </script>
