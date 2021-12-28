@@ -47,11 +47,11 @@ class Surgeon extends Node {
     this.initSurgeonParams();
   }
 
-  playNote(i) {
+  playNote(noteFreqIndex) {
     //polyphony
     const index = this.getFirstAvailable();
     if (index === -1) return;
-    this.setInUse(index, i);
+    this.setInUse(index, noteFreqIndex);
 
     const gains = Array(this.oscillatorsPerNote.length);
     const ADSRGains = Array(this.oscillatorsPerNote.length);
@@ -65,7 +65,7 @@ class Surgeon extends Node {
     for (let o = 0; o < this.oscillatorsPerNote; o++) {
       const { A, D, S, detune, gain, octave, transpose, peak, type, destination } = this.oscillatorGroupProps[o];
 
-      let noteIndex = i + 12 * octave + transpose;
+      let noteIndex = noteFreqIndex + 1 * octave + transpose;
       if (noteIndex < 0) noteIndex = 0;
       else if (noteIndex > noteFrequencies.length - 1) noteIndex = noteFrequencies.length - 1;
 

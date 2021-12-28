@@ -6,7 +6,11 @@
       @touchend.prevent="onPadTouchEnd"
       @touchcancel.prevent="onPadTouchCancel"
       @touchmove.prevent="onPadTouchMove"
-    ></div>
+    >
+      <p v-for="(log, l) in logs" :key="l">
+        {{ log }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -15,36 +19,33 @@ export default {
   name: 'Pad',
   data() {
     return {
+      logs: [],
       bounding: null,
       height: null,
       width: null,
-      currentIndex: null,
+      noteFreqIndex: null,
     };
   },
   mounted() {
-    const padDiv = document.querySelector('.pad');
-    this.bounding = padDiv.getBoundingClientRect();
-    this.height = this.bounding.height;
-    this.width = this.bounding.width;
+    this.getPadDimensions();
   },
 
   methods: {
     onPadTouchStart(e) {
-      const padX = e.touches[0].clientX - this.bounding.x;
-      const xPercent = (padX / this.width) * 100;
-
       const padY = e.touches[0].clientY - this.bounding.y;
-      const yPercent = Math.round((padY / this.height) * 100);
-
-      this.currentIndex = Math.round(yPercent.map(0, 100, 0, 12));
-      // console.log(this.currentIndex)
-      console.log(e);
-      this.$emit('onPadTouchStart', this.currentIndex);
+      this.noteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
+      console.log(e.changedTouches);
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        this.log('++started ' + e.changedTouches[i].identifier);
+      }
+      this.$emit('onPadTouchStart', this.noteFreqIndex);
     },
 
     onPadTouchEnd(e) {
-      console.log(e);
-      this.$emit('onPadTouchEnd', this.currentIndex);
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        this.log('----ended ' + e.changedTouches[i].identifier);
+      }
+      this.$emit('onPadTouchEnd', this.noteFreqIndex);
     },
 
     onPadTouchCancel(e) {
@@ -52,24 +53,29 @@ export default {
     },
 
     onPadTouchMove(e) {
-      const padX = e.touches[0].clientX - this.bounding.x;
-      const xPercent = (padX / this.width) * 100;
-
       const padY = e.touches[0].clientY - this.bounding.y;
-      const yPercent = Math.round((padY / this.height) * 100);
+      const newNoteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
 
-      const newIndex = Math.round(yPercent.map(0, 100, 0, 12));
-      if (newIndex !== this.currentIndex) {
-        this.$emit('onPadTouchEnd', this.currentIndex);
-        this.currentIndex = newIndex;
-        this.$emit('onPadTouchStart', this.currentIndex);
+      if (newNoteFreqIndex !== this.noteFreqIndex) {
+        this.$emit('onPadTouchEnd', this.noteFreqIndex);
+        this.noteFreqIndex = newNoteFreqIndex;
+        this.$emit('onPadTouchStart', this.noteFreqIndex);
       }
+    },
+    log(msg) {
+      this.logs.unshift(msg);
+    },
+    getPadDimensions() {
+      const padDiv = document.querySelector('.pad');
+      this.bounding = padDiv.getBoundingClientRect();
+      this.height = this.bounding.height;
+      this.width = this.bounding.width;
     },
   },
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .pad-container {
   position: fixed;
   padding: 0.5rem;
@@ -86,7 +92,15 @@ export default {
   width: calc(100vw - 1rem);
   background: teal;
   user-select: none;
-  background: linear-gradient(#e66465, #071cff);
+  background: linear-gradient(coral, teal);
+  p {
+    text-align: left;
+    font-size: 1.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    padding: 3px;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
 }
 @media (min-width: 500px) {
   .pad-container {
