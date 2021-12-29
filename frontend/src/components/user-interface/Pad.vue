@@ -33,16 +33,14 @@ export default {
 
   methods: {
     onPadTouchStart(e) {
-      const padY = e.touches[0].clientY - this.bounding.y;
-      const noteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
-      console.log(e);
       for (let i = 0; i < e.changedTouches.length; i++) {
         this.log('++started ' + e.changedTouches[i].identifier + ' note ' + noteFreqIndex);
         if (e.changedTouches[i].force) {
+          const padY = e.touches[0].clientY - this.bounding.y;
+          const noteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
           this.touches[e.changedTouches[i].identifier] = noteFreqIndex;
         }
       }
-      // this.touches[]
       this.$emit('onPadTouchStart', noteFreqIndex);
     },
 
