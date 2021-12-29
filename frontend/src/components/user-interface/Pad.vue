@@ -1,5 +1,6 @@
 <template>
   <div class="pad-container">
+    <div>TOP</div>
     <div
       class="pad"
       @touchstart.prevent="onPadTouchStart"
@@ -96,7 +97,7 @@ export default {
 <style lang="scss" scoped>
 .pad-container {
   position: fixed;
-  padding: 0.5rem;
+  padding: 0;
   top: 0;
   left: 0;
   z-index: 99999;
@@ -107,7 +108,7 @@ export default {
 }
 .pad {
   height: calc(100vh - 1rem);
-  width: calc(100vw - 1rem);
+  // width: calc(100vw - 1rem);
   background: teal;
   user-select: none;
   background: linear-gradient(coral, teal);
