@@ -24,6 +24,7 @@ export default {
       height: null,
       width: null,
       noteFreqIndex: null,
+      touches: [],
     };
   },
   mounted() {
@@ -33,19 +34,26 @@ export default {
   methods: {
     onPadTouchStart(e) {
       const padY = e.touches[0].clientY - this.bounding.y;
-      this.noteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
-      console.log(e.changedTouches);
+      const noteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
+      console.log(e);
       for (let i = 0; i < e.changedTouches.length; i++) {
         this.log('++started ' + e.changedTouches[i].identifier);
+        if (e.changedTouches[i].force) {
+          this.touches[e.changedTouches[i].identifier] = noteFreqIndex;
+        }
       }
-      this.$emit('onPadTouchStart', this.noteFreqIndex);
+      // this.touches[]
+      this.$emit('onPadTouchStart', noteFreqIndex);
     },
 
     onPadTouchEnd(e) {
       for (let i = 0; i < e.changedTouches.length; i++) {
         this.log('----ended ' + e.changedTouches[i].identifier);
+        if (!e.changedTouches[i].force) {
+          this.$emit('onPadTouchEnd', this.touches[e.changedTouches[i].identifier]);
+          this.touches[e.changedTouches[i].identifier] = null;
+        }
       }
-      this.$emit('onPadTouchEnd', this.noteFreqIndex);
     },
 
     onPadTouchCancel(e) {
@@ -56,12 +64,18 @@ export default {
       const padY = e.touches[0].clientY - this.bounding.y;
       const newNoteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
 
-      if (newNoteFreqIndex !== this.noteFreqIndex) {
-        this.$emit('onPadTouchEnd', this.noteFreqIndex);
-        this.noteFreqIndex = newNoteFreqIndex;
-        this.$emit('onPadTouchStart', this.noteFreqIndex);
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        this.log('----moved ' + e.changedTouches[i].identifier);
+        if (e.changedTouches[i].force) {
+          if (newNoteFreqIndex !== this.touches[e.changedTouches[i].identifier]) {
+            this.$emit('onPadTouchEnd', this.touches[e.changedTouches[i].identifier]);
+            this.touches[e.changedTouches[i].identifier] = newNoteFreqIndex;
+            this.$emit('onPadTouchStart', newNoteFreqIndex);
+          }
+        }
       }
     },
+
     log(msg) {
       this.logs.unshift(msg);
     },
