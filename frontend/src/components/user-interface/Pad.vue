@@ -47,13 +47,13 @@ export default {
 
     onPadTouchEnd(e) {
       for (let i = 0; i < e.changedTouches.length; i++) {
-        this.log(
-          '----ended ' +
-            e.changedTouches[i].identifier +
-            ' note ' +
-            this.touches[e.changedTouches[i].identifier]
-        );
         if (!e.changedTouches[i].force) {
+          this.log(
+            '----ended ' +
+              e.changedTouches[i].identifier +
+              ' note ' +
+              this.touches[e.changedTouches[i].identifier]
+          );
           this.$emit('onPadTouchEnd', this.touches[e.changedTouches[i].identifier]);
           this.touches[e.changedTouches[i].identifier] = null;
         }

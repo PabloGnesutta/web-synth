@@ -65,6 +65,7 @@ class Surgeon extends Node {
     for (let o = 0; o < this.oscillatorsPerNote; o++) {
       const { A, D, S, detune, gain, octave, transpose, peak, type, destination } = this.oscillatorGroupProps[o];
 
+      // todo: add 1 instead of 12 in all instruments
       let noteIndex = noteFreqIndex + 1 * octave + transpose;
       if (noteIndex < 0) noteIndex = 0;
       else if (noteIndex > noteFrequencies.length - 1) noteIndex = noteFrequencies.length - 1;
