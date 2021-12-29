@@ -160,6 +160,7 @@ import Pad from '@/components/user-interface/Pad';
 import Header from '../components/Header';
 import Click from '../components/Click';
 import Knob from '../components/Knob';
+import { reverse } from '../data/noteFrequencies';
 
 export default {
   name: 'Home',
@@ -252,7 +253,8 @@ export default {
       this.createMainGain();
       this.createTrack(new Surgeon());
       this.insertEffect(new Delay())
-      // this.createTrack(new Femod());
+      this.createTrack(new Femod());
+      this.insertEffect(new Reverb())
 
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
