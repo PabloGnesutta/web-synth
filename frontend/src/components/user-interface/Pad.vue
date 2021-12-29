@@ -13,7 +13,7 @@
           v-for="n in notes"
           :key="n"
           class="band"
-          :style="{ backgroundColor: `rgba(${20 * n + 10}, ${10 * n + 10}, ${8 * n + 10})` }"
+          :style="{ backgroundColor: `rgba(${20 * n + 12}, ${12 * n + 12}, ${8 * n + 12})` }"
         ></div>
       </div>
       <p v-for="(log, l) in logs" :key="l">{{ log }}</p>
@@ -45,7 +45,7 @@ export default {
         // if (e.changedTouches[i].force) {
         const touch = e.changedTouches[i];
         const padY = touch.clientY - this.bounding.y;
-        const noteFreqIndex = Math.round(padY.map(0, this.height, 0, this.notes));
+        const noteFreqIndex = Math.floor(padY.map(0, this.height, 0, this.notes));
         this.touches[touch.identifier] = noteFreqIndex;
         this.$emit('onPadTouchStart', noteFreqIndex);
         // }
@@ -70,7 +70,7 @@ export default {
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
         const padY = touch.clientY - this.bounding.y;
-        const newNoteFreqIndex = Math.round(padY.map(0, this.height, 0, this.notes));
+        const newNoteFreqIndex = Math.floor(padY.map(0, this.height, 0, this.notes));
 
         if (newNoteFreqIndex !== this.touches[touch.identifier]) {
           this.$emit('onPadTouchEnd', this.touches[touch.identifier]);
