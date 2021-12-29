@@ -47,6 +47,7 @@ export default {
 
     onPadTouchEnd(e) {
       for (let i = 0; i < e.changedTouches.length; i++) {
+        this.log('--on end ' + e.changedTouches[i].identifier + ' force ' + e.changedTouches[i].force);
         if (!e.changedTouches[i].force) {
           this.log(
             '----ended ' +
