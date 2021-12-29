@@ -40,9 +40,9 @@ export default {
           const noteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
           this.log('++started ' + e.changedTouches[i].identifier + ' note ' + noteFreqIndex);
           this.touches[e.changedTouches[i].identifier] = noteFreqIndex;
+          this.$emit('onPadTouchStart', noteFreqIndex);
         }
       }
-      this.$emit('onPadTouchStart', noteFreqIndex);
     },
 
     onPadTouchEnd(e) {
