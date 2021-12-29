@@ -8,12 +8,13 @@
       @touchcancel.prevent="onPadTouchCancel"
       @touchmove.prevent="onPadTouchMove"
     >
-      <div class="under" @touchstart.prevent="underTouchStart">
+      <div class="under">
         <div
           v-for="n in notes"
           :key="n"
           class="band"
-          :style="{ backgroundColor: `rgba(${20 * n + 12}, ${12 * n + 12}, ${8 * n + 12})` }"
+          :style="{ backgroundColor: `rgba(${18 * n + 12}, ${12 * n + 12}, ${10 * n + 18})` }"
+          @touchstart.prevent="underTouchStart"
         ></div>
       </div>
       <p v-for="(log, l) in logs" :key="l">{{ log }}</p>
@@ -127,7 +128,6 @@ export default {
   position: relative;
   z-index: 10;
   height: calc(100vh - 1rem);
-  // width: calc(100vw - 1rem);
   background: teal;
   user-select: none;
   background: transparent;
@@ -147,10 +147,13 @@ export default {
   left: 0;
   width: 100%;
   height: 100vh;
+  // height: calc((100vh - 1rem));
   .band {
-    // background: red;
     height: calc((100vh - 1rem) / 12);
   }
+}
+.band:active {
+  background: white;
 }
 
 @media (min-width: 500px) {

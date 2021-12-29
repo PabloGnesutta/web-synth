@@ -16,7 +16,7 @@ module.exports = function hasDryWet(target) {
     unit: '', //%
     minValue: 0,
     maxValue: 1,
-    value: 1,
+    value: 0.5,
   };
 
   target.setDryWet = function (value) {

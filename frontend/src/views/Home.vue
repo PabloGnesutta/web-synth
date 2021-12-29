@@ -251,7 +251,8 @@ export default {
 
       this.createMainGain();
       this.createTrack(new Surgeon());
-      // this.insertEffect(new Distortion())
+      this.insertEffect(new Delay())
+      // this.createTrack(new Femod());
 
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
