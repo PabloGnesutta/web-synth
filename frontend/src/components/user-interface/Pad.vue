@@ -37,7 +37,7 @@ export default {
       const noteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
       console.log(e);
       for (let i = 0; i < e.changedTouches.length; i++) {
-        this.log('++started ' + e.changedTouches[i].identifier);
+        this.log('++started ' + e.changedTouches[i].identifier + ' note ' + noteFreqIndex);
         if (e.changedTouches[i].force) {
           this.touches[e.changedTouches[i].identifier] = noteFreqIndex;
         }
@@ -48,7 +48,12 @@ export default {
 
     onPadTouchEnd(e) {
       for (let i = 0; i < e.changedTouches.length; i++) {
-        this.log('----ended ' + e.changedTouches[i].identifier);
+        this.log(
+          '----ended ' +
+            e.changedTouches[i].identifier +
+            ' note ' +
+            this.touches[e.changedTouches[i].identifier]
+        );
         if (!e.changedTouches[i].force) {
           this.$emit('onPadTouchEnd', this.touches[e.changedTouches[i].identifier]);
           this.touches[e.changedTouches[i].identifier] = null;
@@ -63,7 +68,6 @@ export default {
     onPadTouchMove(e) {
       // const padY = e.touches[0].clientY - this.bounding.y;
       // const newNoteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
-
       // for (let i = 0; i < e.changedTouches.length; i++) {
       //   this.log('----moved ' + e.changedTouches[i].identifier);
       //   if (e.changedTouches[i].force) {
