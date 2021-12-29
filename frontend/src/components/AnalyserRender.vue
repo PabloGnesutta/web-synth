@@ -134,7 +134,7 @@ export default {
 }
 canvas {
   width: 13px;
-  height: 256px;
+  height: 3rem;
   display: block;
   background: pink;
   cursor: pointer;

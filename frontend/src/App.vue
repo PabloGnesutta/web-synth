@@ -45,16 +45,29 @@ select:focus {
   outline: none;
 }
 
-.track-inner::-webkit-scrollbar {
-  height: 8px;
+canvas {
+  display: block;
 }
 
-.track-inner::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 3px grey;
+.custom-scrollbar::-webkit-scrollbar {
+  height: 10px;
+  width: 12px;
 }
 
-.track-inner::-webkit-scrollbar-thumb {
-  background: var(--color-2);
+.custom-scrollbar::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 2px #fff;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgb(228, 173, 154);
+}
+
+.select-none {
+  user-select: none;
+}
+
+.cursor-default {
+  cursor: default;
 }
 
 #app {

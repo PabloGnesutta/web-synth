@@ -34,7 +34,8 @@ export default {
       displayValue: 0,
 
       calib: 2,
-      fineTuneStep: 0.1,
+      fineTuneStep: 0.2,
+      microTuneStep: 0.1,
       finerTuneStep: 0.01,
 
       deg: 0,
@@ -100,8 +101,8 @@ export default {
 
       if (e.ctrlKey || e.shiftKey) {
         amount = this.fineTuneStep;
-        if (this.ctrlKey && this.shiftKey) {
-          amount = 0.05;
+        if (e.ctrlKey && e.shiftKey) {
+          amount = this.microTuneStep;
         }
       }
 

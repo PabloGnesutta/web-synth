@@ -1,12 +1,13 @@
+
 <template>
-  <div class="container">
+  <div class="node-render">
     <div
       :ref="Node.name"
       class="node"
       :class="[Node.nodeType, getCssNodeName(Node.name), { folded: folded }]"
     >
-      <!-- Top Bar -->
-      <div class="top-bar">
+      <!-- Node Header -->
+      <div class="node-header">
         <div class="top-left">
           <div
             v-if="Node.nodeRol === 'Instrument'"
@@ -15,7 +16,10 @@
           >
             <div class="instrument-enabler-inner" :class="{ enabled: instrumentEnabled }"></div>
           </div>
-          <div v-if="Node.saveString" class="save-preset" @click="savePreset()">Guardar</div>
+          <div v-if="Node.saveString" class="save-preset" @click="savePreset()">[G]</div>
+        </div>
+        <div class="node-name-container">
+          <div class="node-name" @click.stop="toggleFolded">{{ Node.name }}</div>
         </div>
         <div class="top-right" v-if="Node.name !== 'Track Gain'">
           <div class="delete" @click="deleteNode()">X</div>
@@ -24,11 +28,6 @@
 
       <div v-if="folded" class="backdrop" @click.stop="toggleFolded">
         <div class="name-folded">{{ Node.name }}</div>
-      </div>
-
-      <!-- Node Header -->
-      <div class="node-header">
-        <div class="node-name" @click.stop="toggleFolded">{{ Node.name }}</div>
       </div>
 
       <!-- Node Body -->
@@ -104,22 +103,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Track Gain -->
-      <div v-if="Node.name === 'Track Gain'" class="node-controls">
-        <div class="rec-enabled-disabled" @click="toggleRecEnabled">
-          <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
-          <div v-else class="rec-btn rec-disabled">Rec disabled</div>
-        </div>
-        <div class="mute-unmute" @click="toggleMute">
-          <div v-if="Node.muted" class="unmute">M</div>
-          <div v-else class="mute">M</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="analyser-wrapper" v-if="analyser">
-      <AnalyserRender :analyser="analyser" />
     </div>
   </div>
 </template>
@@ -128,7 +111,6 @@
 import { mapGetters, mapMutations } from 'vuex';
 
 import Knob from './Knob';
-import AnalyserRender from './AnalyserRender';
 import DelayBody from './specific-nodes/DelayBody';
 import EQ3Body from './specific-nodes/EQ3Body.vue';
 import LooperBody from './specific-nodes/LooperBody.vue';
@@ -150,16 +132,15 @@ export default {
     SurgeonBody,
     FemodBody,
     BiquadFilterBody,
-    AnalyserRender,
     SamplerBody,
     BaseNodeBody,
   },
-  props: ['Node', 'analyser', 'recEnabled', 'instrumentEnabled'],
+
+  props: ['Node', 'instrumentEnabled'],
 
   data() {
     return {
       folded: false,
-      muted: false,
       loopStatus: 'CLEARED',
       presetCandidates: ['Surgeon', 'Femod'],
     };
@@ -169,20 +150,11 @@ export default {
     ...mapGetters(['context', 'appConnecting', 'originNode']),
   },
 
-  mounted() {
-    console.log('NodeRender mounted', this.Node);
-  },
-
   methods: {
     ...mapMutations(['setAppConnecting', 'setOriginNode']),
 
-    toggleRecEnabled() {
-      this.$emit('toggleRecEnabled');
-    },
-
-    toggleMute() {
-      this.muted = !this.muted;
-      this.Node.toggleMute();
+    setNodeGain(value) {
+      this.Node.setGain(value);
     },
 
     toggleFolded() {
@@ -246,10 +218,6 @@ export default {
       this.Node.setDryWet(parseFloat(value));
     },
 
-    setNodeGain(value) {
-      this.Node.setGain(value);
-    },
-
     knobClicked(knobName) {
       const knobRef = this.$refs[knobName][0] || this.$refs[knobName];
       this.$emit('knobClicked', knobRef);
@@ -275,9 +243,10 @@ export default {
 </script>
 
 <style lang="scss">
-.container {
-  display: flex;
-  align-items: flex-end;
+.node-render {
+  // display: flex;
+  // align-items: flex-end;
+  height: 100%;
 }
 
 .node {
@@ -289,27 +258,15 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: border-color 0.2s ease-out;
+  transition: all 0.2s ease-out;
   gap: 0em;
-  .node-name {
-    font-size: 1rem;
-    text-align: left;
-    padding: 0.5em 0;
-    display: inline-block;
-    user-select: none;
-    text-align: center;
-    cursor: pointer;
-    position: relative;
-  }
+
+  max-height: 365px;
 }
 
 .node.folded {
   width: 34px;
-  max-height: 340px;
   overflow: hidden;
-  .node-header {
-    display: none;
-  }
   .backdrop {
     display: block;
     position: absolute;
@@ -329,34 +286,30 @@ export default {
       letter-spacing: 1px;
     }
   }
-  .delete,
-  .fold-unfold {
-    display: none;
-  }
 }
 
-.Modulator .node-name {
-  cursor: pointer;
-}
-
-.node.Track-Gain {
-  padding: 1em;
-  border: 1px solid rgb(150, 255, 255);
-  min-height: 257px;
-}
-
-.top-bar {
-  position: absolute;
-  width: 100%;
-  height: 20px;
+.node-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
   .top-left {
     display: flex;
     gap: 0.2em;
     .save-preset {
-      font-size: 0.8rem;
+      cursor: pointer;
     }
+  }
+  .node-name-container {
+    text-align: center;
+    flex: 1;
+    user-select: none;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .top-right {
+    display: flex;
+    justify-content: flex-end;
   }
 }
 
@@ -383,7 +336,7 @@ export default {
   z-index: 1;
 }
 
-.node-header {
+.node-name-container {
   text-align: center;
 }
 .types {
@@ -394,7 +347,6 @@ export default {
 // PARAMS
 
 .params-container {
-  // padding-bottom: 0.2em;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -462,21 +414,12 @@ export default {
   width: 200px;
 }
 
-.Gain {
-  width: 80px;
-}
-
 .BiquadFilter {
   width: 200px;
 }
 
-.Track-Gain {
-  width: 135px;
-  .node-name {
-    font-size: 1.1rem;
-    padding: 0;
-    text-align: center;
-  }
+.Gain {
+  width: 80px;
 }
 
 .node-footer {
@@ -509,58 +452,35 @@ export default {
   border: 1px solid red;
 }
 
-// .outputs {
-//   text-align: left;
-//   margin-top: 0.5em;
-// }
-
-// .output {
-//   cursor: pointer;
-//   padding: 0.2em;
-//   font-size: 0.9rem;
-//   color: var(--color-1);
-//   margin-bottom: 0.4em;
-// }
-
-// .output:hover {
-//   color: var(--color-2);
-// }
-
-// .param.is-connection-destination,
-// .level.is-connection-destination {
-//   border: 2px solid white;
-//   background: var(--color-2);
-// }
-
 // Track gain
-.rec-enabled-disabled {
-  cursor: pointer;
-  margin-bottom: 1em;
-}
-.rec-btn {
-  user-select: none;
-}
-.rec-enabled {
-  color: red;
-}
-.rec-disabled {
-  color: gray;
-}
+// .rec-enabled-disabled {
+//   cursor: pointer;
+//   margin-bottom: 1em;
+// }
+// .rec-btn {
+//   user-select: none;
+// }
+// .rec-enabled {
+//   color: red;
+// }
+// .rec-disabled {
+//   color: gray;
+// }
 
-.mute-unmute {
-  cursor: pointer;
-  .mute,
-  .unmute {
-    width: 30px;
-    padding: 0.2em;
-    margin: 0 auto;
-    text-align: center;
-  }
-  .mute {
-    background: #111;
-  }
-  .unmute {
-    background: red;
-  }
-}
+// .mute-unmute {
+//   cursor: pointer;
+//   .mute,
+//   .unmute {
+//     width: 30px;
+//     padding: 0.2em;
+//     margin: 0 auto;
+//     text-align: center;
+//   }
+//   .mute {
+//     background: #111;
+//   }
+//   .unmute {
+//     background: red;
+//   }
+// }
 </style>

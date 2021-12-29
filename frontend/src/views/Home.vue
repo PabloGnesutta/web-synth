@@ -1,5 +1,5 @@
 <template>
-  <div class="Home">
+  <div class="home">
     <div class="inited" v-if="inited">
       <div class="top-section">
         <div class="header-wrapper">
@@ -27,27 +27,49 @@
         </div>
       </div>
 
-      <!-- TRACKS -->
-      <div class="tracks" :class="{ mapping: mapping }">
-        <div
-          class="track"
-          :key="track.name"
-          v-for="(track, t) in tracks"
-          :class="{
-            selected: currentTrackIndex === t,
-            connecting: appConnecting,
-          }"
-          @click="selectTrack(t)"
-        >
-          <div class="track-inner" :class="'track-inner_' + t">
+      <div class="main-section">
+        <!-- TRACKS -->
+        <div class="tracks custom-scrollbar" :class="{ mapping: mapping }">
+          <div
+            class="track"
+            :key="track.name"
+            v-for="(track, t) in tracks"
+            :class="{
+              selected: currentTrackIndex === t,
+              connecting: appConnecting,
+            }"
+            @click.self="selectTrack(t)"
+          >
+            <div class="track-inner-left" @click="selectTrack(t)">
+              <div class="select-none cursor-default">{{ track.name }}</div>
+              <div class="select-none cursor-default">{{ track.instrument.nodeType }}</div>
+            </div>
+
+            <!-- Track Gain and Controls -->
+            <GainBody
+              :Node="track.trackGain"
+              :analyser="track.trackGainAnalyser"
+              :recEnabled="track.recEnabled"
+              @knobClicked="knobClicked"
+            />
+          </div>
+        </div>
+
+        <!-- Current Track Detail -->
+        <div class="track-detail-container">
+          <div
+            v-if="currentTrack"
+            class="track-detail custom-scrollbar"
+            :class="'track-detail_' + currentTrackIndex"
+          >
             <!-- Instrument -->
             <div class="track-instrument">
               <NodeRender
-                :Node="track.instrument"
-                :analyser="track.instrumentAnalyser"
-                :instrumentEnabled="track.instrumentEnabled"
-                @deleteNode="deleteTrack(t)"
-                @toggleInstrumentEnabled="toggleInstrumentEnabled(t)"
+                :Node="currentTrack.instrument"
+                :analyser="currentTrack.instrumentAnalyser"
+                :instrumentEnabled="currentTrack.instrumentEnabled"
+                @deleteNode="deleteTrack"
+                @toggleInstrumentEnabled="toggleInstrumentEnabled"
                 @knobClicked="knobClicked"
               />
             </div>
@@ -55,34 +77,23 @@
             <!-- Effects -->
             <div class="track-effects">
               <NodeRender
-                v-for="(Node, n) in track.effects"
+                v-for="(Node, n) in currentTrack.effects"
                 :Node="Node"
                 :analyser="Node.analyser"
                 :key="n"
                 :ref="'Node-' + n"
-                @deleteNode="deleteEffect(t, n)"
+                @deleteNode="deleteEffect(n)"
                 @levelClicked="levelClicked(Node)"
                 @knobClicked="knobClicked"
               />
               <div class="track-right-placeholder"></div>
             </div>
           </div>
-
-          <!-- Track Gain -->
-          <div class="track-gain">
-            <NodeRender
-              :Node="track.trackGain"
-              :analyser="track.trackGainAnalyser"
-              :recEnabled="track.recEnabled"
-              @toggleRecEnabled="toggleRecEnabled(t)"
-              @knobClicked="knobClicked"
-            />
-          </div>
         </div>
       </div>
-
       <!-- xyPad -->
       <Pad
+        v-if="false"
         @onPadTouchStart="onPadTouchStart"
         @onPadTouchEnd="onPadTouchEnd"
         @onPadTouchCancel="onPadTouchCancel"
@@ -90,7 +101,7 @@
       />
 
       <!-- Main Gain -->
-      <div class="section-inner Main-Gain">
+      <div class="section-inner main-gain">
         <h3>Main Gain</h3>
         <div class="knob-wrapper" @click="knobClicked('MainGain')">
           <Knob
@@ -155,11 +166,11 @@ const effectsDict = new Map([
 
 import { mapMutations, mapGetters } from 'vuex';
 import NodeRender from '../components/NodeRender';
+import GainBody from '../components/specific-nodes/GainBody';
 import Pad from '@/components/user-interface/Pad';
 import Header from '../components/Header';
 import Click from '../components/Click';
 import Knob from '../components/Knob';
-import { reverse } from '../data/noteFrequencies';
 
 export default {
   name: 'Home',
@@ -169,6 +180,7 @@ export default {
     Click,
     Header,
     NodeRender,
+    GainBody,
   },
   data() {
     return {
@@ -176,6 +188,7 @@ export default {
 
       tracks: [],
       trackCount: 0,
+      currentTrack: null,
       currentTrackIndex: 0,
 
       mainGain: null,
@@ -233,7 +246,7 @@ export default {
       navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
     }
 
-    document.querySelector('.Home').addEventListener('click', this.init);
+    document.querySelector('.home').addEventListener('click', this.init);
   },
 
   methods: {
@@ -245,7 +258,7 @@ export default {
 
     init() {
       this.addConfirmLeaveHandler();
-      document.querySelector('.Home').removeEventListener('click', this.init);
+      document.querySelector('.home').removeEventListener('click', this.init);
       this.setContext(new (window.AudioContext || window.webkitAudioContext)());
       Node.context = this.context;
 
@@ -311,26 +324,24 @@ export default {
       });
     },
 
-    deleteTrack(t) {
-      let track = this.tracks[t];
-
-      let index = this.keypressListeners.findIndex(listener => listener.trackName === track.name);
+    deleteTrack() {
+      let index = this.keypressListeners.findIndex(listener => listener.trackName === this.currentTrack.name);
       if (index !== -1) this.keypressListeners.splice(index, 1);
-      index = this.numpadListeners.findIndex(listener => listener.trackName === track.name);
+      index = this.numpadListeners.findIndex(listener => listener.trackName === this.currentTrack.name);
       if (index !== -1) this.numpadListeners.splice(index, 1);
-      index = this.xyPadListeners.findIndex(listener => listener.trackName === track.name);
+      index = this.xyPadListeners.findIndex(listener => listener.trackName === this.currentTrack.name);
       if (index !== -1) this.xyPadListeners.splice(index, 1);
 
       //remove track
-      track.instrument.destroy();
-      track.instrument = null;
-      track.trackGain.destroy();
-      track.trackGain = null;
-      track.effects.forEach(effect => {
+      this.currentTrack.instrument.destroy();
+      this.currentTrack.instrument = null;
+      this.currentTrack.trackGain.destroy();
+      this.currentTrack.trackGain = null;
+      this.currentTrack.effects.forEach(effect => {
         effect.destroy();
         effect = null;
       });
-      track = null;
+      this.currentTrack = null;
       this.tracks.splice(t, 1);
     },
 
@@ -342,26 +353,26 @@ export default {
     },
 
     insertEffect(Node) {
-      const track = this.tracks[this.currentTrackIndex];
-      const effects = track.effects;
-      const prev = effects[effects.length - 1] || track.instrument;
-      const next = track.trackGain;
+      const effects = this.currentTrack.effects;
+      const prev = effects[effects.length - 1] || this.currentTrack.instrument;
+      const next = this.currentTrack.trackGain;
 
       prev.disconnect().connect(Node).connect(next);
       effects.push(Node);
       this.$nextTick(() => {
-        const trackInnerClass = '.track-inner_' + this.currentTrackIndex;
+        const trackInnerClass = '.track-detail_' + this.currentTrackIndex;
         const trackInner = document.querySelector(trackInnerClass);
-        trackInner.scrollTo(trackInner.offsetWidth, 0);
+        if (trackInner) {
+          trackInner.scrollTo(trackInner.offsetWidth, 0);
+        }
       });
     },
 
-    deleteEffect(t, n) {
-      const track = this.tracks[t];
-      const effects = track.effects;
+    deleteEffect(n) {
+      const effects = this.currentTrack.effects;
 
-      const prev = effects[n - 1] || track.instrument;
-      const next = effects[n + 1] || track.trackGain;
+      const prev = effects[n - 1] || this.currentTrack.instrument;
+      const next = effects[n + 1] || this.currentTrack.trackGain;
 
       prev.disconnect().connect(next);
 
@@ -401,20 +412,20 @@ export default {
 
     // User Interface (UI):
 
-    toggleInstrumentEnabled(t) {
-      const track = this.tracks[t];
-      track.instrumentEnabled = !this.tracks[t].instrumentEnabled;
+    toggleInstrumentEnabled() {
+      // const track = this.tracks[t];
+      this.currentTrack.instrumentEnabled = !this.currentTrack.instrumentEnabled;
 
-      if (track.instrumentEnabled) {
+      if (this.currentTrack.instrumentEnabled) {
         this.keypressListeners.push({
-          instrument: track.instrument,
-          trackName: track.name,
+          instrument: this.currentTrack.instrument,
+          trackName: this.currentTrack.name,
         });
-        if (track.instrument.name === 'Mic') track.instrument.setMute(false);
+        if (this.currentTrack.instrument.name === 'Mic') this.currentTrack.instrument.setMute(false);
       } else {
-        const i = this.keypressListeners.findIndex(kpl => kpl.trackName === track.name);
+        const i = this.keypressListeners.findIndex(kpl => kpl.trackName === this.currentTrack.name);
         this.keypressListeners.splice(i, 1);
-        if (track.instrument.name === 'Mic') track.instrument.setMute(true);
+        if (this.currentTrack.instrument.name === 'Mic') this.currentTrack.instrument.setMute(true);
       }
     },
 
@@ -912,14 +923,11 @@ export default {
 </script>
 
 <style lang="scss">
-.Home {
+.home {
   min-height: 90vh;
 }
 
 .top-section {
-  // position: fixed;
-  // top: 2px;
-  // width: 100%;
   z-index: 1;
 }
 
@@ -935,9 +943,19 @@ export default {
   border-top: 1px solid rgb(161, 161, 161);
 }
 
+.main-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  // click height, header height
+  height: calc(100vh - 46px - 50px);
+}
+
 .tracks {
-  // margin: 6em 0 1em;
-  border: 4px solid transparent;
+  flex: 1;
+  overflow-y: auto;
+  border: 2px solid transparent;
+  padding: 0.25rem;
 }
 
 .tracks.mapping {
@@ -945,28 +963,47 @@ export default {
 }
 
 .track {
-  margin: 0 auto 0.5em;
-  // overflow-x: auto;
-  background: #111;
-  padding: 0.3em 0.5em;
-
   display: flex;
-  // align-items: center;
-  // align-items: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.5em;
+
+  background: #111;
   border: 2px solid transparent;
-  transition: border-color 0.2s ease-out;
+  margin: 0 auto 0.5em;
+}
+.track:last-child {
+  margin: 0;
 }
 
-.track-inner {
+.track.selected {
+  background: #333;
+  border: 2px solid #ff857c;
+}
+
+.track-inner-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+}
+
+// Track Detail
+.track-detail-container {
+  padding: 0.5rem;
+  background: black;
+}
+
+.track-detail {
   background: transparent;
   display: flex;
-  // align-items: center;
-  // align-items: flex-end;
   gap: 1em;
   overflow-x: auto;
-  padding-bottom: 0.3em;
+  overflow-y: hidden;
+  padding-bottom: 0.5rem;
+  padding-right: 3rem;
   flex: 1;
+  height: 380px;
 }
 
 .node {
@@ -981,70 +1018,22 @@ export default {
   font-size: 1.1rem;
 }
 
-.track.selected {
-  border: 2px solid #ff857c;
-}
-
-.track-modulators {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-}
-
 .track-effects {
   display: flex;
-  // align-items: center;
   gap: 0.5em;
 }
 
-.track-gain {
-  align-self: flex-end;
-}
-
-// IF CONNECTING
-.connecting {
-  .node.current-node {
-    border: 2px solid yellow;
-  }
-
-  .node:not(.current-node):not(.Track-Gain):not(.Delay):not(.Femod) {
-    border-color: green;
-    .node-name {
-      color: var(--color-2);
-    }
-    .param-name.connectable {
-      color: yellow;
-      cursor: pointer;
-    }
-    .param-name:not(.connectable) {
-      color: gray;
-    }
-  }
-
-  .output {
-    cursor: default;
-    color: gray;
-  }
-}
-
-.Main-Gain {
+.main-gain {
   position: fixed;
   bottom: 10px;
   right: 10px;
-  margin: 1em auto 0;
+  background: #222;
   color: #f3f3f3;
-  max-width: 300px;
-  transition: border-color 0.2s ease-out;
-}
-
-.level {
-  cursor: default;
-  transition: border-color 0.2s ease-out;
-}
-
-.Main-Gain:not(.is-connection-destination),
-.level:not(.is-connection-destination) {
-  border: 2px solid transparent;
+  padding: 0.75rem;
+  h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
 }
 
 .welcome-msg {
@@ -1090,9 +1079,5 @@ $yMaxVal: 60px; //e.srcElement.scrollTop;
   .exporting-modal-content {
     font-size: 2rem;
   }
-}
-
-canvas {
-  display: block;
 }
 </style>
