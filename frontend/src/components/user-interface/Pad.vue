@@ -13,7 +13,7 @@
           v-for="n in notes"
           :key="n"
           class="band"
-          :style="{ backgroundColor: `rgba(${20 * n}, ${10 * n}, ${8 * n})` }"
+          :style="{ backgroundColor: `rgba(${20 * n + 10}, ${10 * n + 10}, ${8 * n + 10})` }"
         ></div>
       </div>
       <p v-for="(log, l) in logs" :key="l">{{ log }}</p>
@@ -89,12 +89,20 @@ export default {
     },
     getPadDimensions() {
       const padDiv = document.querySelector('.pad');
-      padDiv.requestFullscreen({ navigationUI: 'hide' }).catch(err => {
-        alert('error requesting fullscreen');
-      });
-      this.bounding = padDiv.getBoundingClientRect();
-      this.height = this.bounding.height;
-      this.width = this.bounding.width;
+      const padContainer = document.querySelector('.pad-container');
+      padContainer
+        .requestFullscreen({ navigationUI: 'hide' })
+        .then(() => {
+          this.bounding = padDiv.getBoundingClientRect();
+          this.height = this.bounding.height;
+          this.width = this.bounding.width;
+        })
+        .catch(err => {
+          this.bounding = padDiv.getBoundingClientRect();
+          this.height = this.bounding.height;
+          this.width = this.bounding.width;
+          alert('error requesting fullscreen');
+        });
     },
   },
 };
