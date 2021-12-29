@@ -1,6 +1,6 @@
 <template>
   <div class="pad-container">
-    <div>TOP</div>
+    <div class="top">TOP</div>
     <div
       class="pad"
       @touchstart.prevent="onPadTouchStart"
@@ -8,9 +8,15 @@
       @touchcancel.prevent="onPadTouchCancel"
       @touchmove.prevent="onPadTouchMove"
     >
-      <p v-for="(log, l) in logs" :key="l">
-        {{ log }}
-      </p>
+      <div class="under" @touchstart.prevent="underTouchStart">
+        <div
+          v-for="n in notes"
+          :key="n"
+          class="band"
+          :style="{ backgroundColor: `rgba(${20 * n}, ${10 * n}, ${8 * n})` }"
+        ></div>
+      </div>
+      <p v-for="(log, l) in logs" :key="l">{{ log }}</p>
     </div>
   </div>
 </template>
@@ -26,6 +32,7 @@ export default {
       width: null,
       noteFreqIndex: null,
       touches: [],
+      notes: 12,
     };
   },
   mounted() {
@@ -36,9 +43,10 @@ export default {
     onPadTouchStart(e) {
       for (let i = 0; i < e.changedTouches.length; i++) {
         // if (e.changedTouches[i].force) {
-        const padY = e.changedTouches[i].clientY - this.bounding.y;
-        const noteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
-        this.touches[e.changedTouches[i].identifier] = noteFreqIndex;
+        const touch = e.changedTouches[i];
+        const padY = touch.clientY - this.bounding.y;
+        const noteFreqIndex = Math.round(padY.map(0, this.height, 0, this.notes));
+        this.touches[touch.identifier] = noteFreqIndex;
         this.$emit('onPadTouchStart', noteFreqIndex);
         // }
       }
@@ -47,8 +55,9 @@ export default {
     onPadTouchEnd(e) {
       for (let i = 0; i < e.changedTouches.length; i++) {
         // if (e.changedTouches[i].force < 1) {
-        this.$emit('onPadTouchEnd', this.touches[e.changedTouches[i].identifier]);
-        this.touches[e.changedTouches[i].identifier] = null;
+        const touch = e.changedTouches[i];
+        this.$emit('onPadTouchEnd', this.touches[touch.identifier]);
+        this.touches[touch.identifier] = null;
         // }
       }
     },
@@ -59,15 +68,20 @@ export default {
 
     onPadTouchMove(e) {
       for (let i = 0; i < e.changedTouches.length; i++) {
-        const padY = e.changedTouches[i].clientY - this.bounding.y;
-        const newNoteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
+        const touch = e.changedTouches[i];
+        const padY = touch.clientY - this.bounding.y;
+        const newNoteFreqIndex = Math.round(padY.map(0, this.height, 0, this.notes));
 
-        if (newNoteFreqIndex !== this.touches[e.changedTouches[i].identifier]) {
-          this.$emit('onPadTouchEnd', this.touches[e.changedTouches[i].identifier]);
-          this.touches[e.changedTouches[i].identifier] = newNoteFreqIndex;
+        if (newNoteFreqIndex !== this.touches[touch.identifier]) {
+          this.$emit('onPadTouchEnd', this.touches[touch.identifier]);
+          this.touches[touch.identifier] = newNoteFreqIndex;
           this.$emit('onPadTouchStart', newNoteFreqIndex);
         }
       }
+    },
+
+    underTouchStart() {
+      console.log('under');
     },
 
     log(msg) {
@@ -75,6 +89,9 @@ export default {
     },
     getPadDimensions() {
       const padDiv = document.querySelector('.pad');
+      padDiv.requestFullscreen({ navigationUI: 'hide' }).catch(err => {
+        alert('error requesting fullscreen');
+      });
       this.bounding = padDiv.getBoundingClientRect();
       this.height = this.bounding.height;
       this.width = this.bounding.width;
@@ -95,12 +112,17 @@ export default {
   background: gray;
   user-select: none;
 }
+.top {
+  height: 1rem;
+}
 .pad {
+  position: relative;
+  z-index: 10;
   height: calc(100vh - 1rem);
   // width: calc(100vw - 1rem);
   background: teal;
   user-select: none;
-  background: linear-gradient(coral, teal);
+  background: transparent;
   p {
     text-align: left;
     font-size: 1.5rem;
@@ -110,6 +132,19 @@ export default {
     letter-spacing: 1px;
   }
 }
+
+.under {
+  background: linear-gradient(coral, teal);
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  .band {
+    // background: red;
+    height: calc((100vh - 1rem) / 12);
+  }
+}
+
 @media (min-width: 500px) {
   .pad-container {
     display: none;
