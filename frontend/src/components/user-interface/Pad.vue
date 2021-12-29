@@ -37,6 +37,7 @@ export default {
     };
   },
   mounted() {
+    // this.init();
     this.getPadDimensions();
   },
 
@@ -90,18 +91,20 @@ export default {
     },
     getPadDimensions() {
       const padDiv = document.querySelector('.pad');
+      this.bounding = padDiv.getBoundingClientRect();
+      this.height = this.bounding.height;
+      this.width = this.bounding.width;
+    },
+
+    init() {
       const padContainer = document.querySelector('.pad-container');
       padContainer
         .requestFullscreen({ navigationUI: 'hide' })
         .then(() => {
-          this.bounding = padDiv.getBoundingClientRect();
-          this.height = this.bounding.height;
-          this.width = this.bounding.width;
+          getPadDimensions();
         })
         .catch(err => {
-          this.bounding = padDiv.getBoundingClientRect();
-          this.height = this.bounding.height;
-          this.width = this.bounding.width;
+          getPadDimensions();
           alert('error requesting fullscreen');
         });
     },

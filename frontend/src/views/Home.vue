@@ -1,10 +1,5 @@
 <template>
   <div class="Home">
-    <div class="welcome-msg" v-if="!inited">
-      <p>Welcome to web-synth</p>
-      <p>Click anywhere to Start!</p>
-    </div>
-
     <div class="inited" v-if="inited">
       <div class="top-section">
         <div class="header-wrapper">
@@ -42,7 +37,7 @@
             selected: currentTrackIndex === t,
             connecting: appConnecting,
           }"
-          @click="trackClicked(t)"
+          @click="selectTrack(t)"
         >
           <div class="track-inner" :class="'track-inner_' + t">
             <!-- Instrument -->
@@ -107,6 +102,10 @@
           />
         </div>
       </div>
+    </div>
+    <div v-else class="welcome-msg">
+      <p>Welcome to web-synth</p>
+      <p>Click anywhere to Start!</p>
     </div>
   </div>
 </template>
@@ -251,10 +250,11 @@ export default {
       Node.context = this.context;
 
       this.createMainGain();
+
       this.createTrack(new Surgeon());
-      this.insertEffect(new Delay())
+      this.insertEffect(new Delay());
       this.createTrack(new Femod());
-      this.insertEffect(new Reverb())
+      this.insertEffect(new Reverb());
 
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
@@ -262,8 +262,454 @@ export default {
       this.inited = true;
     },
 
-    //REC
+    createInstrument(className) {
+      const Node = new (instrumentsDict.get(className))();
+      this.createTrack(Node);
+    },
 
+    createTrack(instrument) {
+      const trackGain = new Gain('Track Gain');
+      const trackGainAnalyser = this.context.createAnalyser();
+
+      instrument.connect(trackGain);
+      trackGain.connectNativeNode(this.mixerGain, 'Mixer Gain');
+      trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
+
+      this.tracks.push({
+        id: ++this.trackCount,
+        name: 'Track ' + this.trackCount,
+        displayName: 'Track ' + this.trackCount,
+        instrument,
+        effects: [],
+        trackGain,
+        trackGainAnalyser,
+        recEnabled: true,
+        instrumentEnabled: true,
+      });
+
+      this.currentTrackIndex = this.tracks.length - 1;
+      this.currentTrack = this.tracks[this.currentTrackIndex];
+
+      // Listeners
+      this.keypressListeners.push({
+        instrument,
+        trackName: this.currentTrack.name,
+      });
+      this.xyPadListeners.push({
+        instrument,
+        trackName: this.currentTrack.name,
+      });
+
+      if (instrument.nodeType === 'Drumkit')
+        this.numpadListeners.push({
+          instrument,
+          trackName: this.currentTrack.name,
+        });
+
+      this.$nextTick(() => {
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+    },
+
+    deleteTrack(t) {
+      let track = this.tracks[t];
+
+      let index = this.keypressListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) this.keypressListeners.splice(index, 1);
+      index = this.numpadListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) this.numpadListeners.splice(index, 1);
+      index = this.xyPadListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) this.xyPadListeners.splice(index, 1);
+
+      //remove track
+      track.instrument.destroy();
+      track.instrument = null;
+      track.trackGain.destroy();
+      track.trackGain = null;
+      track.effects.forEach(effect => {
+        effect.destroy();
+        effect = null;
+      });
+      track = null;
+      this.tracks.splice(t, 1);
+    },
+
+    // Effects:
+    createEffect(className) {
+      const Node = new (effectsDict.get(className))();
+      this.insertEffect(Node);
+      return Node;
+    },
+
+    insertEffect(Node) {
+      const track = this.tracks[this.currentTrackIndex];
+      const effects = track.effects;
+      const prev = effects[effects.length - 1] || track.instrument;
+      const next = track.trackGain;
+
+      prev.disconnect().connect(Node).connect(next);
+      effects.push(Node);
+      this.$nextTick(() => {
+        const trackInnerClass = '.track-inner_' + this.currentTrackIndex;
+        const trackInner = document.querySelector(trackInnerClass);
+        trackInner.scrollTo(trackInner.offsetWidth, 0);
+      });
+    },
+
+    deleteEffect(t, n) {
+      const track = this.tracks[t];
+      const effects = track.effects;
+
+      const prev = effects[n - 1] || track.instrument;
+      const next = effects[n + 1] || track.trackGain;
+
+      prev.disconnect().connect(next);
+
+      effects[n].destroy();
+      effects[n] = null;
+      effects.splice(n, 1);
+    },
+
+    createMainGain() {
+      this.mainGain = this.context.createGain();
+      this.mainGain.gain.value = this.mainGainKnob;
+      this.mainGain.connect(this.context.destination);
+
+      this.mixerGain = this.context.createGain();
+
+      this.mixerGain.connect(this.mainGain);
+    },
+    createMic() {
+      const that = this;
+      navigator.mediaDevices
+        .getUserMedia({ audio: true, video: false })
+        .then(function (stream) {
+          that.createTrack(new Mic(stream));
+        })
+        .catch(function (err) {
+          console.log('err', err);
+          alert("Couldn't get user media, continuing without mic input. Error: " + err);
+        });
+    },
+    onMainGainKnobInput(val) {
+      this.mainGain.gain.setValueAtTime(val, 0);
+    },
+    selectTrack(t) {
+      this.currentTrackIndex = t;
+      this.currentTrack = this.tracks[this.currentTrackIndex];
+    },
+
+    // User Interface (UI):
+
+    toggleInstrumentEnabled(t) {
+      const track = this.tracks[t];
+      track.instrumentEnabled = !this.tracks[t].instrumentEnabled;
+
+      if (track.instrumentEnabled) {
+        this.keypressListeners.push({
+          instrument: track.instrument,
+          trackName: track.name,
+        });
+        if (track.instrument.name === 'Mic') track.instrument.setMute(false);
+      } else {
+        const i = this.keypressListeners.findIndex(kpl => kpl.trackName === track.name);
+        this.keypressListeners.splice(i, 1);
+        if (track.instrument.name === 'Mic') track.instrument.setMute(true);
+      }
+    },
+
+    // Touch
+    onPadTouchStart(currentIndex) {
+      const noteKeyIndex = currentIndex;
+      let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+      this.xyPadListeners.forEach(scaleInterface => {
+        scaleInterface.instrument.playNote(noteIndex);
+      });
+    },
+
+    onPadTouchEnd(currentIndex) {
+      const noteKeyIndex = currentIndex;
+      let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+      this.xyPadListeners.forEach(scaleInterface => {
+        scaleInterface.instrument.stopNote(noteIndex);
+      });
+    },
+
+    onPadTouchCancel(e) {
+      console.log('onPadTouchCancel', e);
+    },
+    onPadTouchMove(e) {
+      console.log('onPadTouchMove', e);
+    },
+
+    // Keyboard
+    onKeydown(e) {
+      if (!this.keyEnabled[e.keyCode]) return;
+      this.keyEnabled[e.keyCode] = false;
+
+      const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
+
+      if (noteKeyIndex !== -1) {
+        let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+        if (noteIndex < 0) noteIndex = 0;
+        if (noteIndex > totalAmountOfNotes - 1) noteIndex = totalAmountOfNotes - 1;
+
+        this.keypressListeners.forEach(scaleInterface => {
+          scaleInterface.instrument.playNote(noteIndex);
+        });
+      } else {
+        this.onOtherKeydown(e);
+      }
+    },
+
+    onKeyup(e) {
+      this.keyEnabled[e.keyCode] = true;
+      const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
+
+      if (noteKeyIndex !== -1) {
+        let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+
+        this.keypressListeners.forEach(scaleInterface => {
+          scaleInterface.instrument.stopNote(noteIndex);
+        });
+      } else {
+        this.onOtherKeyup(e);
+      }
+    },
+
+    onOtherKeydown({ key, keyCode }) {
+      //m
+      if (keyCode === 77) this.m_pressed = true;
+      //ctrl
+      else if (keyCode === 17) this.ctrl_pressed = true;
+      //1 a 9 numpad:
+      else if (keyCode >= 97 && keyCode <= 105) {
+        this.numpadListeners.forEach(scaleInterface => {
+          scaleInterface.instrument.playNote(parseInt(key));
+        });
+      }
+    },
+
+    onOtherKeyup({ keyCode }) {
+      // console.log(keyCode);
+      //1 a 9
+      if (keyCode >= 49 && keyCode <= 57) {
+        if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
+      } else {
+        switch (keyCode) {
+          case 77: //m
+            this.m_pressed = false;
+            if (this.ctrl_pressed) this.currentTrack.trackGain.toggleMute();
+            break;
+          case 81: //q
+            if (this.ctrl_pressed) this.deleteTrack(this.currentTrackIndex);
+            break;
+          case 17: //ctrl
+            this.ctrl_pressed = false;
+            break;
+          case 27: //esc
+            this.$refs.header.hideMenues();
+            break;
+          case 90: //z
+            this.octave--;
+            break;
+          case 88: //x
+            this.octave++;
+            break;
+          case 67: //c
+            this.transpose--;
+            break;
+          case 86: //v
+            this.transpose++;
+            break;
+        }
+      }
+    },
+
+    // MIDI
+
+    triggerNoteOn(note, channel) {
+      this.keypressListeners.forEach(scaleInterface => {
+        scaleInterface.instrument.playNote(note);
+      });
+    },
+
+    triggerNoteOff(note, channel) {
+      this.keypressListeners.forEach(scaleInterface => {
+        scaleInterface.instrument.stopNote(note);
+      });
+    },
+
+    toggleMapping() {
+      if (this.refBeignMapped) {
+        this.refBeignMapped.stopMapping();
+        this.refBeignMapped = null;
+      }
+      this.mapping = !this.mapping;
+      this.setAppIsMapping(this.mapping);
+    },
+
+    // knobClicked(refName) {
+    knobClicked(knobRef) {
+      if (!this.mapping) return;
+      if (this.refBeignMapped) {
+        this.refBeignMapped.stopMapping();
+        this.refBeignMapped = null;
+      }
+      this.refBeignMapped = knobRef;
+      knobRef.startMapping();
+    },
+
+    onMIDIMessage(event) {
+      let data = event.data;
+
+      const status = data[0];
+      const note = data[1];
+      const value = data[2];
+
+      if (this.mapping) {
+        let refName = this.refBeignMapped.$vnode.data.ref;
+        const existingMap = this.maps.find(m => m.refName === refName);
+        if (!existingMap) {
+          this.maps.push({
+            ref: this.refBeignMapped,
+            refName,
+            cmd: status,
+            note,
+          });
+        } else {
+          existingMap.cmd = status;
+          existingMap.note = note;
+        }
+        const knob = this.refBeignMapped;
+        knob.assignMap(status, note);
+      } else {
+        const binary = status.toString(2);
+        const command = binary.substr(0, 4);
+        const channel = parseInt(binary.substr(4, 4), 2) + 1;
+
+        //note on / note off / sustain pedal
+        if (command === '1001') this.triggerNoteOn(note, channel);
+        else if (command === '1000') this.triggerNoteOff(note, channel);
+        // else if (command === "1011")
+        //   console.log("sustain pedal pressed", value);
+        else {
+          //turn knob
+          const mappedItem = this.maps.find(m => m.cmd === status && m.note === note);
+          if (!mappedItem) return;
+          const knob = mappedItem.ref;
+          knob.receiveMidi(value);
+        }
+      }
+    },
+
+    onMIDISuccess(midiAccess) {
+      console.log('MIDI Access:', midiAccess);
+      this.inputs = midiAccess.inputs;
+      this.outputs = midiAccess.outputs;
+
+      for (var input of this.inputs.values()) {
+        input.onmidimessage = this.onMIDIMessage;
+      }
+    },
+
+    onMIDIFailure() {
+      console.log('Could not access your MIDI devices.');
+    },
+
+    loadSave(tracks) {
+      tracks.forEach(t => {
+        this.loadInstrument(t.instrument);
+
+        t.effects.forEach(savedEffect => {
+          this.loadEffect(savedEffect);
+        });
+      });
+    },
+
+    loadPreset(saveString) {
+      if (saveString.nodeRol === 'Instrument') this.loadInstrument(saveString);
+      else this.loadEffect(saveString);
+    },
+
+    loadInstrument(savedInst) {
+      const instrument = new (instrumentsDict.get(savedInst.nodeType))();
+
+      this.createTrack(instrument);
+
+      instrument.setGain(savedInst.gain);
+
+      if (instrument.audioParams)
+        savedInst.audioParams.forEach((ins_ap, i) => {
+          instrument.setAudioParam(i, ins_ap.value);
+        });
+
+      if (instrument.innerNodeAudioParams)
+        savedInst.innerNodeAudioParams.forEach((ins_inap, i) => {
+          instrument.setInnerNodeAudioParam(i, ins_inap.value);
+        });
+
+      if (instrument.customParams)
+        savedInst.customParams.forEach((ins_cp, i) => {
+          instrument.setCustomParam(i, ins_cp.value);
+        });
+
+      if (instrument.modulationParams)
+        savedInst.modulationParams.forEach((ins_mp, i) => {
+          instrument.setModulationParam(i, ins_mp.value);
+        });
+
+      if (instrument.surgeonParams) {
+        for (let o = 0; o < instrument.oscillatorsPerNote; o++) {
+          const state = savedInst.oscillatorGroupProps[o];
+
+          instrument.setType(o, state.type);
+          instrument.setOscillatorTarget(o, state.destination);
+
+          instrument.setSurgeonParam(o, 0, state.A);
+          instrument.setSurgeonParam(o, 1, state.D);
+          instrument.setSurgeonParam(o, 2, state.S);
+          instrument.setSurgeonParam(o, 3, state.R);
+          instrument.setSurgeonParam(o, 4, state.detune);
+          instrument.setSurgeonParam(o, 5, state.gain);
+
+          instrument.setOctaveTranspose(o, 'octave', state.octave);
+          instrument.setOctaveTranspose(o, 'transpose', state.transpose);
+
+          instrument.setMute(o, state.muted);
+        }
+      }
+    },
+
+    loadEffect(savedEffect) {
+      console.log(savedEffect);
+      const effect = new (effectsDict.get(savedEffect.nodeType))();
+
+      effect.setGain(savedEffect.gain);
+
+      if (effect.type) effect.setType(savedEffect.type);
+
+      if (effect.audioParams)
+        savedEffect.audioParams.forEach((ef_ap, i) => {
+          effect.setAudioParam(i, ef_ap.value);
+        });
+
+      if (effect.innerNodeAudioParams)
+        savedEffect.innerNodeAudioParams.forEach((ef_inap, i) => {
+          effect.setInnerNodeAudioParam(i, ef_inap.value);
+        });
+
+      if (effect.customParams)
+        savedEffect.customParams.forEach((ef_cp, i) => {
+          effect.setCustomParam(i, ef_cp.value);
+        });
+
+      if (effect.dryWet) effect.setDryWet(savedEffect.dryWet.value);
+
+      this.insertEffect(effect);
+    },
+
+    // REC
     startRec() {
       const recordingTracks = this.tracks.filter(t => t.recEnabled);
       const total = recordingTracks.length;
@@ -440,514 +886,6 @@ export default {
       a.setAttribute('href', URL.createObjectURL(blob));
       a.setAttribute('download', fileName);
       a.click();
-    },
-
-    createTrack(instrument) {
-      const trackGain = new Gain('Track Gain');
-      const trackGainAnalyser = this.context.createAnalyser();
-
-      instrument.connect(trackGain);
-      trackGain.connectNativeNode(this.mixerGain, 'Mixer Gain');
-      trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
-
-      this.tracks.push({
-        id: ++this.trackCount,
-        name: 'Track ' + this.trackCount,
-        displayName: 'Track ' + this.trackCount,
-        instrument,
-        effects: [],
-        trackGain,
-        trackGainAnalyser,
-        recEnabled: true,
-        instrumentEnabled: true,
-      });
-
-      this.currentTrackIndex = this.tracks.length - 1;
-      this.currentTrack = this.tracks[this.currentTrackIndex];
-
-      // Listeners
-      this.keypressListeners.push({
-        instrument,
-        trackName: this.currentTrack.name,
-      });
-      this.xyPadListeners.push({
-        instrument,
-        trackName: this.currentTrack.name,
-      });
-
-      if (instrument.nodeType === 'Drumkit')
-        this.numpadListeners.push({
-          instrument,
-          trackName: this.currentTrack.name,
-        });
-
-      this.$nextTick(() => {
-        window.scrollTo(0, document.body.scrollHeight);
-      });
-    },
-
-    deleteTrack(t) {
-      let track = this.tracks[t];
-
-      //remove from keypressListeners
-      let index = this.keypressListeners.findIndex(listener => listener.trackName === track.name);
-      if (index !== -1) this.keypressListeners.splice(index, 1);
-
-      //remove from numpadListeners
-      index = this.numpadListeners.findIndex(listener => listener.trackName === track.name);
-      if (index !== -1) this.numpadListeners.splice(index, 1);
-      //remove from xyPadListeners
-      index = this.xyPadListeners.findIndex(listener => listener.trackName === track.name);
-      if (index !== -1) this.xyPadListeners.splice(index, 1);
-
-      //remove track
-      track.instrument.destroy();
-      track.instrument = null;
-      track.trackGain.destroy();
-      track.trackGain = null;
-      track.effects.forEach(e => {
-        e.destroy();
-        e = null;
-      });
-      // track.modulators.forEach((m) => {
-      //   m.destroy();
-      // });
-      track = null;
-      this.tracks.splice(t, 1);
-    },
-
-    toggleInstrumentEnabled(t) {
-      const track = this.tracks[t];
-      track.instrumentEnabled = !this.tracks[t].instrumentEnabled;
-
-      if (track.instrumentEnabled) {
-        this.keypressListeners.push({
-          instrument: track.instrument,
-          trackName: track.name,
-        });
-        if (track.instrument.name === 'Mic') track.instrument.setMute(false);
-      } else {
-        const i = this.keypressListeners.findIndex(kpl => kpl.trackName === track.name);
-        this.keypressListeners.splice(i, 1);
-        if (track.instrument.name === 'Mic') track.instrument.setMute(true);
-      }
-    },
-
-    insertEffect(Node) {
-      const track = this.tracks[this.currentTrackIndex];
-      const effects = track.effects;
-      const prev = effects[effects.length - 1] || track.instrument;
-      const next = track.trackGain;
-
-      prev.disconnect().connect(Node).connect(next);
-      effects.push(Node);
-      this.$nextTick(() => {
-        const trackInnerClass = '.track-inner_' + this.currentTrackIndex;
-        const trackInner = document.querySelector(trackInnerClass);
-        trackInner.scrollTo(trackInner.offsetWidth, 0);
-      });
-    },
-
-    deleteEffect(t, n) {
-      const track = this.tracks[t];
-      const effects = track.effects;
-
-      const prev = effects[n - 1] || track.instrument;
-      const next = effects[n + 1] || track.trackGain;
-
-      prev.disconnect().connect(next);
-
-      effects[n].destroy();
-      effects[n] = null;
-      effects.splice(n, 1);
-    },
-
-    // CREATE NODES
-    createInstrument(className) {
-      const Node = new (instrumentsDict.get(className))();
-      this.createTrack(Node);
-      return Node;
-    },
-
-    createEffect(className) {
-      const Node = new (effectsDict.get(className))();
-      this.insertEffect(Node);
-      return Node;
-    },
-
-    createMic() {
-      const that = this;
-      navigator.mediaDevices
-        .getUserMedia({ audio: true, video: false })
-        .then(function (stream) {
-          that.createTrack(new Mic(stream));
-        })
-        .catch(function (err) {
-          console.log('err', err);
-          alert("Couldn't get user media, continuing without mic input. Error: " + err);
-        });
-    },
-
-    trackClicked(t) {
-      this.currentTrackIndex = t;
-      this.currentTrack = this.tracks[this.currentTrackIndex];
-    },
-
-    createMainGain() {
-      this.mainGain = this.context.createGain();
-      this.mainGain.gain.value = this.mainGainKnob;
-      this.mainGain.connect(this.context.destination);
-
-      this.mixerGain = this.context.createGain();
-
-      this.mixerGain.connect(this.mainGain);
-    },
-
-    onMainGainKnobInput(val) {
-      this.mainGain.gain.setValueAtTime(val, 0);
-    },
-
-    // User Interface (UI):
-
-    // Touch
-    onPadTouchStart(currentIndex) {
-      const noteKeyIndex = currentIndex;
-      let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-      this.xyPadListeners.forEach(scaleInterface => {
-        scaleInterface.instrument.playNote(noteIndex);
-      });
-    },
-
-    onPadTouchEnd(currentIndex) {
-      const noteKeyIndex = currentIndex;
-      let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-      this.xyPadListeners.forEach(scaleInterface => {
-        scaleInterface.instrument.stopNote(noteIndex);
-      });
-    },
-
-    onPadTouchCancel(e) {
-      console.log('onPadTouchCancel', e);
-    },
-    onPadTouchMove(e) {
-      console.log('onPadTouchMove', e);
-    },
-
-    onKeydown(e) {
-      if (!this.keyEnabled[e.keyCode]) return;
-      this.keyEnabled[e.keyCode] = false;
-
-      const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
-
-      if (noteKeyIndex !== -1) {
-        let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-        if (noteIndex < 0) noteIndex = 0;
-        if (noteIndex > totalAmountOfNotes - 1) noteIndex = totalAmountOfNotes - 1;
-
-        this.keypressListeners.forEach(scaleInterface => {
-          scaleInterface.instrument.playNote(noteIndex);
-        });
-      } else {
-        this.onOtherKeydown(e);
-      }
-    },
-
-    onKeyup(e) {
-      this.keyEnabled[e.keyCode] = true;
-      const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
-
-      if (noteKeyIndex !== -1) {
-        let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-
-        this.keypressListeners.forEach(scaleInterface => {
-          scaleInterface.instrument.stopNote(noteIndex);
-        });
-      } else {
-        this.onOtherKeyup(e);
-      }
-    },
-
-    onOtherKeydown({ key, keyCode }) {
-      //m
-      if (keyCode === 77) this.m_pressed = true;
-      //ctrl
-      else if (keyCode === 17) this.ctrl_pressed = true;
-      //1 a 9 numpad:
-      else if (keyCode >= 97 && keyCode <= 105) {
-        this.numpadListeners.forEach(scaleInterface => {
-          scaleInterface.instrument.playNote(parseInt(key));
-        });
-      }
-    },
-
-    onOtherKeyup({ keyCode }) {
-      // console.log(keyCode);
-      //1 a 9
-      if (keyCode >= 49 && keyCode <= 57) {
-        if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
-      } else {
-        switch (keyCode) {
-          case 77: //m
-            this.m_pressed = false;
-            if (this.ctrl_pressed) this.currentTrack.trackGain.toggleMute();
-            break;
-          case 81: //q
-            if (this.ctrl_pressed) this.deleteTrack(this.currentTrackIndex);
-            break;
-          case 17: //ctrl
-            this.ctrl_pressed = false;
-            break;
-          case 27: //esc
-            this.$refs.header.hideMenues();
-            break;
-          case 90: //z
-            this.octave--;
-            break;
-          case 88: //x
-            this.octave++;
-            break;
-          case 67: //c
-            this.transpose--;
-            break;
-          case 86: //v
-            this.transpose++;
-            break;
-        }
-      }
-    },
-
-    // MIDI
-
-    triggerNoteOn(note, channel) {
-      this.keypressListeners.forEach(scaleInterface => {
-        scaleInterface.instrument.playNote(note);
-      });
-    },
-
-    triggerNoteOff(note, channel) {
-      this.keypressListeners.forEach(scaleInterface => {
-        scaleInterface.instrument.stopNote(note);
-      });
-    },
-
-    toggleMapping() {
-      if (this.refBeignMapped) {
-        this.refBeignMapped.stopMapping();
-        this.refBeignMapped = null;
-      }
-      this.mapping = !this.mapping;
-      this.setAppIsMapping(this.mapping);
-    },
-
-    // knobClicked(refName) {
-    knobClicked(knobRef) {
-      if (!this.mapping) return;
-      if (this.refBeignMapped) {
-        this.refBeignMapped.stopMapping();
-        this.refBeignMapped = null;
-      }
-      this.refBeignMapped = knobRef;
-      knobRef.startMapping();
-    },
-
-    onMIDIMessage(event) {
-      let data = event.data;
-
-      const status = data[0];
-      const note = data[1];
-      const value = data[2];
-
-      if (this.mapping) {
-        let refName = this.refBeignMapped.$vnode.data.ref;
-        const existingMap = this.maps.find(m => m.refName === refName);
-        if (!existingMap) {
-          this.maps.push({
-            ref: this.refBeignMapped,
-            refName,
-            cmd: status,
-            note,
-          });
-        } else {
-          existingMap.cmd = status;
-          existingMap.note = note;
-        }
-        const knob = this.refBeignMapped;
-        knob.assignMap(status, note);
-      } else {
-        const binary = status.toString(2);
-        const command = binary.substr(0, 4);
-        const channel = parseInt(binary.substr(4, 4), 2) + 1;
-
-        //note on / note off / sustain pedal
-        if (command === '1001') this.triggerNoteOn(note, channel);
-        else if (command === '1000') this.triggerNoteOff(note, channel);
-        // else if (command === "1011")
-        //   console.log("sustain pedal pressed", value);
-        else {
-          //turn knob
-          const mappedItem = this.maps.find(m => m.cmd === status && m.note === note);
-          if (!mappedItem) return;
-          const knob = mappedItem.ref;
-          knob.receiveMidi(value);
-        }
-      }
-    },
-
-    onMIDISuccess(midiAccess) {
-      console.log('MIDI Access:', midiAccess);
-      this.inputs = midiAccess.inputs;
-      this.outputs = midiAccess.outputs;
-
-      for (var input of this.inputs.values()) {
-        input.onmidimessage = this.onMIDIMessage;
-      }
-    },
-
-    onMIDIFailure() {
-      console.log('Could not access your MIDI devices.');
-    },
-
-    //Waveforms:
-
-    renderWaveforms() {
-      for (let i = 0; i < this.recordings.length; i++) this.renderWaveform(this.recordings[i]);
-      this.renderFinished = true;
-      console.log('finished rendering');
-    },
-
-    renderWaveform({ audioBuffer, track }) {
-      console.log('rendering waveform', track);
-      let canvas = document.createElement('canvas');
-      canvas.width = audioBuffer.duration * 100;
-
-      const canvasWidth = canvas.width;
-      const canvasHeight = 150;
-      const context = canvas.getContext('2d');
-      var leftChannel = audioBuffer.getChannelData(0); // Float32Array describing left channel
-
-      context.save();
-      context.fillStyle = '#222';
-      context.fillRect(0, 0, canvasWidth, canvasHeight);
-      context.strokeStyle = '#122';
-      context.globalCompositeOperation = 'lighter';
-      context.translate(0, canvasHeight / 2);
-      context.globalAlpha = 0.06; // lineOpacity ;
-      for (var i = 0; i < leftChannel.length; i++) {
-        var x = Math.floor((canvasWidth * i) / leftChannel.length);
-        var y = (leftChannel[i] * canvasHeight) / 2 - 2;
-        context.beginPath();
-        context.moveTo(x, 0);
-        context.lineTo(x + 1, y);
-        context.stroke();
-      }
-      context.restore();
-      console.log('done');
-      document.querySelector('.canvases').appendChild(canvas);
-    },
-
-    loadSave(tracks) {
-      tracks.forEach(t => {
-        this.loadInstrument(t.instrument);
-
-        t.effects.forEach(savedEffect => {
-          this.loadEffect(savedEffect);
-        });
-      });
-    },
-
-    loadPreset(saveString) {
-      if (saveString.nodeRol === 'Instrument') this.loadInstrument(saveString);
-      else this.loadEffect(saveString);
-    },
-
-    loadInstrument(savedInst) {
-      const instrument = new (instrumentsDict.get(savedInst.nodeType))();
-
-      this.createTrack(instrument);
-
-      instrument.setGain(savedInst.gain);
-
-      if (instrument.audioParams)
-        savedInst.audioParams.forEach((ins_ap, i) => {
-          instrument.setAudioParam(i, ins_ap.value);
-        });
-
-      if (instrument.innerNodeAudioParams)
-        savedInst.innerNodeAudioParams.forEach((ins_inap, i) => {
-          instrument.setInnerNodeAudioParam(i, ins_inap.value);
-        });
-
-      if (instrument.customParams)
-        savedInst.customParams.forEach((ins_cp, i) => {
-          instrument.setCustomParam(i, ins_cp.value);
-        });
-
-      if (instrument.modulationParams)
-        savedInst.modulationParams.forEach((ins_mp, i) => {
-          instrument.setModulationParam(i, ins_mp.value);
-        });
-
-      // if (savedInst.duetteParams) {
-      //   for (let o = 0; o < savedInst.oscillatorsPerNote; o++) {
-      //     const state = savedInst.oscillatorsState[o];
-      //     instrument.setDuetteParam(o, 0, state.A);
-      //     instrument.setDuetteParam(o, 1, state.D);
-      //     instrument.setDuetteParam(o, 2, state.S);
-      //     instrument.setDuetteParam(o, 3, state.R);
-      //     instrument.setDuetteParam(o, 4, state.detune);
-      //     instrument.setDuetteParam(o, 5, state.gain);
-      //     instrument.setType(o, state.type);
-      //   }
-      // }
-
-      if (instrument.surgeonParams) {
-        for (let o = 0; o < instrument.oscillatorsPerNote; o++) {
-          const state = savedInst.oscillatorGroupProps[o];
-
-          instrument.setType(o, state.type);
-          instrument.setOscillatorTarget(o, state.destination);
-
-          instrument.setSurgeonParam(o, 0, state.A);
-          instrument.setSurgeonParam(o, 1, state.D);
-          instrument.setSurgeonParam(o, 2, state.S);
-          instrument.setSurgeonParam(o, 3, state.R);
-          instrument.setSurgeonParam(o, 4, state.detune);
-          instrument.setSurgeonParam(o, 5, state.gain);
-
-          instrument.setOctaveTranspose(o, 'octave', state.octave);
-          instrument.setOctaveTranspose(o, 'transpose', state.transpose);
-
-          instrument.setMute(o, state.muted);
-        }
-      }
-    },
-
-    loadEffect(savedEffect) {
-      console.log(savedEffect);
-      const effect = new (effectsDict.get(savedEffect.nodeType))();
-
-      effect.setGain(savedEffect.gain);
-
-      if (effect.type) effect.setType(savedEffect.type);
-
-      if (effect.audioParams)
-        savedEffect.audioParams.forEach((ef_ap, i) => {
-          effect.setAudioParam(i, ef_ap.value);
-        });
-
-      if (effect.innerNodeAudioParams)
-        savedEffect.innerNodeAudioParams.forEach((ef_inap, i) => {
-          effect.setInnerNodeAudioParam(i, ef_inap.value);
-        });
-
-      if (effect.customParams)
-        savedEffect.customParams.forEach((ef_cp, i) => {
-          effect.setCustomParam(i, ef_cp.value);
-        });
-
-      if (effect.dryWet) effect.setDryWet(savedEffect.dryWet.value);
-
-      this.insertEffect(effect);
     },
 
     getCssNodeName(name) {
