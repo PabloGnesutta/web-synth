@@ -180,7 +180,7 @@ export default {
 
       mainGain: null,
       mixerGain: null,
-      mainGainKnob: 0.75,
+      mainGainKnob: 1,
 
       keyEnabled: [],
       keypressListeners: [],
