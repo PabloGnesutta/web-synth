@@ -36,7 +36,7 @@ export default {
       console.log(e);
       for (let i = 0; i < e.changedTouches.length; i++) {
         if (e.changedTouches[i].force) {
-          const padY = e.touches[0].clientY - this.bounding.y;
+          const padY = e.changedTouches[i].clientY - this.bounding.y;
           const noteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
           this.log('++started ' + e.changedTouches[i].identifier + ' note ' + noteFreqIndex);
           this.touches[e.changedTouches[i].identifier] = noteFreqIndex;
