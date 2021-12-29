@@ -66,18 +66,15 @@ export default {
     },
 
     onPadTouchMove(e) {
-      // const padY = e.touches[0].clientY - this.bounding.y;
-      // const newNoteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
       for (let i = 0; i < e.changedTouches.length; i++) {
-        this.log('--on move ' + e.changedTouches[i].identifier + ' force ' + e.changedTouches[i].force);
+        const padY = e.changedTouches[i].clientY - this.bounding.y;
+        const newNoteFreqIndex = Math.round(padY.map(0, this.height, 0, 12));
 
-        // if (e.changedTouches[i].force) {
-        //   if (newNoteFreqIndex !== this.touches[e.changedTouches[i].identifier]) {
-        //     this.$emit('onPadTouchEnd', this.touches[e.changedTouches[i].identifier]);
-        //     this.touches[e.changedTouches[i].identifier] = newNoteFreqIndex;
-        //     this.$emit('onPadTouchStart', newNoteFreqIndex);
-        //   }
-        // }
+        if (newNoteFreqIndex !== this.touches[e.changedTouches[i].identifier]) {
+          this.$emit('onPadTouchEnd', this.touches[e.changedTouches[i].identifier]);
+          this.touches[e.changedTouches[i].identifier] = newNoteFreqIndex;
+          this.$emit('onPadTouchStart', newNoteFreqIndex);
+        }
       }
     },
 
