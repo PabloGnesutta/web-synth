@@ -136,6 +136,7 @@ export default {
     },
 
     setParamContraints(minVal, maxVal, initValue) {
+      console.log('knob se contraints')
       this.min_v = parseFloat(minVal);
       this.max_v = parseFloat(maxVal);
 

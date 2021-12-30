@@ -1,25 +1,35 @@
 <template>
   <div class="biquadfilter-body">
+    <!-- Types -->
+    <div class="types">
+      <select @input="setType($event)">
+        <option v-for="type in Node.types" :key="type" :selected="type === Node.type">
+          {{ type }}
+        </option>
+      </select>
+    </div>
+
     <!-- Audio Params -->
     <!-- Freq, Res, Gain, Q -->
     <div class="params-container">
       <div v-for="(audioParam, apIndex) in Node.audioParams" :key="audioParam.name">
         <div
           class="param"
-          v-if="
-            !(Node.type === 'highshelf' && audioParam.name === 'Q') &&
-            !(Node.type === 'lowshelf' && audioParam.name === 'Q') &&
-            !(Node.type === 'notch' && audioParam.name === 'gain') &&
-            !(Node.type === 'lowpass' && audioParam.name === 'gain') &&
-            !(Node.type === 'bandpass' && audioParam.name === 'gain') &&
-            !(Node.type === 'highpass' && audioParam.name === 'gain')
-          "
+          :class="{
+            visible:
+              !(Node.type === 'highshelf' && audioParam.name === 'Q') &&
+              !(Node.type === 'lowshelf' && audioParam.name === 'Q') &&
+              !(Node.type === 'notch' && audioParam.name === 'gain') &&
+              !(Node.type === 'lowpass' && audioParam.name === 'gain') &&
+              !(Node.type === 'bandpass' && audioParam.name === 'gain') &&
+              !(Node.type === 'highpass' && audioParam.name === 'gain'),
+          }"
         >
           <div class="param-name">
             {{ audioParam.displayName }}
           </div>
 
-          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + audioParam.name)">
+          <div @click="knobClicked(Node.name + '-' + audioParam.name)">
             <Knob
               :ref="Node.name + '-' + audioParam.name"
               :minVal="audioParam.minValue"
@@ -35,7 +45,7 @@
 
     <div class="lfo-container">
       <!-- Modulator Waveshape -->
-      <div class="select-wrapper">
+      <div>
         <span>LFO</span>
         <select @input="setModType($event)">
           <option v-for="modType in Node.modTypes" :key="modType" :selected="modType === Node.modType">
@@ -57,7 +67,7 @@
               {{ innerNodeAudioParam.displayName }}
             </div>
 
-            <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
+            <div @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
               <Knob
                 :ref="Node.name + '-' + innerNodeAudioParam.name"
                 :unit="innerNodeAudioParam.unit"
@@ -76,11 +86,11 @@
         <div class="sync" @click="toggleSync" :class="{ synced: sync }">Sync</div>
         <div class="sync-buttons" v-show="sync">
           <div
-            v-for="(btn, i) in syncButtons"
-            :key="i"
+            v-for="btn in syncButtons"
+            :key="btn.value"
             class="sync-button"
-            :class="{ selected: i === syncButtonSelected }"
-            @click="setSync(i)"
+            :class="{ selected: btn.value === syncButtonSelected }"
+            @click="setSync(btn.value)"
           >
             {{ btn.display }}
           </div>
@@ -126,10 +136,21 @@ export default {
   methods: {
     ...mapMutations(['setTempo', 'setSecondsPerBeat']),
 
-    setAudioParam(apIndex, value, callerIsSetSync) {
-      // if (apIndex === 0 && !callerIsSetSync) {
-      //   this.delayTimeKnobValue = value;
-      // }
+    setType(event) {
+      this.Node.setType(event.target.value);
+      event.target.blur();
+
+      this.setParamsConstraints(this.Node.audioParams);
+    },
+
+    setParamsConstraints(params) {
+      params.forEach(param => {
+        const ref = this.$refs[this.Node.name + '-' + param.name];
+        ref[0].setParamContraints(param.minValue, param.maxValue, param.value);
+      });
+    },
+
+    setAudioParam(apIndex, value) {
       this.Node.setAudioParam(apIndex, value);
     },
 
@@ -151,15 +172,14 @@ export default {
       this.setSecondsPerBeat(60.0 / tempo);
     },
 
-    setSync(i) {
-      this.syncButtonSelected = i;
-      const frequency = this.secondsPerBeat * 2 * this.syncButtons[i].value;
+    setSync(value) {
+      this.syncButtonSelected = value;
+      const frequency = this.secondsPerBeat * 2 * value;
       if (this.sync) this.Node.setInnerNodeAudioParam('modFrequency', frequency);
     },
 
     toggleSync() {
       this.sync = !this.sync;
-
       if (this.sync) this.setSync(this.syncButtonSelected);
       // else this.setInnerNodeAudioParam("delayTime", this.delayTimeKnobValue);
     },
@@ -173,6 +193,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.param:not(.visible) {
+  display: none;
+}
 .lfo-container {
   margin-top: 0.2em;
   padding: 0.1em 0;

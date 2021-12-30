@@ -16,12 +16,13 @@
           >
             <div class="instrument-enabler-inner" :class="{ enabled: instrumentEnabled }"></div>
           </div>
+
           <div v-if="Node.saveString" class="save-preset" @click="savePreset()">[G]</div>
         </div>
-        <div class="node-name-container">
-          <div class="node-name" @click.stop="toggleFolded">{{ Node.name }}</div>
-        </div>
-        <div class="top-right" v-if="Node.name !== 'Track Gain'">
+
+        <div class="node-name" @click.stop="toggleFolded">{{ Node.name }}</div>
+
+        <div class="top-right">
           <div class="delete" @click="deleteNode()">X</div>
         </div>
       </div>
@@ -31,19 +32,7 @@
       </div>
 
       <!-- Node Body -->
-      <div class="node-body">
-        <div class="types" v-if="Node.types">
-          <select @input="setType($event)">
-            <option v-for="type in Node.types" :key="type" :selected="type === Node.type">
-              {{ type }}
-            </option>
-          </select>
-        </div>
-
-        <div class="body-wrapper">
-          <component :is="`${Node.nodeType}Body`" :Node="Node" @knobClicked="knobClickedWithRef" />
-        </div>
-      </div>
+      <component :is="`${Node.nodeType}Body`" :Node="Node" @knobClicked="knobClickedWithRef" />
 
       <div class="start-stop" v-if="Node.nodeType === 'Carrier'">
         <div class="start" @click="startOsc()" v-if="Node.status === 'STOPPED'">START</div>
@@ -55,7 +44,7 @@
         <!-- Dry/Wet -->
         <div v-if="Node.dryWet" class="dry-wet">
           <div class="param-name">dry/wet</div>
-          <div class="knob-wrapper" @click="knobClicked(Node.name + '-dry-wet')">
+          <div @click="knobClicked(Node.name + '-dry-wet')">
             <Knob
               :ref="Node.name + '-dry-wet'"
               :initVal="Node.dryWet.value"
@@ -69,7 +58,7 @@
         <!-- Level -->
         <div class="level">
           <div class="param-name">Level</div>
-          <div class="knob-wrapper" @click="knobClicked(Node.name + '-level')">
+          <div @click="knobClicked(Node.name + '-level')">
             <Knob
               :ref="Node.name + '-level'"
               :initVal="Node.gain"
@@ -144,23 +133,6 @@ export default {
 
     toggleFolded() {
       this.folded = !this.folded;
-    },
-
-    setType(e) {
-      // if (this.Node.nodeType === 'Carrier') return;
-
-      this.Node.setType(e.target.value);
-      e.target.blur();
-
-      if (this.Node.audioParams) this.setParamsConstraints(this.Node.audioParams);
-    },
-
-    setParamsConstraints(params) {
-      params.forEach(p => {
-        const refName = this.Node.name + '-' + p.name;
-        const ref = this.$refs[refName];
-        if (ref) if (ref[0]) ref[0].setParamContraints(p.minValue, p.maxValue, p.defaultValue);
-      });
     },
 
     deleteNode() {
@@ -282,11 +254,13 @@ export default {
       cursor: pointer;
     }
   }
-  .node-name-container {
-    text-align: center;
+  .node-name {
     flex: 1;
+    text-align: center;
     user-select: none;
     white-space: nowrap;
+    color: var(--color-1);
+    font-size: 1.1rem;
     cursor: pointer;
   }
   .top-right {

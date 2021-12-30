@@ -1,17 +1,20 @@
 <template>
   <div class="FemodBody">
-    <!-- Custom Params -->
-    <div class="custom-params params-container">
-      <div
-        v-for="(customParam, cpIndex) in Node.customParams"
-        :key="customParam.name"
-        class="custom-param param"
-      >
-        <div class="param-name">
-          {{ customParam.displayName }}
-        </div>
+    <!-- Types -->
+    <div class="types" v-if="Node.types">
+      <select @input="setType($event)">
+        <option v-for="type in Node.types" :key="type" :selected="type === Node.type">
+          {{ type }}
+        </option>
+      </select>
+    </div>
 
-        <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + customParam.name)">
+    <!-- Custom Params -->
+    <div class="params-container">
+      <div v-for="(customParam, cpIndex) in Node.customParams" :key="customParam.name" class="param">
+        <div class="param-name">{{ customParam.displayName }}</div>
+
+        <div @click="knobClicked(Node.name + '-' + customParam.name)">
           <Knob
             :ref="Node.name + '-' + customParam.name"
             :unit="customParam.unit"
@@ -25,17 +28,16 @@
     </div>
 
     <!-- Modulation Params -->
-    <div class="modulation-params params-container" v-if="Node.modulationParams">
+    <div class="params-container" v-if="Node.modulationParams">
       <div
         v-for="(motulationParam, mpIndex) in Node.modulationParams"
         :key="motulationParam.name"
-        class="modulation-param param"
+        class="param"
       >
         <div class="param-name">{{ motulationParam.displayName }}</div>
 
         <div
           v-if="motulationParam.name !== 'type'"
-          class="knob-wrapper"
           @click="knobClicked(Node.name + '-' + motulationParam.name)"
         >
           <Knob
@@ -47,7 +49,8 @@
             @knobTurned="setModulationParam(mpIndex, $event)"
           />
         </div>
-        <div v-else class="select-wrapper">
+        <!-- Mod Waveshape - todo: should not be a modulation param but a individual thing -->
+        <div v-else>
           <select @input="setModType(mpIndex, $event)">
             <option
               :key="type"
@@ -71,6 +74,11 @@ export default {
   props: ['Node'],
 
   methods: {
+    setType({ target }) {
+      this.Node.setType(target.value);
+      target.blur();
+    },
+
     setCustomParam(cpIndex, value) {
       this.Node.setCustomParam(cpIndex, value);
     },
@@ -80,8 +88,8 @@ export default {
     },
 
     setModType(mpIndex, e) {
-      e.target.blur();
       this.Node.setModulationParam(mpIndex, e.target.value);
+      e.target.blur();
     },
 
     knobClicked(knobName) {

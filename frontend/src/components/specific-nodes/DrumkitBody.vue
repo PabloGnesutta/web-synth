@@ -1,7 +1,5 @@
 <template>
-  <div>
-    <div class="node-body-inner"></div>
-  </div>
+  <div class="drumkit-body"></div>
 </template>
 
 <script>

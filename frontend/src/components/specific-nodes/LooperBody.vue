@@ -1,5 +1,5 @@
 <template>
-  <div class="LooperBody">
+  <div class="looper-body">
     <div class="loop-controls">
       <div class="status">
         {{ Node.status }}

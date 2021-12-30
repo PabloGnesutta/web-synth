@@ -1,5 +1,5 @@
 <template>
-  <div class="DelayBody">
+  <div class="delay-body">
     <!-- Sync -->
     <div class="sync-container">
       <div class="sync" @click="toggleSync" :class="{ synced: sync }">Sync</div>
@@ -16,11 +16,11 @@
       </div>
     </div>
     <!-- Inner node audio params -->
-    <div class="inner-node-audio-params params-container">
+    <div class="params-container">
       <div
         v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
         :key="innerNodeAudioParam.name"
-        class="inner-node-audio-param param"
+        class="param"
       >
         <div
           class="param-container"
@@ -28,11 +28,9 @@
             innerNodeAudioParam.name !== 'delayTime' || (innerNodeAudioParam.name === 'delayTime' && !sync)
           "
         >
-          <div class="param-name">
-            {{ innerNodeAudioParam.displayName }}
-          </div>
+          <div class="param-name">{{ innerNodeAudioParam.displayName }}</div>
 
-          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
+          <div @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
             <Knob
               :ref="Node.name + '-' + innerNodeAudioParam.name"
               :unit="innerNodeAudioParam.unit"
@@ -46,18 +44,12 @@
       </div>
     </div>
 
-    <div class="custom-params params-container">
-      <div
-        v-for="(customParam, cpIndex) in Node.customParams"
-        :key="customParam.name"
-        class="custom-param param"
-      >
-        <div class="param-name">
-          {{ customParam.displayName }}
-        </div>
+    <div class="params-container">
+      <div v-for="(customParam, cpIndex) in Node.customParams" :key="customParam.name" class="param">
+        <div class="param-name">{{ customParam.displayName }}</div>
 
-        <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + customParam.name)">
-          <div class="knob-wrapper">
+        <div @click="knobClicked(Node.name + '-' + customParam.name)">
+          <div>
             <Knob
               :ref="Node.name + '-' + customParam.name"
               :unit="customParam.unit"
@@ -80,6 +72,10 @@
 import { mapGetters, mapMutations } from 'vuex';
 import Knob from '../Knob';
 export default {
+  name: 'DelayBody',
+  components: { Knob },
+  props: ['Node'],
+
   data() {
     return {
       sync: false,
@@ -96,7 +92,6 @@ export default {
     };
   },
 
-  props: ['Node'],
   computed: {
     ...mapGetters(['secondsPerBeat']),
   },
@@ -148,10 +143,6 @@ export default {
     getCssNodeName(name) {
       return name.replace(new RegExp(' ', 'g'), '-');
     },
-  },
-
-  components: {
-    Knob,
   },
 };
 </script>

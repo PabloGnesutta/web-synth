@@ -1,5 +1,5 @@
 <template>
-  <div class="LooperBody">
+  <div class="sampler-body">
     <div class="sample-controls">
       <!-- Upload -->
       <div class="upload-loop">
@@ -8,17 +8,13 @@
       </div>
     </div>
 
-    <div class="custom-params params-container">
-      <div
-        class="custom-param param"
-        v-for="(customParam, cpIndex) in Node.customParams"
-        :key="customParam.name"
-      >
-        <div class="param-name">
-          {{ customParam.displayName }}
-        </div>
+    <div class="params-container">
+      <!-- Custom Params -->
+      <!-- Start At, Cutoff from End -->
+      <div class="param" v-for="(customParam, cpIndex) in Node.customParams" :key="customParam.name">
+        <div class="param-name">{{ customParam.displayName }}</div>
 
-        <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + customParam.name)">
+        <div @click="knobClicked(Node.name + '-' + customParam.name)">
           <Knob
             :ref="Node.name + '-' + customParam.name"
             :unit="customParam.unit"
@@ -31,8 +27,8 @@
       </div>
     </div>
 
-    <div class="stop-btn" v-if="Node.playing" @click="stopSample">STOP</div>
-    <div class="stop-placeholder" v-else></div>
+    <div v-if="Node.playing" class="stop-btn" @click="stopSample">STOP</div>
+    <div v-else class="stop-placeholder"></div>
   </div>
 </template>
 
@@ -40,6 +36,7 @@
 import { mapGetters } from 'vuex';
 import Knob from '../Knob';
 export default {
+  name: 'SamplerBody',
   components: { Knob },
   props: ['Node'],
   data() {

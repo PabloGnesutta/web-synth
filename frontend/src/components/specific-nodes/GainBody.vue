@@ -1,35 +1,33 @@
 <template>
-  <div>
-    <div class="inner">
-      <!-- Mute/Rec enabled -->
-      <div v-if="Node.name === 'Track Gain'" class="node-controls">
-        <div class="rec-enabled-disabled" @click="toggleRecEnabled">
-          <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
-          <div v-else class="rec-btn rec-disabled">Rec disabled</div>
-        </div>
-        <div class="mute-unmute" @click="toggleMute">
-          <div v-if="Node.muted" class="unmute">M</div>
-          <div v-else class="mute">M</div>
-        </div>
+  <div class="inner">
+    <!-- Mute/Rec enabled -->
+    <div v-if="Node.name === 'Track Gain'" class="node-controls">
+      <div class="rec-enabled-disabled" @click="toggleRecEnabled">
+        <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
+        <div v-else class="rec-btn rec-disabled">Rec disabled</div>
       </div>
+      <div class="mute-unmute" @click="toggleMute">
+        <div v-if="Node.muted" class="unmute">M</div>
+        <div v-else class="mute">M</div>
+      </div>
+    </div>
 
-      <!-- Level -->
-      <div class="level">
-        <div class="knob-wrapper" @click="knobClicked(Node.name + '-level')">
-          <Knob
-            :ref="Node.name + '-level'"
-            :initVal="Node.gain"
-            :minVal="Node.minGain"
-            :maxVal="Node.maxGain"
-            @knobTurned="setNodeGain($event)"
-          />
-        </div>
+    <!-- Level -->
+    <div class="level">
+      <div @click="knobClicked(Node.name + '-level')">
+        <Knob
+          :ref="Node.name + '-level'"
+          :initVal="Node.gain"
+          :minVal="Node.minGain"
+          :maxVal="Node.maxGain"
+          @knobTurned="setNodeGain($event)"
+        />
       </div>
+    </div>
 
-      <!-- Analyser -->
-      <div v-if="analyser">
-        <AnalyserRender :analyser="analyser" />
-      </div>
+    <!-- Analyser -->
+    <div v-if="analyser">
+      <AnalyserRender :analyser="analyser" />
     </div>
   </div>
 </template>
@@ -39,8 +37,10 @@ import Knob from '../Knob';
 import AnalyserRender from '../AnalyserRender';
 
 export default {
+  name: 'GainBody',
   components: { Knob, AnalyserRender },
   props: ['Node', 'analyser', 'recEnabled'],
+
   data() {
     return {
       muted: false,

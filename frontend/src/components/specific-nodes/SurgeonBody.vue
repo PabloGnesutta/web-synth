@@ -2,8 +2,10 @@
   <div class="surgeon-body">
     <div v-for="(osc, o) in Node.oscillatorGroupProps" :key="o" class="oscillator">
       <div class="oscillator-inner">
+        <!-- Top Section -->
         <div class="top">
-          <div class="types">
+          <!-- Oscillator Waveshape (Type) -->
+          <div>
             <span class="label">{{ osc.name }}</span>
             <select @input="setType(o, $event)">
               <option v-for="type in Node.oscTypes" :key="type" :selected="type === osc.type">
@@ -11,6 +13,8 @@
               </option>
             </select>
           </div>
+
+          <!-- Octave/Transpose -->
           <div
             tabindex="1"
             class="octave-transpose"
@@ -44,15 +48,12 @@
           <!-- Mute/Unmute -->
           <div class="mute-unmute" :class="{ muted: osc.muted }" @click="toggleOscillatorGroupMute(o)">M</div>
         </div>
-        <div class="custom-params params-container">
-          <div
-            v-for="(customParam, paramIndex) in Node.surgeonParams"
-            :key="customParam.name"
-            class="custom-param param"
-          >
-            <div class="param-name">
-              {{ customParam.displayName }}
-            </div>
+
+        <!-- Custom Params -->
+        <!-- A, D, S, R, Detune  -->
+        <div class="params-container">
+          <div v-for="(customParam, paramIndex) in Node.surgeonParams" :key="customParam.name" class="param">
+            <div class="param-name">{{ customParam.displayName }}</div>
 
             <div class="knob-wrapper" @click="knobClicked(Node.name + '-osc-' + o + '-' + customParam.name)">
               <Knob
@@ -200,16 +201,15 @@ export default {
   align-items: center;
   justify-content: space-between;
 
-  .types {
-    text-align: left;
-    margin: 0;
-  }
+  // .types {
+  // text-align: left;
+  // margin: 0;
+  // }
 
   .octave-transpose:focus {
     border-color: yellow;
     outline: none;
   }
-
   .octave-transpose {
     display: flex;
     align-items: center;
@@ -219,10 +219,10 @@ export default {
     padding: 0 0.2em;
     transition: border-color 0.1s ease-out;
   }
+
   .mute-unmute {
     user-select: none;
     align-self: flex-start;
-    // font-size: 0.9rem;
     background: #444;
     padding: 0 0.2em;
     &.muted {

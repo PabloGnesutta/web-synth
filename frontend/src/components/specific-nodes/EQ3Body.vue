@@ -8,15 +8,13 @@
       <div
         v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
         :key="innerNodeAudioParam.name"
-        class="inner-node-audio-param param"
+        class="param"
         :class="[getCssNodeName(innerNodeAudioParam.name)]"
       >
         <div class="param-container">
-          <div class="param-name">
-            {{ innerNodeAudioParam.displayName }}
-          </div>
+          <div class="param-name">{{ innerNodeAudioParam.displayName }}</div>
 
-          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
+          <div @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
             <Knob
               :ref="Node.name + '-' + innerNodeAudioParam.name"
               :unit="innerNodeAudioParam.unit"

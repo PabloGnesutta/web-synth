@@ -155,7 +155,6 @@ const Looper = require('../class/Effects/Looper');
 const Compressor = require('../class/Effects/Compressor');
 const BiquadFilter = require('../class/Effects/BiquadFilter');
 const effectsDict = new Map([
-  ['Gain', Gain],
   ['EQ3', EQ3],
   ['Delay', Delay],
   ['Reverb', Reverb],
@@ -163,6 +162,7 @@ const effectsDict = new Map([
   ['Distortion', Distortion],
   ['Compressor', Compressor],
   ['BiquadFilter', BiquadFilter],
+  // ['Gain', Gain],
 ]);
 
 import { mapMutations, mapGetters } from 'vuex';
@@ -234,6 +234,9 @@ export default {
       ctrl_pressed: false,
       octave: 3,
       transpose: 0,
+
+      instruments: ['Mic', 'Femod', 'Carrier', 'Drumkit', 'Sampler', 'Surgeon', 'WhiteNoise'],
+      effects: ['EQ3', 'Delay', 'Reverb', 'Looper', 'Distortion', 'Compressor', 'BiquadFilter'],
     };
   },
 
@@ -266,9 +269,8 @@ export default {
       this.createMainGain();
 
       this.createTrack(new Surgeon());
-      this.insertEffect(new Delay());
-      this.createTrack(new Femod());
-      this.insertEffect(new Reverb());
+      this.createEffect('Reverb');
+      this.createEffect('BiquadFilter');
 
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
@@ -343,7 +345,7 @@ export default {
         effect = null;
       });
       this.currentTrack = null;
-      this.tracks.splice(t, 1);
+      this.tracks.splice(this.currentTrackIndex, 1);
     },
 
     // Effects:
@@ -630,10 +632,10 @@ export default {
     },
 
     loadSave(tracks) {
-      tracks.forEach(t => {
+      tracks.forEach(track => {
         this.loadInstrument(t.instrument);
 
-        t.effects.forEach(savedEffect => {
+        track.effects.forEach(savedEffect => {
           this.loadEffect(savedEffect);
         });
       });
@@ -1002,7 +1004,7 @@ export default {
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 0.5rem;
-  padding-right: 3rem;
+  padding-right: 10rem;
   flex: 1;
   height: 380px;
 }
@@ -1013,10 +1015,6 @@ export default {
 
 .track-instrument .container {
   height: 100%;
-}
-.track-instrument .node .node-name {
-  color: var(--color-1);
-  font-size: 1.1rem;
 }
 
 .track-effects {

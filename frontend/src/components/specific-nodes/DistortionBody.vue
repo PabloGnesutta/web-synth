@@ -6,7 +6,7 @@
       <div v-for="(customParam, cpIndex) in Node.customParams" :key="customParam.name" class="param">
         <div class="param-name">{{ customParam.displayName }}</div>
 
-        <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + customParam.name)">
+        <div @click="knobClicked(Node.name + '-' + customParam.name)">
           <Knob
             :ref="Node.name + '-' + customParam.name"
             :unit="customParam.unit"

@@ -1,11 +1,11 @@
 <template>
-  <div class="node-body">
+  <div class="compressor-body">
     <!-- Audio Params -->
     <div class="params-container">
-      <div v-for="(audioParam, apIndex) in Node.audioParams" :key="audioParam.name" class="audio-param param">
+      <div v-for="(audioParam, apIndex) in Node.audioParams" :key="audioParam.name" class="param">
         <div class="param-name">{{ audioParam.displayName }}</div>
 
-        <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + audioParam.name)">
+        <div @click="knobClicked(Node.name + '-' + audioParam.name)">
           <Knob
             :ref="Node.name + '-' + audioParam.name"
             :minVal="audioParam.minValue"
