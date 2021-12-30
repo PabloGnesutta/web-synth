@@ -141,7 +141,7 @@ class Surgeon extends Node {
     this.setNotInUse(index);
   }
 
-  toggleMute(index) {
+  toggleOscillatorGroupMute(index) {
     //arreglar en caso de modulator
     this.oscillatorGroupProps[index].muted = !this.oscillatorGroupProps[index].muted;
     if (this.oscillatorGroupProps[index].muted)

@@ -1,6 +1,6 @@
 <template>
-  <div class="BaseNodeBody">
-    <div class="node-body-inner">
+  <div>
+    <div>
       <!-- Audio Params -->
       <div v-if="Node.audioParams" class="audio-params params-container">
         <div

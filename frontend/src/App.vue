@@ -10,6 +10,7 @@ Number.prototype.map = function (in_min, in_max, out_min, out_max) {
 };
 
 export default {
+  name: 'WebSynth',
   data() {
     return {};
   },
@@ -49,34 +50,12 @@ canvas {
   display: block;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  height: 10px;
-  width: 12px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 2px #fff;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgb(228, 173, 154);
-}
-
 .select-none {
   user-select: none;
 }
 
 .cursor-default {
   cursor: default;
-}
-
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  width: 100vw;
-  overflow-x: hidden;
 }
 
 .pointer {
@@ -90,5 +69,26 @@ canvas {
 .set-default-value {
   color: lightgreen;
   background: rgba(0, 128, 128, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 10px;
+  width: 12px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 2px #fff;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgb(228, 173, 154);
+}
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  width: 100vw;
+  overflow-x: hidden;
 }
 </style>

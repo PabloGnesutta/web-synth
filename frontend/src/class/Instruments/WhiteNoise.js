@@ -69,7 +69,7 @@ class WhiteNoise extends Node {
       },
       {
         name: 'Q', displayName: 'res', unit: '',
-        minValue: -QMax, maxValue: QMax, value: 20,
+        minValue: 0, maxValue: QMax, value: 20,
       },
     ];
 
@@ -80,7 +80,7 @@ class WhiteNoise extends Node {
     this.innerNodeAudioParams = [
       {
         name: 'modFrequency', displayName: 'mod freq', unit: 'hz',
-        minValue: 0, maxValue: 500, value: 4,
+        minValue: 0, maxValue: 200, value: 4,
         node: this.mod, nodeAudioParam: 'frequency'
       },
       {

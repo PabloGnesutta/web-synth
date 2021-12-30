@@ -1,5 +1,5 @@
 <template>
-  <div class="SurgeonBody">
+  <div class="surgeon-body">
     <div v-for="(osc, o) in Node.oscillatorGroupProps" :key="o" class="oscillator">
       <div class="oscillator-inner">
         <div class="top">
@@ -42,7 +42,7 @@
           </div>
 
           <!-- Mute/Unmute -->
-          <div class="mute-unmute" :class="{ muted: osc.muted }" @click="toggleMute(o)">M</div>
+          <div class="mute-unmute" :class="{ muted: osc.muted }" @click="toggleOscillatorGroupMute(o)">M</div>
         </div>
         <div class="custom-params params-container">
           <div
@@ -155,8 +155,8 @@ export default {
       ref.setParamContraints(minValue, maxValue, value);
     },
 
-    toggleMute(index) {
-      this.Node.toggleMute(index);
+    toggleOscillatorGroupMute(index) {
+      this.Node.toggleOscillatorGroupMute(index);
     },
 
     setType(index, event) {
@@ -176,7 +176,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.SurgeonBody {
+.surgeon-body {
   font-size: 0.9rem;
 }
 .oscillator {

@@ -1,10 +1,11 @@
 <template>
-  <div class="FilterBody">
+  <div class="biquadfilter-body">
     <!-- Audio Params -->
-    <div class="audio-params params-container">
+    <!-- Freq, Res, Gain, Q -->
+    <div class="params-container">
       <div v-for="(audioParam, apIndex) in Node.audioParams" :key="audioParam.name">
         <div
-          class="audio-param param"
+          class="param"
           v-if="
             !(Node.type === 'highshelf' && audioParam.name === 'Q') &&
             !(Node.type === 'lowshelf' && audioParam.name === 'Q') &&
@@ -33,7 +34,7 @@
     </div>
 
     <div class="lfo-container">
-      <!-- Mod Type, Tempo, Sync -->
+      <!-- Modulator Waveshape -->
       <div class="select-wrapper">
         <span>LFO</span>
         <select @input="setModType($event)">
@@ -44,25 +45,28 @@
       </div>
 
       <!-- Inner Node Audio Params -->
+      <!-- LFO Freq & Amount -->
       <div class="inner-node-audio-params">
         <div
           v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
           :key="innerNodeAudioParam.name"
-          class="inner-node-audio-param param"
         >
-          <div class="param-name">
-            {{ innerNodeAudioParam.displayName }}
-          </div>
+          <!-- Hide frequency if tempo-synced -->
+          <div v-if="!sync || (sync && inapIndex !== 0)" class="param">
+            <div class="param-name">
+              {{ innerNodeAudioParam.displayName }}
+            </div>
 
-          <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
-            <Knob
-              :ref="Node.name + '-' + innerNodeAudioParam.name"
-              :unit="innerNodeAudioParam.unit"
-              :minVal="innerNodeAudioParam.minValue"
-              :maxVal="innerNodeAudioParam.maxValue"
-              :initVal="innerNodeAudioParam.value"
-              @knobTurned="setInnerNodeAudioParam(inapIndex, $event)"
-            />
+            <div class="knob-wrapper" @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
+              <Knob
+                :ref="Node.name + '-' + innerNodeAudioParam.name"
+                :unit="innerNodeAudioParam.unit"
+                :minVal="innerNodeAudioParam.minValue"
+                :maxVal="innerNodeAudioParam.maxValue"
+                :initVal="innerNodeAudioParam.value"
+                @knobTurned="setInnerNodeAudioParam(inapIndex, $event)"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -72,10 +76,10 @@
         <div class="sync" @click="toggleSync" :class="{ synced: sync }">Sync</div>
         <div class="sync-buttons" v-show="sync">
           <div
-            class="sync-button"
-            :class="{ selected: i === syncButtonSelected }"
             v-for="(btn, i) in syncButtons"
             :key="i"
+            class="sync-button"
+            :class="{ selected: i === syncButtonSelected }"
             @click="setSync(i)"
           >
             {{ btn.display }}
@@ -123,8 +127,7 @@ export default {
     ...mapMutations(['setTempo', 'setSecondsPerBeat']),
 
     setAudioParam(apIndex, value, callerIsSetSync) {
-      // if (inapIndex === 0 && !callerIsSetSync) {
-      //   //frequency... VER
+      // if (apIndex === 0 && !callerIsSetSync) {
       //   this.delayTimeKnobValue = value;
       // }
       this.Node.setAudioParam(apIndex, value);
@@ -140,9 +143,10 @@ export default {
 
     setAsTempo() {
       let tempo = this.Node.mod.frequency.value * 60;
-      while (tempo > 260) {
+      while (tempo > 240) {
         tempo /= 2;
       }
+      tempo = tempo.toFixed(2);
       this.setTempo(tempo);
       this.setSecondsPerBeat(60.0 / tempo);
     },
@@ -150,8 +154,6 @@ export default {
     setSync(i) {
       this.syncButtonSelected = i;
       const frequency = this.secondsPerBeat * 2 * this.syncButtons[i].value;
-
-      console.log(frequency);
       if (this.sync) this.Node.setInnerNodeAudioParam('modFrequency', frequency);
     },
 
@@ -171,10 +173,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.FilterBody {
-  font-size: 0.9rem;
-}
-
 .lfo-container {
   margin-top: 0.2em;
   padding: 0.1em 0;

@@ -51,9 +51,9 @@
                 </div>
               </div>
             </div>
-            <div class="btn btn-instrument dropdown-item" @click="createMic()">Mic</div>
+            <!-- <div class="btn btn-instrument dropdown-item" @click="createMic()">Mic</div> -->
             <div class="btn btn-instrument dropdown-item" @click="createInstrument('WhiteNoise')">Noise</div>
-            <div class="btn btn-instrument dropdown-item" @click="createInstrument('Carrier')">Oscil</div>
+            <!-- <div class="btn btn-instrument dropdown-item" @click="createInstrument('Carrier')">Oscil</div> -->
             <div class="btn btn-instrument dropdown-item" @click="createInstrument('Sampler')">Sampler</div>
           </div>
         </div>
@@ -406,7 +406,7 @@ export default {
 
 <style lang="scss" scoped>
 .backdrop {
-  position: absolute;
+  position: fixed;
   top: var(--header-height);
   left: 0;
   width: 100%;

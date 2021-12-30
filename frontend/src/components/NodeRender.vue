@@ -1,6 +1,6 @@
 
 <template>
-  <div class="node-render">
+  <div class="node-wrapper">
     <div
       :ref="Node.name"
       class="node"
@@ -43,19 +43,6 @@
         <div class="body-wrapper">
           <component :is="`${Node.nodeType}Body`" :Node="Node" @knobClicked="knobClickedWithRef" />
         </div>
-
-        <div
-          v-if="
-            Node.nodeType !== 'Delay' &&
-            Node.nodeType !== 'EQ3' &&
-            Node.nodeType !== 'Femod' &&
-            Node.nodeType !== 'Sampler' &&
-            Node.nodeType !== 'BiquadFilter' &&
-            Node.nodeType !== 'Surgeon'
-          "
-        >
-          <BaseNodeBody :Node="Node" @knobClicked="knobClickedWithRef" />
-        </div>
       </div>
 
       <div class="start-stop" v-if="Node.nodeType === 'Carrier'">
@@ -65,16 +52,6 @@
 
       <!-- Node Footer -->
       <div class="node-footer">
-        <!-- Octave/Transpose -->
-        <div class="octave-transpose" v-if="Node.octave || Node.transpose">
-          <div class="octave" v-if="Node.octave">
-            Octave: <span class="value">{{ Node.octave }}</span>
-          </div>
-          <div class="transpose" v-if="Node.transpose != undefined">
-            Transp.: <span class="value"> {{ Node.transpose }}</span>
-          </div>
-        </div>
-
         <!-- Dry/Wet -->
         <div v-if="Node.dryWet" class="dry-wet">
           <div class="param-name">dry/wet</div>
@@ -114,12 +91,16 @@ import Knob from './Knob';
 import DelayBody from './specific-nodes/DelayBody';
 import EQ3Body from './specific-nodes/EQ3Body.vue';
 import LooperBody from './specific-nodes/LooperBody.vue';
-import DuetteBody from './specific-nodes/DuetteBody.vue';
+import DrumkitBody from './specific-nodes/DrumkitBody.vue';
 import SurgeonBody from './specific-nodes/SurgeonBody.vue';
+import WhiteNoiseBody from './specific-nodes/WhiteNoiseBody.vue';
 import FemodBody from './specific-nodes/FemodBody.vue';
 import SamplerBody from './specific-nodes/SamplerBody.vue';
 import BiquadFilterBody from './specific-nodes/BiquadFilterBody.vue';
-import BaseNodeBody from './specific-nodes/BaseNodeBody.vue';
+import ReverbBody from './specific-nodes/ReverbBody.vue';
+import CompressorBody from './specific-nodes/CompressorBody.vue';
+import DistortionBody from './specific-nodes/DistortionBody.vue';
+// import BaseNodeBody from './specific-nodes/BaseNodeBody.vue';
 
 export default {
   name: 'NodeRender',
@@ -128,12 +109,16 @@ export default {
     EQ3Body,
     DelayBody,
     LooperBody,
-    DuetteBody,
+    DrumkitBody,
     SurgeonBody,
+    WhiteNoiseBody,
     FemodBody,
+    CompressorBody,
     BiquadFilterBody,
+    DistortionBody,
     SamplerBody,
-    BaseNodeBody,
+    ReverbBody,
+    // BaseNodeBody,
   },
 
   props: ['Node', 'instrumentEnabled'],
@@ -162,7 +147,7 @@ export default {
     },
 
     setType(e) {
-      if (this.Node.nodeType === 'Carrier') return;
+      // if (this.Node.nodeType === 'Carrier') return;
 
       this.Node.setType(e.target.value);
       e.target.blur();
@@ -243,15 +228,13 @@ export default {
 </script>
 
 <style lang="scss">
-.node-render {
-  // display: flex;
-  // align-items: flex-end;
+.node-wrapper {
   height: 100%;
 }
 
 .node {
   border: 2px solid transparent;
-  padding-bottom: 0.1em;
+  padding-bottom: 0.5rem;
   background: #333;
   color: #f3f3f3;
   position: relative;
@@ -281,7 +264,6 @@ export default {
       bottom: 50%;
       width: 100%;
       white-space: nowrap;
-      cursor: pointer;
       user-select: none;
       letter-spacing: 1px;
     }
@@ -313,35 +295,12 @@ export default {
   }
 }
 
-.instrument-enabler {
-  cursor: pointer;
-  // position: relative;
-  z-index: 1;
-  .instrument-enabler-inner {
-    width: 15px;
-    height: 15px;
-    background: red;
-    transition: background-color 0.2s ease-out;
-  }
-  .instrument-enabler-inner.enabled {
-    background: green;
-  }
-}
-
 .delete {
   user-select: none;
   cursor: pointer;
   background: #444;
   padding: 0 0.2em;
   z-index: 1;
-}
-
-.node-name-container {
-  text-align: center;
-}
-.types {
-  padding: 0.2em 0;
-  background: #272727;
 }
 
 // PARAMS
@@ -362,14 +321,28 @@ export default {
   font-size: 0.95rem;
 }
 
-.level {
-  transition: border-color 0.2s ease-out, background-color 0.2s ease-out;
-}
-
 .param-name {
   padding: 0.3em 0.2em 0.5em;
   user-select: none;
   font-size: 0.9rem;
+}
+
+.types {
+  padding: 0.2em 0;
+  background: #272727;
+}
+
+.instrument-enabler {
+  cursor: pointer;
+  .instrument-enabler-inner {
+    width: 15px;
+    height: 15px;
+    background: red;
+    transition: background-color 0.2s ease-out;
+  }
+  .instrument-enabler-inner.enabled {
+    background: green;
+  }
 }
 
 // Specific Node Styles:
@@ -424,10 +397,7 @@ export default {
 
 .node-footer {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  gap: 0.5em;
+  justify-content: space-around;
 }
 
 .octave-transpose {
@@ -451,36 +421,4 @@ export default {
 .stop {
   border: 1px solid red;
 }
-
-// Track gain
-// .rec-enabled-disabled {
-//   cursor: pointer;
-//   margin-bottom: 1em;
-// }
-// .rec-btn {
-//   user-select: none;
-// }
-// .rec-enabled {
-//   color: red;
-// }
-// .rec-disabled {
-//   color: gray;
-// }
-
-// .mute-unmute {
-//   cursor: pointer;
-//   .mute,
-//   .unmute {
-//     width: 30px;
-//     padding: 0.2em;
-//     margin: 0 auto;
-//     text-align: center;
-//   }
-//   .mute {
-//     background: #111;
-//   }
-//   .unmute {
-//     background: red;
-//   }
-// }
 </style>
