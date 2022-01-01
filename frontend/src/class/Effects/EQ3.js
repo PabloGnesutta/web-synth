@@ -18,19 +18,12 @@ class EQ3 extends Node {
 
     //high
     this.high.type = "highshelf";
-    this.high.frequency.value = 3200.0;
-    this.high.gain.value = 0.0;
     this.high.connect(this.mid);
     //mid
     this.mid.type = "peaking";
-    this.mid.frequency.value = 1000.0;
-    this.mid.Q.value = 0.5;
-    this.mid.gain.value = 0.0;
     this.mid.connect(this.node);
     //low (chain end)
     this.node.type = "lowshelf";
-    this.node.frequency.value = 320.0;
-    this.node.gain.value = 0.0;
 
     this.inputNode.connect(this.high);
 
@@ -40,6 +33,7 @@ class EQ3 extends Node {
   }
 
   initInnerNodeAudioParams() {
+    hasInnerNodeAudioParams(this);
     this.innerNodeAudioParams = [
       //low
       {
@@ -80,7 +74,10 @@ class EQ3 extends Node {
         node: this.high, nodeAudioParam: 'gain'
       },
     ];
-    hasInnerNodeAudioParams(this);
+
+    for (let i = 0; i < this.innerNodeAudioParams.length; i++) {
+      this.setInnerNodeAudioParam(i, this.innerNodeAudioParams[i].value);
+    }
   }
 
   saveString() {

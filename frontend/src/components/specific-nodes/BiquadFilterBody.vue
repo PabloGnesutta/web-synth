@@ -56,16 +56,14 @@
 
       <!-- Inner Node Audio Params -->
       <!-- LFO Freq & Amount -->
-      <div class="inner-node-audio-params">
+      <div class="params-container">
         <div
           v-for="(innerNodeAudioParam, inapIndex) in Node.innerNodeAudioParams"
           :key="innerNodeAudioParam.name"
         >
           <!-- Hide frequency if tempo-synced -->
-          <div v-if="!sync || (sync && inapIndex !== 0)" class="param">
-            <div class="param-name">
-              {{ innerNodeAudioParam.displayName }}
-            </div>
+          <div v-if="!sync || (sync && inapIndex !== 0)" class="param visible">
+            <div class="param-name">{{ innerNodeAudioParam.displayName }}</div>
 
             <div @click="knobClicked(Node.name + '-' + innerNodeAudioParam.name)">
               <Knob
@@ -131,6 +129,10 @@ export default {
 
   computed: {
     ...mapGetters(['secondsPerBeat', 'tempo']),
+  },
+
+  mounted() {
+    console.log('bq load', this.Node);
   },
 
   methods: {
@@ -252,10 +254,5 @@ export default {
       background: var(--color-1);
     }
   }
-}
-
-.inner-node-audio-params {
-  display: flex;
-  justify-content: center;
 }
 </style>

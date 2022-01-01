@@ -4,10 +4,10 @@ module.exports = function hasDryWet(target) {
     if (typeof (indexOrName) !== 'number')
       index = target.audioParams.findIndex(ap => ap.name === indexOrName);
 
-    let curvedValue = parseFloat(value);
-
     const param = target.audioParams[index];
-    target.node[param.name].setValueAtTime(curvedValue, 0);
+    let newValue = parseFloat(value);
+
+    target.node[param.name].setValueAtTime(newValue, 0);
     target.audioParams[index].value = parseFloat(value);
   };
 

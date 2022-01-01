@@ -18,10 +18,7 @@ class Delay extends Node {
     this.name = "Delay " + ++Delay.delayCount;
 
     this.node = Node.context.createDelay(maxDelayTime);
-    this.node.delayTime.value = initialDelayTime;
-
     this.feedbackGain = Node.context.createGain();
-    this.feedbackGain.gain.value = initialFeddback;
 
     this.node.connect(this.feedbackGain);
     this.feedbackGain.connect(this.node);
@@ -34,6 +31,7 @@ class Delay extends Node {
   }
 
   initInnerNodeAudioParams() {
+    hasInnerNodeAudioParams(this);
     this.innerNodeAudioParams = [
       {
         name: 'delayTime', displayName: 'time', unit: 's',
@@ -46,8 +44,9 @@ class Delay extends Node {
         node: this.feedbackGain, nodeAudioParam: 'gain'
       },
     ];
-
-    hasInnerNodeAudioParams(this);
+    for (let i = 0; i < this.innerNodeAudioParams.length; i++) {
+      this.setInnerNodeAudioParam(i, this.innerNodeAudioParams[i].value);
+    }
   }
 
   saveString() {

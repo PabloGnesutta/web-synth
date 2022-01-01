@@ -11,7 +11,7 @@
     <div class="mapped-cmd" v-if="appIsMapping">
       {{ mappedCmd }}
     </div>
-    <div class="value set-default-value pointer" @click="valueClicked">
+    <div class="value set-default-value pointer" @click="onDefaultValueClick">
       <div>{{ displayValue }}</div>
     </div>
   </div>
@@ -43,7 +43,7 @@ export default {
       maxTurningDeg: 235,
       min_v: 0,
       max_v: 127,
-      defaultValue: null,
+      default_v: null,
 
       thisIsMapping: false,
       mappedCmd: null,
@@ -66,37 +66,17 @@ export default {
   },
 
   methods: {
-    valueClicked() {
-      this.setKnobValueAndPosition(parseFloat(this.initknobValue));
-      this.emitAndSetEmitValueWithRawValue(this.defaultValue);
+    onMouseDown(e) {
+      this.startY = e.clientY;
+      this.lastYPos = e.clientY;
+      window.addEventListener('mousemove', this.moveKnob);
+      window.addEventListener('mouseup', this.onMouseUp);
     },
-
-    setKnobValueAndPosition(knobValue) {
-      this.knobValue = knobValue;
-      this.deg = knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
-      const r = knobValue.map(0, this.maxKnobVal, 255, 10);
-      this.trackColor = `rgb(100, ${r},200);`;
-    },
-
-    emitAndSetEmitValueWithKnobValue(knobValue) {
-      this.emitValue = knobValue.map(0, this.maxKnobVal, this.min_v, this.max_v).toFixed(2);
-      this.processDisplayValue();
-      this.$emit('knobTurned', this.emitValue);
-    },
-
-    emitAndSetEmitValueWithRawValue(value) {
-      this.emitValue = value.toFixed(2);
-      this.processDisplayValue();
-      this.$emit('knobTurned', this.emitValue);
-    },
-
     moveKnob(e) {
       let translation = this.lastYPos - (e.clientY || e.touches[0].clientY);
-
       if (translation < this.calib && translation > -this.calib) return;
 
       this.lastYPos = e.clientY || e.touches[0].clientY;
-
       let amount = 1;
 
       if (e.ctrlKey || e.shiftKey) {
@@ -115,6 +95,76 @@ export default {
       this.emitAndSetEmitValueWithKnobValue(knobValue);
     },
 
+    onDefaultValueClick() {
+      this.setKnobValueAndPosition(parseFloat(this.initknobValue));
+      this.emitAndSetEmitValueWithRawValue(this.default_v);
+    },
+
+    setKnobValueAndPosition(knobValue) {
+      this.knobValue = knobValue;
+      this.deg = knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
+      const r = knobValue.map(0, this.maxKnobVal, 255, 10);
+      this.trackColor = `rgb(100, ${r},200);`;
+    },
+
+    emitAndSetEmitValueWithKnobValue(knobValue) {
+      this.emitValue = knobValue.map(0, this.maxKnobVal, this.min_v, this.max_v).toFixed(2);
+      this.formatDisplayValue();
+      this.$emit('knobTurned', this.emitValue);
+    },
+
+    emitAndSetEmitValueWithRawValue(value) {
+      this.emitValue = value.toFixed(2);
+      this.formatDisplayValue();
+      this.$emit('knobTurned', this.emitValue);
+    },
+
+    setParamContraints(minVal, maxVal, initVal) {
+      console.log('knob set contraints');
+      this.min_v = parseFloat(minVal);
+      this.max_v = parseFloat(maxVal);
+      this.default_v = initVal;
+
+      this.knobValue = Math.round(initVal.map(this.min_v, this.max_v, this.minKnobVal, this.maxKnobVal));
+
+      this.initknobValue = this.knobValue;
+
+      //acá (o en node render) chequear que no haya sido creado este nodo previamente antes de forzar reset de parámetros
+      this.emitValue = initVal.toFixed(2);
+      this.formatDisplayValue();
+      this.setKnobValueAndPosition(this.knobValue);
+      // this.$emit('knobTurned', this.emitValue);
+    },
+
+    formatDisplayValue() {
+      this.displayValue =
+        this.emitValue >= 1000
+          ? (this.emitValue / 1000).toFixed(2) + 'k'
+          : parseFloat(this.emitValue).toFixed(2);
+
+      this.displayValue = this.displayValue + (this.unit || '');
+    },
+
+    log10(x) {
+      return Math.log(Math.abs(x)) / Math.LN10;
+    },
+
+    onTouchStart(e) {
+      window.addEventListener('touchmove', this.moveKnob);
+      window.addEventListener('touchend', this.onTouchEnd);
+    },
+
+    onMouseUp() {
+      window.removeEventListener('mousemove', this.moveKnob);
+      window.removeEventListener('mouseup', this.onMouseUp);
+    },
+
+    onTouchEnd() {
+      window.removeEventListener('touchmove', this.moveKnob);
+      window.removeEventListener('touchend', this.onMouseUp);
+    },
+
+    // MIDI:
     startMapping() {
       this.thisIsMapping = true;
     },
@@ -133,68 +183,6 @@ export default {
 
       this.setKnobValueAndPosition(knobValue);
       this.emitAndSetEmitValueWithKnobValue(knobValue);
-    },
-
-    setParamContraints(minVal, maxVal, initValue) {
-      console.log('knob se contraints')
-      this.min_v = parseFloat(minVal);
-      this.max_v = parseFloat(maxVal);
-
-      this.knobValue = Math.round(initValue.map(this.min_v, this.max_v, this.minKnobVal, this.maxKnobVal));
-
-      this.defaultValue = initValue;
-      this.initknobValue = this.knobValue;
-
-      //acá (o en node render) chequear que no haya sido creado este nodo previamente antes de forzar reset de parámetros
-      this.emitValue = initValue.toFixed(2);
-      this.processDisplayValue();
-      this.setKnobValueAndPosition(this.knobValue);
-      this.$emit('knobTurned', this.emitValue);
-    },
-
-    processDisplayValue() {
-      // if (this.unit === "dB") {
-      //   const db = 20 * this.log10(this.emitValue);
-      //   console.log(db, this.emitValue);
-      //   if (db < 0) {
-      //     this.displayValue = "-" + db.toFixed(2) + "dB";
-      //   } else {
-      //     this.displayValue = db.toFixed(2) + "dB";
-      //   }
-      // } else {
-      this.displayValue =
-        this.emitValue >= 1000
-          ? (this.emitValue / 1000).toFixed(2) + 'k'
-          : parseFloat(this.emitValue).toFixed(2);
-
-      this.displayValue = this.displayValue + (this.unit || '');
-      // }
-    },
-
-    log10(x) {
-      return Math.log(Math.abs(x)) / Math.LN10;
-    },
-
-    onTouchStart(e) {
-      window.addEventListener('touchmove', this.moveKnob);
-      window.addEventListener('touchend', this.onTouchEnd);
-    },
-
-    onMouseDown(e) {
-      this.startY = e.clientY;
-      this.lastYPos = e.clientY;
-      window.addEventListener('mousemove', this.moveKnob);
-      window.addEventListener('mouseup', this.onMouseUp);
-    },
-
-    onMouseUp() {
-      window.removeEventListener('mousemove', this.moveKnob);
-      window.removeEventListener('mouseup', this.onMouseUp);
-    },
-
-    onTouchEnd() {
-      window.removeEventListener('touchmove', this.moveKnob);
-      window.removeEventListener('touchend', this.onMouseUp);
     },
   },
 };

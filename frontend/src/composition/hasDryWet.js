@@ -1,7 +1,6 @@
 const Node = require("../class/Node");
 
 module.exports = function hasDryWet(target) {
-  console.log(target);
   target.dryGain = Node.context.createGain();
   target.wetGain = Node.context.createGain();
 
@@ -16,7 +15,7 @@ module.exports = function hasDryWet(target) {
     unit: '', //%
     minValue: 0,
     maxValue: 1,
-    value: 0.5,
+    value: 1,
   };
 
   target.setDryWet = function (value) {
@@ -24,6 +23,8 @@ module.exports = function hasDryWet(target) {
     target.dryGain.gain.value = value - 1;
     target.dryWet.value = value;
   };
+
+  target.setDryWet(1)
 
   target.destroyers.push(() => {
     target.dryGain.disconnect();

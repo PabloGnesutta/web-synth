@@ -6,10 +6,11 @@ const initialGain = 1;
 
 class Compressor extends Node {
   static compressorCount = 0;
-  constructor() {
+  constructor(name) {
     super(initialGain, "Effect", "Compressor");
 
-    this.name = "Comp " + ++Compressor.compressorCount;
+    ++Compressor.compressorCount;
+    this.name = name || "Compressor " + Compressor.compressorCount;
 
     this.node = Node.context.createDynamicsCompressor();
 
@@ -21,6 +22,7 @@ class Compressor extends Node {
   }
 
   initAudioParams() {
+    hasAudioParams(this);
     this.audioParams = [
       {
         name: 'threshold', displayName: 'treshold', unit: '',
@@ -43,7 +45,9 @@ class Compressor extends Node {
         minValue: 0, maxValue: 1, value: 0.3,
       },
     ];
-    hasAudioParams(this);
+    for (let i = 0; i < this.audioParams.length; i++) {
+      this.setAudioParam(i, this.audioParams[i].value);
+    }
   }
 
   saveString() {

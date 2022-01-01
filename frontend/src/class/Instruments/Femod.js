@@ -3,15 +3,8 @@ const noteFrequencies = require("../../data/noteFrequencies");
 
 //repite en surgeon
 const polyphony = 15;
-
 const peak = 1;
-
 const initialGain = 0.5;
-
-let A = 2;
-let D = 1;
-let S = 0.5;
-let R = 2;
 
 class Femod extends Node {
   static femodCount = 0;
@@ -20,6 +13,10 @@ class Femod extends Node {
     super(initialGain, "Instrument", "Femod");
 
     this.name = name || "Femod " + ++Femod.femodCount;
+    this.A = 0.1;
+    this.D = 1;
+    this.S = 0.5;
+    this.R = 2;
 
     this.types = ["sine", "triangle", "sawtooth", "square"];
     this.type = "sawtooth";
@@ -57,7 +54,7 @@ class Femod extends Node {
 
     const freq = noteFrequencies[i];
     const t0 = Node.context.currentTime;
-    const t1 = t0 + A;
+    const t1 = t0 + this.A;
 
     const ADSRGain = Node.context.createGain();
     ADSRGain.connect(this.outputNode);
@@ -65,10 +62,12 @@ class Femod extends Node {
     const oscillator = Node.context.createOscillator();
     oscillator.type = this.type;
     oscillator.connect(ADSRGain);
+    oscillator.start(t0);
 
     //FM
     const modLevel = Node.context.createGain();
     const mod = Node.context.createOscillator();
+    mod.start(t0);
 
     modLevel.connect(oscillator.frequency);
     modLevel.gain.setValueAtTime(this.modLevelValue, t0);
@@ -82,13 +81,9 @@ class Femod extends Node {
     oscillator.frequency.setValueAtTime(freq, t0);
     oscillator.detune.value = detune;
 
-    //start note and mod
-    mod.start(t0);
-    oscillator.start(t0);
-
     ADSRGain.gain.setValueAtTime(0, t0);
     ADSRGain.gain.linearRampToValueAtTime(peak, t1);
-    ADSRGain.gain.linearRampToValueAtTime(S, t1 + D);
+    ADSRGain.gain.linearRampToValueAtTime(this.S, t1 + this.D);
 
     this.modulatorGains[index] = modLevel;
     this.modulators[index] = mod;
@@ -107,10 +102,10 @@ class Femod extends Node {
 
     ADSRGain.gain.cancelScheduledValues(t);
     ADSRGain.gain.setValueAtTime(ADSRGain.gain.value, t);
-    ADSRGain.gain.linearRampToValueAtTime(0, t + R);
+    ADSRGain.gain.linearRampToValueAtTime(0, t + this.R);
 
-    oscillator.stop(t + R);
-    modulator.stop(t + R);
+    oscillator.stop(t + this.R);
+    modulator.stop(t + this.R);
 
     setTimeout(() => {
       oscillator.disconnect();
@@ -118,17 +113,14 @@ class Femod extends Node {
       // anda bien para memory leak pero el release la caga:
       // modulator.disconnect()
       // this.modulatorGains[index].disconnect()
-    }, R * 1000);
+    }, this.R * 1000);
 
     this.setNotInUse(index);
   }
 
   initCustomParams() {
     const setScaleNodeProperty = (prop, value) => {
-      if (prop === 'A') A = value;
-      else if (prop === 'D') D = value;
-      else if (prop === 'S') S = value;
-      else if (prop === 'R') R = value;
+      this[prop] = value;
     };
 
     this.customParams = [
@@ -138,7 +130,7 @@ class Femod extends Node {
         unit: 's',
         minValue: 0,
         maxValue: 5,
-        value: A,
+        value: this.A,
         set(v) { setScaleNodeProperty("A", v); }
       },
       {
@@ -147,7 +139,7 @@ class Femod extends Node {
         unit: 's',
         minValue: 0.01,
         maxValue: 3,
-        value: D,
+        value: this.D,
         set(v) { setScaleNodeProperty("D", v); }
       },
       {
@@ -156,7 +148,7 @@ class Femod extends Node {
         unit: '',
         minValue: 0,
         maxValue: 1,
-        value: S,
+        value: this.S,
         set(v) { setScaleNodeProperty("S", v); }
       },
       {
@@ -165,7 +157,7 @@ class Femod extends Node {
         unit: 's',
         minValue: 0.001,
         maxValue: 5,
-        value: R,
+        value: this.R,
         set(v) { setScaleNodeProperty("R", v); }
       },
       {
@@ -195,9 +187,7 @@ class Femod extends Node {
         displayName: "mod type",
         value: "triangle",
         types: ['sine', 'triangle', 'sawtooth', 'square'],
-        set: (value) => {
-          this.modType = value;
-        }
+        set: (value) => { this.modType = value; }
       },
       {
         name: "modLevel",
@@ -206,9 +196,7 @@ class Femod extends Node {
         minValue: 0,
         maxValue: 3000,
         value: 100,
-        set: (value) => {
-          this.modLevelValue = value;
-        }
+        set: (value) => { this.modLevelValue = value; }
       },
       {
         name: "modDetune",
@@ -217,9 +205,7 @@ class Femod extends Node {
         minValue: -100,
         maxValue: 100,
         value: 0,
-        set: (value) => {
-          this.modDetune = value;
-        }
+        set: (value) => { this.modDetune = value; }
       },
     ];
   }
@@ -229,6 +215,8 @@ class Femod extends Node {
     modulationParams.value = value;
     modulationParams.set(value);
   }
+
+  // Polyphony helper functions
 
   getFirstAvailable() {
     let found = false;

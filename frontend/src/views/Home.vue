@@ -6,7 +6,7 @@
           <Header
             :ref="'header'"
             @createInstrument="createInstrument"
-            @createEffect="createEffect"
+            @createEffect="createAndInsertEffect"
             @createMic="createMic"
             @startRec="startRec"
             @stopRec="stopRec"
@@ -31,18 +31,18 @@
         <!-- TRACKS -->
         <div class="tracks custom-scrollbar" :class="{ mapping: mapping }">
           <div
-            class="track"
             :key="track.name"
             v-for="(track, t) in tracks"
-            :class="{
-              selected: currentTrackIndex === t,
-              connecting: appConnecting,
-            }"
+            class="track"
+            :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
             @click.self="selectTrack(t)"
           >
-            <div class="track-inner-left" @click="selectTrack(t)">
-              <div class="select-none cursor-default">{{ track.name }}</div>
-              <div class="select-none cursor-default">{{ track.instrument.nodeType }}</div>
+            <div class="track-inner-left">
+              <div @click="deleteTrack(t)" class="pointer">[X]</div>
+              <div class="select-none cursor-default" @click="selectTrack(t)">{{ track.name }}</div>
+              <div class="select-none cursor-default" @click="selectTrack(t)">
+                {{ track.instrument.nodeType }}
+              </div>
             </div>
 
             <!-- Track Gain and Controls -->
@@ -268,9 +268,8 @@ export default {
 
       this.createMainGain();
 
-      this.createTrack(new Surgeon());
-      this.createEffect('Reverb');
-      this.createEffect('BiquadFilter');
+      this.createTrack(new Femod());
+      // this.createAndInsertEffect('BiquadFilter');
 
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
@@ -327,32 +326,46 @@ export default {
       });
     },
 
-    deleteTrack() {
-      let index = this.keypressListeners.findIndex(listener => listener.trackName === this.currentTrack.name);
-      if (index !== -1) this.keypressListeners.splice(index, 1);
-      index = this.numpadListeners.findIndex(listener => listener.trackName === this.currentTrack.name);
-      if (index !== -1) this.numpadListeners.splice(index, 1);
-      index = this.xyPadListeners.findIndex(listener => listener.trackName === this.currentTrack.name);
-      if (index !== -1) this.xyPadListeners.splice(index, 1);
+    deleteTrack(trackIndex) {
+      if (trackIndex === undefined) {
+        trackIndex = this.currentTrackIndex;
+      }
 
-      //remove track
-      this.currentTrack.instrument.destroy();
-      this.currentTrack.instrument = null;
-      this.currentTrack.trackGain.destroy();
-      this.currentTrack.trackGain = null;
-      this.currentTrack.effects.forEach(effect => {
+      let track = this.tracks[trackIndex];
+
+      // delete from listeners
+      let index = this.keypressListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) this.keypressListeners.splice(index, 1);
+      index = this.numpadListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) this.numpadListeners.splice(index, 1);
+      index = this.xyPadListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) this.xyPadListeners.splice(index, 1);
+      // remove track - check if this actually cleans more memory than simply nulling the track
+      track.instrument.destroy();
+      track.instrument = null;
+      track.trackGain.destroy();
+      track.trackGain = null;
+      track.effects.forEach(effect => {
         effect.destroy();
         effect = null;
       });
-      this.currentTrack = null;
-      this.tracks.splice(this.currentTrackIndex, 1);
+      track = null;
+
+      if (trackIndex === this.currentTrackIndex) {
+        // todo: ensure to clean analyser node memory
+        // console.log(this.currentTrack);
+        // console.log(this.currentTrack.trackGainAnalyser);
+        this.currentTrackIndex = null;
+        this.currentTrack = null;
+      }
+
+      this.tracks.splice(trackIndex, 1);
     },
 
     // Effects:
-    createEffect(className) {
+    createAndInsertEffect(className) {
       const Node = new (effectsDict.get(className))();
       this.insertEffect(Node);
-      return Node;
     },
 
     insertEffect(Node) {
@@ -410,7 +423,10 @@ export default {
     },
     selectTrack(t) {
       this.currentTrackIndex = t;
-      this.currentTrack = this.tracks[this.currentTrackIndex];
+      this.currentTrack = null;
+      this.$nextTick(()=>{
+        this.currentTrack = this.tracks[this.currentTrackIndex];
+      })
     },
 
     // User Interface (UI):

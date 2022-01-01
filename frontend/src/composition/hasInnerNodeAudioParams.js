@@ -1,5 +1,6 @@
 module.exports = function hasDryWet(target) {
   target.setInnerNodeAudioParam = function (indexOrName, value) {
+    console.log('set inner node', indexOrName, value);
     let index = indexOrName;
     if (typeof (indexOrName) !== 'number')
       index = target.innerNodeAudioParams.findIndex(inap => inap.name === indexOrName);

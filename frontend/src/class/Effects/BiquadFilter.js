@@ -3,9 +3,6 @@ const hasDryWet = require("../../composition/hasDryWet");
 const hasAudioParams = require("../../composition/hasAudioParams");
 const hasInnerNodeAudioParams = require("../../composition/hasInnerNodeAudioParams");
 
-const freqMax = 7000;
-const QMax = 30;
-
 const initialGain = 1;
 
 class BiquadFilter extends Node {
@@ -16,10 +13,10 @@ class BiquadFilter extends Node {
 
     this.name = name || "Filter " + ++BiquadFilter.filterCount;
 
-    this.type = 'lowpass';
     this.types = ['lowpass', 'highpass', 'bandpass', 'notch', 'lowshelf', 'highshelf', 'peaking'];
-
     this.modTypes = ['sine', 'triangle', 'sawtooth', 'square'];
+
+    this.type = 'lowpass';
     this.modType = "sawtooth";
 
     this.node = Node.context.createBiquadFilter();
@@ -37,110 +34,124 @@ class BiquadFilter extends Node {
 
     this.initAudioParams();
     this.initInnerNodeAudioParams();
-    this.refreshParams();
 
     hasDryWet(this);
   }
 
   initAudioParams() {
+    // Frequency, Resonance (Q), Gain
+    hasAudioParams(this);
     this.audioParams = [
       {
         name: 'frequency', displayName: 'freq', unit: 'hz',
-        minValue: 20, maxValue: freqMax, value: freqMax,
+        minValue: 20, maxValue: 7000, value: 1000,
       },
       {
         name: 'Q', displayName: 'res', unit: '',
-        minValue: -QMax, maxValue: QMax, value: 0,
+        minValue: -30, maxValue: 30, value: 0,
       },
       {
         name: 'gain', displayName: 'gain', unit: '',
-        minValue: -QMax, maxValue: QMax, value: 0,
+        minValue: 0, maxValue: 3, value: 100,
       },
     ];
-    hasAudioParams(this);
+    for (let i = 0; i < this.audioParams.length; i++) {
+      this.setAudioParam(i, this.audioParams[i].value);
+    }
+    this.setAudioParamsContraints();
   }
 
   initInnerNodeAudioParams() {
+    // Modulator Params
+    hasInnerNodeAudioParams(this);
     this.innerNodeAudioParams = [
       {
-        name: 'modFrequency', displayName: 'freq', unit: 'hz', //%
-        minValue: 0, maxValue: 60, value: 0,
-        node: this.mod, nodeAudioParam: 'frequency'
+        name: 'modFrequency', displayName: 'freq', unit: 'hz',
+        node: this.mod, nodeAudioParam: 'frequency',
+        minValue: 0, maxValue: 60, value: 10,
       },
       {
         name: 'modAmount', displayName: 'amt', unit: '',
+        node: this.modGain, nodeAudioParam: 'gain',
         minValue: 0, maxValue: 10000, value: 0,
-        node: this.modGain, nodeAudioParam: 'gain'
       },
     ];
-    hasInnerNodeAudioParams(this);
+    for (let i = 0; i < this.innerNodeAudioParams.length; i++) {
+      this.setInnerNodeAudioParam(i, this.innerNodeAudioParams[i].value);
+    }
   }
 
-  refreshParams() {
-    this.setValuesAccordingToType();
-    this.node.frequency.setValueAtTime(this.audioParams[0].value, 0);
-    // this.node.Q.setValueAtTime(this.audioParams[1].value, 0)//
-    // this.node.gain.setValueAtTime(this.audioParams[2].value, 0)//
-  }
-
-  setType(type) {
-    this.type = type;
-    this.node.type = type;
-    this.refreshParams();
-  }
-
-  setModType(value) {
-    this.mod.type = value;
-    this.modType = value;
-  }
-
-  setValuesAccordingToType() {
-    let freq;
+  setAudioParamsContraints() {
     let q = {};
+    let gain = {};
     switch (this.type) {
       case "lowpass":
-        freq = freqMax;
         q.minValue = -30;
         q.maxValue = 30;
         q.value = 0;
         break;
       case "highpass":
-        freq = 0;
-        q.minValue = -20;
-        q.maxValue = 20;
+        q.minValue = -30;
+        q.maxValue = 30;
         q.value = 0;
         break;
       case "bandpass":
-        freq = 3000;
         q.minValue = 0;
-        q.maxValue = 6;
+        q.maxValue = 5;
         q.value = 0;
         break;
       case "notch":
-        freq = 4000;
-        q.minValue = 0.01;
-        q.maxValue = 10;
+        q.minValue = 0;
+        q.maxValue = 5;
         q.value = 1;
+        break;
+      case "lowshelf":
+        gain.minValue = -20;
+        gain.maxValue = 20;
+        gain.value = 1;
+        break;
+      case "highshelf":
+        gain.minValue = -20;
+        gain.maxValue = 20;
+        gain.value = 1;
         break;
       case "peaking":
-        freq = 4000;
         q.minValue = 0;
-        q.maxValue = 100;
+        q.maxValue = 20;
         q.value = 1;
+        gain.minValue = -20;
+        gain.maxValue = 20;
+        gain.value = 1;
         break;
-      default:
-        freq = 0;
-        q.minValue = -100;
-        q.maxValue = 100;
-        q.value = 1;
     }
-    //freq
-    this.audioParams[0].value = freq;
-    //Q
-    this.audioParams[1].minValue = q.minValue;
-    this.audioParams[1].maxValue = q.maxValue;
-    this.audioParams[1].value = q.value;
-    //gain
+    if (q.value !== undefined) {
+      this.audioParams[1].minValue = q.minValue;
+      this.audioParams[1].maxValue = q.maxValue;
+      if (this.audioParams[1].value > q.maxValue || this.audioParams[1].value < q.minValue) {
+        let newValue = this.audioParams[1].value > q.maxValue ? q.maxValue : q.minValue;
+        this.setAudioParam(1, newValue);
+      }
+    }
+    if (gain.value !== undefined) {
+      this.audioParams[2].minValue = gain.minValue;
+      this.audioParams[2].maxValue = gain.maxValue;
+      if (this.audioParams[2].value > gain.maxValue || this.audioParams[2].value < gain.minValue) {
+        let newValue = this.audioParams[2].value > gain.maxValue ? gain.maxValue : gain.minValue;
+        this.setAudioParam(2, newValue);
+
+      }
+    }
+  }
+
+  setType(type) {
+    this.type = type;
+    this.node.type = type;
+    this.setAudioParamsContraints();
+  }
+
+  setModType(value) {
+    this.mod.type = value;
+    this.modType = value;
   }
 
   saveString() {
@@ -157,7 +168,6 @@ class BiquadFilter extends Node {
 
   destroy() {
     super.destroy();
-
     this.mod.disconnect();
     this.mod = null;
     this.modGain.disconnect();
