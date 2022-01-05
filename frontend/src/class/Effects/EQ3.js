@@ -7,10 +7,10 @@ const initialGain = 1;
 class EQ3 extends Node {
   static EQ3Count = 0;
 
-  constructor(name) {
+  constructor(saveObject) {
     super(initialGain, 'Effect', 'EQ3');
 
-    this.name = name || "EQ3 " + ++EQ3.EQ3Count;
+    this.name = saveObject?.name || "EQ3 " + ++EQ3.EQ3Count;
 
     this.high = Node.context.createBiquadFilter();
     this.mid = Node.context.createBiquadFilter();
@@ -27,13 +27,12 @@ class EQ3 extends Node {
 
     this.inputNode.connect(this.high);
 
-    this.initInnerNodeAudioParams();
+    this.initInnerNodeAudioParams(saveObject?.innerNodeAudioParams);
 
-    hasDryWet(this);
+    hasDryWet(this, saveObject?.dryWet);
   }
 
-  initInnerNodeAudioParams() {
-    hasInnerNodeAudioParams(this);
+  initInnerNodeAudioParams(saveObjectInnerNodeAudioParams) {
     this.innerNodeAudioParams = [
       //low
       {
@@ -59,7 +58,7 @@ class EQ3 extends Node {
       },
       {
         name: 'midQ', displayName: 'res', unit: '',
-        minValue: -10, maxValue: 10, value: 0.5,
+        minValue: 0, maxValue: 5, value: 0.5,
         node: this.mid, nodeAudioParam: 'Q'
       },
       //high
@@ -75,15 +74,26 @@ class EQ3 extends Node {
       },
     ];
 
+    hasInnerNodeAudioParams(this);
+    const valuesToLoad = saveObjectInnerNodeAudioParams || this.innerNodeAudioParams;
+
     for (let i = 0; i < this.innerNodeAudioParams.length; i++) {
-      this.setInnerNodeAudioParam(i, this.innerNodeAudioParams[i].value);
+      this.setInnerNodeAudioParam(i, valuesToLoad[i].value);
     }
   }
 
   saveString() {
-    const jsonString = {};
+    const jsonString = {
+      name: this.name,
+    };
+
     this.saveParams.forEach(param => {
       jsonString[param.name] = param.value;
+    });
+
+    this.saveFunctions.forEach(saveFunction => {
+      const { name, value } = saveFunction();
+      jsonString[name] = value;
     });
 
     return JSON.stringify(jsonString);

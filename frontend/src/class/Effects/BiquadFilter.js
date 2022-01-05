@@ -8,16 +8,16 @@ const initialGain = 1;
 class BiquadFilter extends Node {
   static filterCount = 0;
 
-  constructor(name) {
+  constructor(saveObject) {
     super(initialGain, 'Effect', 'BiquadFilter');
 
-    this.name = name || "Filter " + ++BiquadFilter.filterCount;
+    this.name = saveObject?.name || "Filter " + ++BiquadFilter.filterCount;
 
     this.types = ['lowpass', 'highpass', 'bandpass', 'notch', 'lowshelf', 'highshelf', 'peaking'];
     this.modTypes = ['sine', 'triangle', 'sawtooth', 'square'];
 
-    this.type = 'lowpass';
-    this.modType = "sawtooth";
+    this.type = saveObject?.type || 'lowpass';
+    this.modType = saveObject?.modType || "sawtooth";
 
     this.node = Node.context.createBiquadFilter();
     this.node.type = this.type;
@@ -32,15 +32,14 @@ class BiquadFilter extends Node {
 
     this.inputNode.connect(this.node);
 
-    this.initAudioParams();
-    this.initInnerNodeAudioParams();
+    this.initAudioParams(saveObject?.audioParams);
+    this.initInnerNodeAudioParams(saveObject?.innerNodeAudioParams);
 
-    hasDryWet(this);
+    hasDryWet(this, saveObject?.dryWet);
   }
 
-  initAudioParams() {
+  initAudioParams(saveObjectAudioParams) {
     // Frequency, Resonance (Q), Gain
-    hasAudioParams(this);
     this.audioParams = [
       {
         name: 'frequency', displayName: 'freq', unit: 'hz',
@@ -55,15 +54,18 @@ class BiquadFilter extends Node {
         minValue: 0, maxValue: 3, value: 100,
       },
     ];
+
+    hasAudioParams(this);
+    const valuesToLoad = saveObjectAudioParams || this.audioParams;
+
     for (let i = 0; i < this.audioParams.length; i++) {
-      this.setAudioParam(i, this.audioParams[i].value);
+      this.setAudioParam(i, valuesToLoad[i].value);
     }
+
     this.setAudioParamsContraints();
   }
 
-  initInnerNodeAudioParams() {
-    // Modulator Params
-    hasInnerNodeAudioParams(this);
+  initInnerNodeAudioParams(saveObjectInnerNodeAudioParams) {
     this.innerNodeAudioParams = [
       {
         name: 'modFrequency', displayName: 'freq', unit: 'hz',
@@ -76,8 +78,12 @@ class BiquadFilter extends Node {
         minValue: 0, maxValue: 10000, value: 0,
       },
     ];
+
+    hasInnerNodeAudioParams(this);
+    const valuesToLoad = saveObjectInnerNodeAudioParams || this.audioParams;
+
     for (let i = 0; i < this.innerNodeAudioParams.length; i++) {
-      this.setInnerNodeAudioParam(i, this.innerNodeAudioParams[i].value);
+      this.setInnerNodeAudioParam(i, valuesToLoad[i].value);
     }
   }
 
@@ -156,11 +162,18 @@ class BiquadFilter extends Node {
 
   saveString() {
     const jsonString = {
+      name: this.name,
       type: this.type,
+      modType: this.modType
     };
 
     this.saveParams.forEach(param => {
       jsonString[param.name] = param.value;
+    });
+
+    this.saveFunctions.forEach(saveFunction => {
+      const { name, value } = saveFunction();
+      jsonString[name] = value;
     });
 
     return JSON.stringify(jsonString);

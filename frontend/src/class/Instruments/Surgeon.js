@@ -186,7 +186,7 @@ class Surgeon extends Node {
   }
 
   initOscillatorGroupProps() {
-    //A D S R detune gain - tienen que estar en este orden
+    //A D S R detune gain
     this.oscillatorGroupProps = [
       {
         A: 2.6, D: 0.5, S: 1000, R: 0.3, detune: 0, gain: 0.5,

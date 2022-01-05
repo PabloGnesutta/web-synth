@@ -6,73 +6,59 @@ const initialGain = 1;
 class Distortion extends Node {
   static distortionCount = 0;
 
-  constructor(name) {
+  constructor(saveObject) {
     super(initialGain, "Effect", "Distortion");
 
-    this.name = name || "Distortion " + ++Distortion.distortionCount;
-
-    this.curveAmount = 30;
-    this.harshAmount = 1.2;
+    this.name = saveObject?.name || "Distortion " + ++Distortion.distortionCount;
 
     this.node = Node.context.createWaveShaper();
-
-    this.node.curve = this.makeDistortionCurve(this.curveAmount, this.harshAmount);
-    this.node.oversample = 'none'; //2x 4x
+    // currently oversample can't be changed by the user, eventualy it will?
+    this.oversample = saveObject?.oversample || 'none'; //2x 4x
+    this.node.oversample = this.oversample;
 
     this.inputNode.connect(this.node);
 
-    this.initCustomParams();
+    this.initCustomParams(saveObject?.customParams);
 
-    hasDryWet(this);
+    hasDryWet(this, saveObject?.dryWet);
   }
 
-  initCustomParams() {
+  initCustomParams(saveObjctCustomParams) {
     this.customParams = [
       {
-        name: 'amount', displayName: 'boost', unit: '', //%
-        minValue: 20, maxValue: 100, value: this.curveAmount,
+        name: 'curveAmount', displayName: 'boost', unit: '', //%
+        minValue: 20, maxValue: 100,
+        value: saveObjctCustomParams ? saveObjctCustomParams[0].value : 30,
       },
       {
-        name: 'harsh', displayName: 'harsh', unit: '', //%
-        minValue: 0, maxValue: 3, value: this.harshAmount,
+        name: 'harshAmount', displayName: 'harsh', unit: '', //%
+        minValue: 0, maxValue: 3,
+        value: saveObjctCustomParams ? saveObjctCustomParams[1].value : 1.2,
       },
     ];
+
+    this.node.curve = this.makeDistortionCurve(this.customParams[0].value, this.customParams[1].value);
   }
 
   setCustomParam(index, value) {
-    if (index === 0) this.setAmount(value);
-    else if (index === 1) this.setHarsh(value);
     this.customParams[index].value = value;
+    this.node.curve = this.makeDistortionCurve(this.customParams[0].value, this.customParams[1].value);
   }
 
-  setAmount(value) {
-    let val = value * 2;
-    this.curveAmount = val;
-    this.node.curve = this.makeDistortionCurve(val, this.harshAmount);
-  }
-
-  setHarsh(value) {
-    let val = Math.pow(10, value);
-    this.harshAmount = val;
-    this.node.curve = this.makeDistortionCurve(this.curveAmount, val);
-  }
-
-  makeDistortionCurve(amount, harsh) {
+  makeDistortionCurve(incomingAmount, incomingHarsh) {
     let
-      k = amount,
+      amount = incomingAmount * 2,
+      harsh = Math.pow(10, incomingHarsh),
       n_samples = 44100,
       curve = new Float32Array(n_samples),
-      deg = Math.PI / 180,
+      // deg = Math.PI / 180,
       x;
 
     for (let i = 0; i < n_samples; ++i) {
       x = i * 2 / n_samples - 1;
-
-      curve[i] = (3 + harsh) * x * k * (Math.PI / 180) / (Math.PI + harsh * Math.abs(x));
-
-      // curve[i] = (3 + k) * x * harsh * deg / (Math.PI + k * Math.abs(x)); //esta va mas
-
-      // curve[i] = (3 + k) * Math.atan(Math.sinh(x * 0.25) * 5) / (Math.PI + k * Math.abs(x));
+      curve[i] = (3 + harsh) * x * amount * (Math.PI / 180) / (Math.PI + harsh * Math.abs(x));
+      // curve[i] = (3 + amount) * x * harsh * deg / (Math.PI + amount * Math.abs(x)); //esta va mas
+      // curve[i] = (3 + amount) * Math.atan(Math.sinh(x * 0.25) * 5) / (Math.PI + amount * Math.abs(x));
 
     }
     return curve;
@@ -80,11 +66,19 @@ class Distortion extends Node {
 
   saveString() {
     const jsonString = {
-      customParams: this.customParams,
+      oversample: this.oversample,
+      customParams: this.customParams.map(param => {
+        return { name: param.name, value: param.value };
+      }),
     };
 
     this.saveParams.forEach(param => {
       jsonString[param.name] = param.value;
+    });
+
+    this.saveFunctions.forEach(saveFunction => {
+      const { name, value } = saveFunction();
+      jsonString[name] = value;
     });
 
     return JSON.stringify(jsonString);
@@ -94,4 +88,5 @@ class Distortion extends Node {
     super.destroy();
   }
 }
+
 module.exports = Distortion;

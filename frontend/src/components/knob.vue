@@ -22,21 +22,17 @@ import { mapGetters } from 'vuex';
 export default {
   data() {
     return {
-      startY: 0,
       lastYPos: 0,
-
-      knobValue: 0,
+      knobValue: 0, //0 - 127
       minKnobVal: 0,
       maxKnobVal: 127,
-      initknobValue: 0,
+      defaultKnobValue: 0,
 
-      emitValue: 0,
       displayValue: 0,
 
       calib: 2,
       fineTuneStep: 0.2,
       microTuneStep: 0.1,
-      finerTuneStep: 0.01,
 
       deg: 0,
       trackColor: '#111',
@@ -67,7 +63,6 @@ export default {
 
   methods: {
     onMouseDown(e) {
-      this.startY = e.clientY;
       this.lastYPos = e.clientY;
       window.addEventListener('mousemove', this.moveKnob);
       window.addEventListener('mouseup', this.onMouseUp);
@@ -80,6 +75,7 @@ export default {
       let amount = 1;
 
       if (e.ctrlKey || e.shiftKey) {
+        console.log('ctrl or shift');
         amount = this.fineTuneStep;
         if (e.ctrlKey && e.shiftKey) {
           amount = this.microTuneStep;
@@ -92,55 +88,48 @@ export default {
       else if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
 
       this.setKnobValueAndPosition(knobValue);
-      this.emitAndSetEmitValueWithKnobValue(knobValue);
+      this.emitWithKnobValue(knobValue);
     },
 
     onDefaultValueClick() {
-      this.setKnobValueAndPosition(parseFloat(this.initknobValue));
-      this.emitAndSetEmitValueWithRawValue(this.default_v);
+      this.setKnobValueAndPosition(parseFloat(this.defaultKnobValue));
+      // this.emitWithKnobValue(this.defaultKnobValue);
+      this.emitKnobTurned(this.default_v.toFixed(2));
     },
 
     setKnobValueAndPosition(knobValue) {
       this.knobValue = knobValue;
       this.deg = knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
-      const r = knobValue.map(0, this.maxKnobVal, 255, 10);
-      this.trackColor = `rgb(100, ${r},200);`;
+      const colorAmount = knobValue.map(0, this.maxKnobVal, 255, 10);
+      this.trackColor = `rgb(100, ${colorAmount},200);`;
     },
 
-    emitAndSetEmitValueWithKnobValue(knobValue) {
-      this.emitValue = knobValue.map(0, this.maxKnobVal, this.min_v, this.max_v).toFixed(2);
-      this.formatDisplayValue();
-      this.$emit('knobTurned', this.emitValue);
+    emitWithKnobValue(knobValue) {
+      const emitValue = knobValue.map(0, this.maxKnobVal, this.min_v, this.max_v).toFixed(2);
+      this.emitKnobTurned(emitValue);
     },
 
-    emitAndSetEmitValueWithRawValue(value) {
-      this.emitValue = value.toFixed(2);
-      this.formatDisplayValue();
-      this.$emit('knobTurned', this.emitValue);
+    emitKnobTurned(emitValue) {
+      this.$emit('knobTurned', emitValue);
+      this.formatDisplayValue(emitValue);
     },
 
     setParamContraints(minVal, maxVal, initVal) {
-      console.log('knob set contraints');
       this.min_v = parseFloat(minVal);
       this.max_v = parseFloat(maxVal);
       this.default_v = initVal;
 
       this.knobValue = Math.round(initVal.map(this.min_v, this.max_v, this.minKnobVal, this.maxKnobVal));
+      this.defaultKnobValue = this.knobValue;
 
-      this.initknobValue = this.knobValue;
-
-      //acá (o en node render) chequear que no haya sido creado este nodo previamente antes de forzar reset de parámetros
-      this.emitValue = initVal.toFixed(2);
-      this.formatDisplayValue();
+      const emitValue = initVal.toFixed(2);
+      this.formatDisplayValue(emitValue);
       this.setKnobValueAndPosition(this.knobValue);
-      // this.$emit('knobTurned', this.emitValue);
     },
 
-    formatDisplayValue() {
+    formatDisplayValue(emitValue) {
       this.displayValue =
-        this.emitValue >= 1000
-          ? (this.emitValue / 1000).toFixed(2) + 'k'
-          : parseFloat(this.emitValue).toFixed(2);
+        emitValue >= 1000 ? (emitValue / 1000).toFixed(2) + 'k' : parseFloat(emitValue).toFixed(2);
 
       this.displayValue = this.displayValue + (this.unit || '');
     },
@@ -182,7 +171,7 @@ export default {
       if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
 
       this.setKnobValueAndPosition(knobValue);
-      this.emitAndSetEmitValueWithKnobValue(knobValue);
+      this.emitWithKnobValue(knobValue);
     },
   },
 };

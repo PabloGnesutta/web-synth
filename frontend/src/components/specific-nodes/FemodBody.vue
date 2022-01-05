@@ -11,7 +11,7 @@
 
     <!-- Custom Params -->
     <div class="params-container">
-      <div v-for="(customParam, cpIndex) in Node.customParams" :key="customParam.name" class="param">
+      <div v-for="(customParam, paramIndex) in Node.customParams" :key="customParam.name" class="param">
         <div class="param-name">{{ customParam.displayName }}</div>
 
         <div @click="knobClicked(Node.name + '-' + customParam.name)">
@@ -21,41 +21,41 @@
             :minVal="customParam.minValue"
             :maxVal="customParam.maxValue"
             :initVal="customParam.value"
-            @knobTurned="setCustomParam(cpIndex, $event)"
+            @knobTurned="setCustomParam(paramIndex, $event)"
           />
         </div>
       </div>
     </div>
 
     <!-- Modulation Params -->
-    <div class="params-container" v-if="Node.modulationParams">
+    <div class="params-container">
       <div
-        v-for="(motulationParam, mpIndex) in Node.modulationParams"
-        :key="motulationParam.name"
+        v-for="(modulationParam, paramIndex) in Node.modulationParams"
+        :key="modulationParam.name"
         class="param"
       >
-        <div class="param-name">{{ motulationParam.displayName }}</div>
+        <div class="param-name">{{ modulationParam.displayName }}</div>
 
         <div
-          v-if="motulationParam.name !== 'type'"
-          @click="knobClicked(Node.name + '-' + motulationParam.name)"
+          v-if="modulationParam.name !== 'modType'"
+          @click="knobClicked(Node.name + '-' + modulationParam.name)"
         >
           <Knob
-            :ref="Node.name + '-' + motulationParam.name"
-            :unit="motulationParam.unit"
-            :minVal="motulationParam.minValue"
-            :maxVal="motulationParam.maxValue"
-            :initVal="motulationParam.value"
-            @knobTurned="setModulationParam(mpIndex, $event)"
+            :ref="Node.name + '-' + modulationParam.name"
+            :unit="modulationParam.unit"
+            :minVal="modulationParam.minValue"
+            :maxVal="modulationParam.maxValue"
+            :initVal="modulationParam.value"
+            @knobTurned="setModulationParam(paramIndex, $event)"
           />
         </div>
         <!-- Mod Waveshape - todo: should not be a modulation param but a individual thing -->
         <div v-else>
-          <select @input="setModType(mpIndex, $event)">
+          <select @input="setModType(paramIndex, $event)">
             <option
+              v-for="type in modulationParam.types"
               :key="type"
-              v-for="type in motulationParam.types"
-              :selected="type === motulationParam.value"
+              :selected="type === modulationParam.value"
             >
               {{ type }}
             </option>
@@ -79,16 +79,16 @@ export default {
       target.blur();
     },
 
-    setCustomParam(cpIndex, value) {
-      this.Node.setCustomParam(cpIndex, value);
+    setCustomParam(paramIndex, value) {
+      this.Node.setCustomParam(paramIndex, value);
     },
 
-    setModulationParam(mpIndex, value) {
-      this.Node.setModulationParam(mpIndex, value);
+    setModulationParam(paramIndex, value) {
+      this.Node.setModulationParam(paramIndex, value);
     },
 
-    setModType(mpIndex, e) {
-      this.Node.setModulationParam(mpIndex, e.target.value);
+    setModType(paramIndex, e) {
+      this.Node.setModulationParam(paramIndex, e.target.value);
       e.target.blur();
     },
 

@@ -59,8 +59,6 @@ class Sampler extends Node {
 
   stopNote(i) { }
 
-  onOtherKeyup(key) { }
-
   initCustomParams() {
     const setOffset = (value) => {
       this.offset = value;

@@ -12,10 +12,10 @@ const initialGain = 1;
 class Delay extends Node {
   static delayCount = 0;
 
-  constructor() {
+  constructor(saveObject) {
     super(initialGain, "Effect", "Delay");
 
-    this.name = "Delay " + ++Delay.delayCount;
+    this.name = saveObject?.name || "Delay " + ++Delay.delayCount;
 
     this.node = Node.context.createDelay(maxDelayTime);
     this.feedbackGain = Node.context.createGain();
@@ -25,13 +25,12 @@ class Delay extends Node {
 
     this.inputNode.connect(this.feedbackGain);
 
-    this.initInnerNodeAudioParams();
+    this.initInnerNodeAudioParams(saveObject?.innerNodeAudioParams);
 
-    hasDryWet(this);
+    hasDryWet(this, saveObject?.dryWet);
   }
 
-  initInnerNodeAudioParams() {
-    hasInnerNodeAudioParams(this);
+  initInnerNodeAudioParams(saveObjectInnerNodeAudioParams) {
     this.innerNodeAudioParams = [
       {
         name: 'delayTime', displayName: 'time', unit: 's',
@@ -44,18 +43,28 @@ class Delay extends Node {
         node: this.feedbackGain, nodeAudioParam: 'gain'
       },
     ];
+
+    hasInnerNodeAudioParams(this);
+    const valuesToLoad = saveObjectInnerNodeAudioParams || this.innerNodeAudioParams;
+
     for (let i = 0; i < this.innerNodeAudioParams.length; i++) {
-      this.setInnerNodeAudioParam(i, this.innerNodeAudioParams[i].value);
+      this.setInnerNodeAudioParam(i, valuesToLoad[i].value);
     }
   }
 
   saveString() {
     const jsonString = {
+      name: this.name,
       type: this.type,
     };
 
     this.saveParams.forEach(param => {
       jsonString[param.name] = param.value;
+    });
+
+    this.saveFunctions.forEach(saveFunction => {
+      const { name, value } = saveFunction();
+      jsonString[name] = value;
     });
 
     return JSON.stringify(jsonString);

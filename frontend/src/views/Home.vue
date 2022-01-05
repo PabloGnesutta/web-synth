@@ -5,16 +5,12 @@
         <div class="header-wrapper">
           <Header
             :ref="'header'"
-            @createInstrument="createInstrument"
-            @createEffect="createAndInsertEffect"
-            @createMic="createMic"
             @startRec="startRec"
             @stopRec="stopRec"
             @playExport="playExport"
             @downloadExport="downloadExport"
             @stopPlayingExport="stopPlayingExport"
             @loadSave="loadSave"
-            @loadPreset="loadPreset"
             @toggleMapping="toggleMapping"
             :tracks="tracks"
             :playing="playing"
@@ -22,99 +18,109 @@
             :recordingsAvailable="recordingsAvailable"
           />
         </div>
-        <div class="click-wrapper">
-          <Click ref="click" />
+      </div>
+
+      <div class="mid-section">
+        <div class="left-col">
+          <Sidebar
+            @createInstrument="createInstrument"
+            @createEffect="createAndInsertEffect"
+            @loadPreset="loadPreset"
+          />
+        </div>
+
+        <div class="right-col">
+          <!-- Click -->
+          <div class="click-wrapper"><Click ref="click" /></div>
+          <!-- Tracks -->
+          <div class="tracks custom-scrollbar" :class="{ mapping: mapping }">
+            <div
+              :key="track.name"
+              v-for="(track, t) in tracks"
+              class="track"
+              :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
+              @click.self="selectTrack(t)"
+            >
+              <div class="track-inner-left">
+                <div @click="deleteTrack(t)" class="pointer">[X]</div>
+                <div class="select-none cursor-default" @click="selectTrack(t)">{{ track.name }}</div>
+                <div class="select-none cursor-default" @click="selectTrack(t)">
+                  {{ track.instrument.nodeType }}
+                </div>
+              </div>
+
+              <!-- Track Gain and Controls -->
+              <GainBody
+                :Node="track.trackGain"
+                :analyser="track.trackGainAnalyser"
+                :recEnabled="track.recEnabled"
+                @knobClicked="knobClicked"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="main-section">
-        <!-- TRACKS -->
-        <div class="tracks custom-scrollbar" :class="{ mapping: mapping }">
-          <div
-            :key="track.name"
-            v-for="(track, t) in tracks"
-            class="track"
-            :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
-            @click.self="selectTrack(t)"
-          >
-            <div class="track-inner-left">
-              <div @click="deleteTrack(t)" class="pointer">[X]</div>
-              <div class="select-none cursor-default" @click="selectTrack(t)">{{ track.name }}</div>
-              <div class="select-none cursor-default" @click="selectTrack(t)">
-                {{ track.instrument.nodeType }}
-              </div>
-            </div>
-
-            <!-- Track Gain and Controls -->
-            <GainBody
-              :Node="track.trackGain"
-              :analyser="track.trackGainAnalyser"
-              :recEnabled="track.recEnabled"
+      <!-- Current Track -->
+      <div class="bottom-section track-detail-container">
+        <div
+          v-if="currentTrack"
+          class="track-detail custom-scrollbar"
+          :class="'track-detail_' + currentTrackIndex"
+        >
+          <!-- Instrument -->
+          <div class="track-instrument">
+            <NodeRender
+              :Node="currentTrack.instrument"
+              :analyser="currentTrack.instrumentAnalyser"
+              :instrumentEnabled="currentTrack.instrumentEnabled"
+              @deleteNode="deleteTrack"
+              @toggleInstrumentEnabled="toggleInstrumentEnabled"
               @knobClicked="knobClicked"
             />
           </div>
-        </div>
 
-        <!-- Current Track Detail -->
-        <div class="track-detail-container">
-          <div
-            v-if="currentTrack"
-            class="track-detail custom-scrollbar"
-            :class="'track-detail_' + currentTrackIndex"
-          >
-            <!-- Instrument -->
-            <div class="track-instrument">
-              <NodeRender
-                :Node="currentTrack.instrument"
-                :analyser="currentTrack.instrumentAnalyser"
-                :instrumentEnabled="currentTrack.instrumentEnabled"
-                @deleteNode="deleteTrack"
-                @toggleInstrumentEnabled="toggleInstrumentEnabled"
-                @knobClicked="knobClicked"
-              />
-            </div>
-
-            <!-- Effects -->
-            <div class="track-effects">
-              <NodeRender
-                v-for="(Node, n) in currentTrack.effects"
-                :Node="Node"
-                :analyser="Node.analyser"
-                :key="n"
-                :ref="'Node-' + n"
-                @deleteNode="deleteEffect(n)"
-                @levelClicked="levelClicked(Node)"
-                @knobClicked="knobClicked"
-              />
-              <div class="track-right-placeholder"></div>
-            </div>
+          <!-- Effects -->
+          <div class="track-effects">
+            <NodeRender
+              v-for="(Node, effectIndex) in currentTrack.effects"
+              :Node="Node"
+              :analyser="Node.analyser"
+              :key="Node.name"
+              :ref="'Node-' + effectIndex"
+              @deleteNode="deleteEffect(effectIndex)"
+              @levelClicked="levelClicked(Node)"
+              @knobClicked="knobClicked"
+            />
+            <div class="track-right-placeholder"></div>
           </div>
         </div>
       </div>
 
       <!-- xyPad -->
-      <Pad
+      <!-- <Pad
         v-if="false"
         @onPadTouchStart="onPadTouchStart"
         @onPadTouchEnd="onPadTouchEnd"
         @onPadTouchCancel="onPadTouchCancel"
         @onPadTouchMove="onPadTouchMove"
-      />
+      /> -->
 
       <!-- Main Gain -->
       <div class="section-inner main-gain">
-        <h3>Main Gain</h3>
         <div class="knob-wrapper" @click="knobClicked('MainGain')">
           <Knob
             :ref="'MainGain'"
             minVal="0"
             maxVal="1"
             :initVal="mainGainKnob"
-            @knobTurned="onMainGainKnobInput"
+            @knobTurned="setMainGainValue"
           />
         </div>
+        <h3>Main Gain</h3>
       </div>
     </div>
+
     <div v-else class="welcome-msg">
       <p>Welcome to web-synth</p>
       <p>Click anywhere to Start!</p>
@@ -170,6 +176,7 @@ import NodeRender from '../components/NodeRender';
 import GainBody from '../components/specific-nodes/GainBody';
 import Pad from '@/components/user-interface/Pad';
 import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 import Click from '../components/Click';
 import Knob from '../components/Knob';
 
@@ -180,6 +187,7 @@ export default {
     Pad,
     Click,
     Header,
+    Sidebar,
     NodeRender,
     GainBody,
   },
@@ -193,8 +201,8 @@ export default {
       currentTrackIndex: 0,
 
       mainGain: null,
-      mixerGain: null,
-      mainGainKnob: 1,
+      bufferGain: null,
+      mainGainKnob: 0.5,
 
       keyEnabled: [],
       keypressListeners: [],
@@ -229,14 +237,12 @@ export default {
       playingBuffers: [],
       recordingsAvailable: false,
 
-      //keys
-      m_pressed: false,
-      ctrl_pressed: false,
       octave: 3,
       transpose: 0,
 
-      instruments: ['Mic', 'Femod', 'Carrier', 'Drumkit', 'Sampler', 'Surgeon', 'WhiteNoise'],
-      effects: ['EQ3', 'Delay', 'Reverb', 'Looper', 'Distortion', 'Compressor', 'BiquadFilter'],
+      //keys - could be removed listening to event
+      m_pressed: false,
+      ctrl_pressed: false,
     };
   },
 
@@ -287,7 +293,7 @@ export default {
       const trackGainAnalyser = this.context.createAnalyser();
 
       instrument.connect(trackGain);
-      trackGain.connectNativeNode(this.mixerGain, 'Mixer Gain');
+      trackGain.connectNativeNode(this.bufferGain, 'Mixer Gain');
       trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
 
       this.tracks.push({
@@ -384,17 +390,17 @@ export default {
       });
     },
 
-    deleteEffect(n) {
+    deleteEffect(effectIndex) {
       const effects = this.currentTrack.effects;
 
-      const prev = effects[n - 1] || this.currentTrack.instrument;
-      const next = effects[n + 1] || this.currentTrack.trackGain;
+      const prev = effects[effectIndex - 1] || this.currentTrack.instrument;
+      const next = effects[effectIndex + 1] || this.currentTrack.trackGain;
 
       prev.disconnect().connect(next);
 
-      effects[n].destroy();
-      effects[n] = null;
-      effects.splice(n, 1);
+      effects[effectIndex].destroy();
+      effects[effectIndex] = null;
+      effects.splice(effectIndex, 1);
     },
 
     createMainGain() {
@@ -402,10 +408,11 @@ export default {
       this.mainGain.gain.value = this.mainGainKnob;
       this.mainGain.connect(this.context.destination);
 
-      this.mixerGain = this.context.createGain();
+      this.bufferGain = this.context.createGain();
 
-      this.mixerGain.connect(this.mainGain);
+      this.bufferGain.connect(this.mainGain);
     },
+
     createMic() {
       const that = this;
       navigator.mediaDevices
@@ -418,21 +425,22 @@ export default {
           alert("Couldn't get user media, continuing without mic input. Error: " + err);
         });
     },
-    onMainGainKnobInput(val) {
+
+    setMainGainValue(val) {
       this.mainGain.gain.setValueAtTime(val, 0);
     },
+
     selectTrack(t) {
       this.currentTrackIndex = t;
       this.currentTrack = null;
-      this.$nextTick(()=>{
+      this.$nextTick(() => {
         this.currentTrack = this.tracks[this.currentTrackIndex];
-      })
+      });
     },
 
     // User Interface (UI):
 
     toggleInstrumentEnabled() {
-      // const track = this.tracks[t];
       this.currentTrack.instrumentEnabled = !this.currentTrack.instrumentEnabled;
 
       if (this.currentTrack.instrumentEnabled) {
@@ -521,7 +529,6 @@ export default {
     },
 
     onOtherKeyup({ keyCode }) {
-      // console.log(keyCode);
       //1 a 9
       if (keyCode >= 49 && keyCode <= 57) {
         if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
@@ -579,7 +586,6 @@ export default {
       this.setAppIsMapping(this.mapping);
     },
 
-    // knobClicked(refName) {
     knobClicked(knobRef) {
       if (!this.mapping) return;
       if (this.refBeignMapped) {
@@ -634,7 +640,6 @@ export default {
     },
 
     onMIDISuccess(midiAccess) {
-      console.log('MIDI Access:', midiAccess);
       this.inputs = midiAccess.inputs;
       this.outputs = midiAccess.outputs;
 
@@ -651,8 +656,8 @@ export default {
       tracks.forEach(track => {
         this.loadInstrument(t.instrument);
 
-        track.effects.forEach(savedEffect => {
-          this.loadEffect(savedEffect);
+        track.effects.forEach(effectSaveString => {
+          this.loadEffect(effectSaveString);
         });
       });
     },
@@ -662,79 +667,63 @@ export default {
       else this.loadEffect(saveString);
     },
 
-    loadInstrument(savedInst) {
-      const instrument = new (instrumentsDict.get(savedInst.nodeType))();
-
+    loadInstrument(instSaveString) {
+      const instrument = new (instrumentsDict.get(instSaveString.nodeType))(instSaveString);
       this.createTrack(instrument);
+      // if (instrument.customParams)
+      //   instSaveString.customParams.forEach((ins_cp, i) => {
+      //     instrument.setCustomParam(i, ins_cp.value);
+      //   });
 
-      instrument.setGain(savedInst.gain);
+      // if (instrument.modulationParams)
+      //   instSaveString.modulationParams.forEach((ins_mp, i) => {
+      //     instrument.setModulationParam(i, ins_mp.value);
+      //   });
 
-      if (instrument.audioParams)
-        savedInst.audioParams.forEach((ins_ap, i) => {
-          instrument.setAudioParam(i, ins_ap.value);
-        });
+      // if (instrument.surgeonParams) {
+      //   for (let o = 0; o < instrument.oscillatorsPerNote; o++) {
+      //     const state = instSaveString.oscillatorGroupProps[o];
 
-      if (instrument.innerNodeAudioParams)
-        savedInst.innerNodeAudioParams.forEach((ins_inap, i) => {
-          instrument.setInnerNodeAudioParam(i, ins_inap.value);
-        });
+      //     instrument.setType(o, state.type);
+      //     instrument.setOscillatorTarget(o, state.destination);
 
-      if (instrument.customParams)
-        savedInst.customParams.forEach((ins_cp, i) => {
-          instrument.setCustomParam(i, ins_cp.value);
-        });
+      //     instrument.setSurgeonParam(o, 0, state.A);
+      //     instrument.setSurgeonParam(o, 1, state.D);
+      //     instrument.setSurgeonParam(o, 2, state.S);
+      //     instrument.setSurgeonParam(o, 3, state.R);
+      //     instrument.setSurgeonParam(o, 4, state.detune);
+      //     instrument.setSurgeonParam(o, 5, state.gain);
 
-      if (instrument.modulationParams)
-        savedInst.modulationParams.forEach((ins_mp, i) => {
-          instrument.setModulationParam(i, ins_mp.value);
-        });
+      //     instrument.setOctaveTranspose(o, 'octave', state.octave);
+      //     instrument.setOctaveTranspose(o, 'transpose', state.transpose);
 
-      if (instrument.surgeonParams) {
-        for (let o = 0; o < instrument.oscillatorsPerNote; o++) {
-          const state = savedInst.oscillatorGroupProps[o];
-
-          instrument.setType(o, state.type);
-          instrument.setOscillatorTarget(o, state.destination);
-
-          instrument.setSurgeonParam(o, 0, state.A);
-          instrument.setSurgeonParam(o, 1, state.D);
-          instrument.setSurgeonParam(o, 2, state.S);
-          instrument.setSurgeonParam(o, 3, state.R);
-          instrument.setSurgeonParam(o, 4, state.detune);
-          instrument.setSurgeonParam(o, 5, state.gain);
-
-          instrument.setOctaveTranspose(o, 'octave', state.octave);
-          instrument.setOctaveTranspose(o, 'transpose', state.transpose);
-
-          instrument.setMute(o, state.muted);
-        }
-      }
+      //     instrument.setMute(o, state.muted);
+      //   }
+      // }
     },
 
-    loadEffect(savedEffect) {
-      console.log(savedEffect);
-      const effect = new (effectsDict.get(savedEffect.nodeType))();
+    loadEffect(effectSaveString) {
+      console.log(effectSaveString);
+      const effect = new (effectsDict.get(effectSaveString.nodeType))(effectSaveString);
 
-      effect.setGain(savedEffect.gain);
+      // if (effect.type) effect.setType(effectSaveString.type);
 
-      if (effect.type) effect.setType(savedEffect.type);
+      // if (effect.audioParams)
+      //   effectSaveString.audioParams.forEach((ef_ap, i) => {
+      //     effect.setAudioParam(i, ef_ap.value);
+      //   });
 
-      if (effect.audioParams)
-        savedEffect.audioParams.forEach((ef_ap, i) => {
-          effect.setAudioParam(i, ef_ap.value);
-        });
+      // if (effect.innerNodeAudioParams)
+      //   effectSaveString.innerNodeAudioParams.forEach((ef_inap, i) => {
+      //     effect.setInnerNodeAudioParam(i, ef_inap.value);
+      //   });
 
-      if (effect.innerNodeAudioParams)
-        savedEffect.innerNodeAudioParams.forEach((ef_inap, i) => {
-          effect.setInnerNodeAudioParam(i, ef_inap.value);
-        });
+      // if (effect.customParams)
+      //   effectSaveString.customParams.forEach((ef_cp, i) => {
+      //     effect.setCustomParam(i, ef_cp.value);
+      //   });
 
-      if (effect.customParams)
-        savedEffect.customParams.forEach((ef_cp, i) => {
-          effect.setCustomParam(i, ef_cp.value);
-        });
-
-      if (effect.dryWet) effect.setDryWet(savedEffect.dryWet.value);
+      // if (effect.dryWet) effect.setDryWet(effectSaveString.dryWet.value);
 
       this.insertEffect(effect);
     },
@@ -960,21 +949,26 @@ export default {
   width: 100%;
   border-bottom: 1px solid rgb(161, 161, 161);
   border-top: 1px solid rgb(161, 161, 161);
+  padding: 0.25rem 0;
 }
 
-.main-section {
+.mid-section {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  gap: 0.5rem;
+  .right-col {
+    flex: 1;
+  }
+  // flex-direction: column;
+  // justify-content: space-between;
   // click height, header height
-  height: calc(100vh - 46px - 50px);
+  // height: calc(100vh - 46px - 50px);
 }
 
 .tracks {
   flex: 1;
   overflow-y: auto;
   border: 2px solid transparent;
-  padding: 0.25rem;
+  padding: 0.25rem 0;
 }
 
 .tracks.mapping {
@@ -1040,14 +1034,16 @@ export default {
 
 .main-gain {
   position: fixed;
-  bottom: 10px;
-  right: 10px;
+  bottom: 5px;
+  right: 5px;
   background: #222;
   color: #f3f3f3;
   padding: 0.75rem;
+  border: 1px solid #666;
   h3 {
     font-size: 1rem;
-    margin-bottom: 0.75rem;
+    margin-top: 1rem;
+    user-select: none;
   }
 }
 
@@ -1057,6 +1053,22 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 2rem;
+}
+
+.exporting-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba($color: #000000, $alpha: 0.9);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  .exporting-modal-content {
+    font-size: 2rem;
+  }
 }
 
 // Scoll Pane
@@ -1078,21 +1090,5 @@ $yMaxVal: 60px; //e.srcElement.scrollTop;
 .scroll-pane-inner {
   height: $spHeight + $yMaxVal;
   width: $spWidth + $xMaxVal;
-}
-
-.exporting-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background: rgba($color: #000000, $alpha: 0.9);
-  z-index: 10;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  .exporting-modal-content {
-    font-size: 2rem;
-  }
 }
 </style>

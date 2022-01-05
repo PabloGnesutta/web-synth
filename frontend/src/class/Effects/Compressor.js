@@ -6,23 +6,21 @@ const initialGain = 1;
 
 class Compressor extends Node {
   static compressorCount = 0;
-  constructor(name) {
+  constructor(saveObject) {
     super(initialGain, "Effect", "Compressor");
 
-    ++Compressor.compressorCount;
-    this.name = name || "Compressor " + Compressor.compressorCount;
+    this.name = saveObject?.name || "Compressor " + ++Compressor.compressorCount;
 
     this.node = Node.context.createDynamicsCompressor();
 
     this.inputNode.connect(this.node);
 
-    this.initAudioParams();
+    this.initAudioParams(saveObject?.audioParams);
 
-    hasDryWet(this);
+    hasDryWet(this, saveObject?.dryWet);
   }
 
-  initAudioParams() {
-    hasAudioParams(this);
+  initAudioParams(saveObjectAudioParams) {
     this.audioParams = [
       {
         name: 'threshold', displayName: 'treshold', unit: '',
@@ -45,15 +43,27 @@ class Compressor extends Node {
         minValue: 0, maxValue: 1, value: 0.3,
       },
     ];
+
+    hasAudioParams(this);
+    const valuesToLoad = saveObjectAudioParams || this.audioParams;
+
     for (let i = 0; i < this.audioParams.length; i++) {
-      this.setAudioParam(i, this.audioParams[i].value);
+      this.setAudioParam(i, valuesToLoad[i].value);
     }
   }
 
   saveString() {
-    const jsonString = {};
+    const jsonString = {
+      name: this.name
+    };
+
     this.saveParams.forEach(param => {
       jsonString[param.name] = param.value;
+    });
+
+    this.saveFunctions.forEach(saveFunction => {
+      const { name, value } = saveFunction();
+      jsonString[name] = value;
     });
 
     return JSON.stringify(jsonString);

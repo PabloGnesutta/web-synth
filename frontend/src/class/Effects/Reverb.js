@@ -8,12 +8,12 @@ const initialGain = 1;
 class Reverb extends Node {
   static reverbCount = 0;
 
-  constructor(name) {
+  constructor(saveObject) {
     super(initialGain, "Effect", "Reverb");
 
-    this.name = name || "Reverb " + ++Reverb.reverbCount;
+    this.name = saveObject?.name || "Reverb " + ++Reverb.reverbCount;
     this.types = ['Five Columns', 'Bottle Hall', 'Deep Space', 'In The Silo', 'Chateau Outside', 'Damp Lg Room'];
-    this.type = 'In The Silo';
+    this.type = saveObject?.type || 'In The Silo';
 
     this.node = Node.context.createConvolver();
 
@@ -21,11 +21,12 @@ class Reverb extends Node {
 
     this.setType(this.type);
 
-    hasDryWet(this);
+    hasDryWet(this, saveObject?.dryWet);
   }
 
   //se podrían cachear los buffers, o no...
   setType(type) {
+    this.type = type;
     fetch(dirName + type + '.wav').then(res => { return res.arrayBuffer(); })
       .then((arrayBuffer) => {
         Node.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
@@ -36,11 +37,17 @@ class Reverb extends Node {
 
   saveString() {
     const jsonString = {
+      name: this.name,
       type: this.type,
     };
 
     this.saveParams.forEach(param => {
       jsonString[param.name] = param.value;
+    });
+
+    this.saveFunctions.forEach(saveFunction => {
+      const { name, value } = saveFunction();
+      jsonString[name] = value;
     });
 
     return JSON.stringify(jsonString);

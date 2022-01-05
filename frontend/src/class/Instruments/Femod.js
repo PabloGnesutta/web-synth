@@ -1,7 +1,6 @@
 const Node = require("../Node");
 const noteFrequencies = require("../../data/noteFrequencies");
 
-//repite en surgeon
 const polyphony = 15;
 const peak = 1;
 const initialGain = 0.5;
@@ -9,21 +8,14 @@ const initialGain = 0.5;
 class Femod extends Node {
   static femodCount = 0;
 
-  constructor(name) {
+  constructor(saveObjct) {
     super(initialGain, "Instrument", "Femod");
 
-    this.name = name || "Femod " + ++Femod.femodCount;
-    this.A = 0.1;
-    this.D = 1;
-    this.S = 0.5;
-    this.R = 2;
+    ++Femod.femodCount;
+    this.name = saveObjct?.name || "Femod " + Femod.femodCount;
 
     this.types = ["sine", "triangle", "sawtooth", "square"];
-    this.type = "sawtooth";
-
-    this.modLevelValue = 1000;
-    this.modType = "sine";
-    this.modDetune = 0;
+    this.type = saveObjct?.type || "sawtooth";
 
     this.noteIndexInUse = Array(polyphony).fill(null);
     this.available = Array(polyphony).fill(true);
@@ -36,12 +28,106 @@ class Femod extends Node {
 
     this.inputNode.connect(this.outputNode);
 
-    this.initModulationParams();
-    this.initCustomParams();
+    this.initModulationParams(saveObjct?.modulationParams);
+    this.initCustomParams(saveObjct?.customParams);
+  }
+
+  initCustomParams(saveObjctCustomParams) {
+    this.customParams = [
+      {
+        name: "A",
+        displayName: "attack",
+        unit: 's',
+        minValue: 0,
+        maxValue: 5,
+        value: 0.1,
+      },
+      {
+        name: "D",
+        displayName: "decay",
+        unit: 's',
+        minValue: 0.01,
+        maxValue: 3,
+        value: 1,
+      },
+      {
+        name: "S",
+        displayName: "sustain",
+        unit: '',
+        minValue: 0,
+        maxValue: 1,
+        value: 0.5,
+      },
+      {
+        name: "R",
+        displayName: "release",
+        unit: 's',
+        minValue: 0.001,
+        maxValue: 5,
+        value: 2,
+      },
+      {
+        name: "detune",
+        displayName: "fine",
+        unit: '%',
+        minValue: -100,
+        maxValue: 100,
+        value: 0,
+      },
+    ];
+
+    const valuesToLoad = saveObjctCustomParams || this.customParams;
+    for (let i = 0; i < this.customParams.length; i++) {
+      this.setCustomParam(i, valuesToLoad[i].value);
+    }
+  }
+
+  setCustomParam(paramIndex, value) {
+    const customParam = this.customParams[paramIndex];
+    customParam.value = value;
+    this[customParam.name] = parseFloat(value);
+  }
+
+  initModulationParams(saveObjctModulationParams) {
+    this.modulationParams = [
+      {
+        name: "modType",
+        displayName: "mod type",
+        value: "triangle",
+        types: ['sine', 'triangle', 'sawtooth', 'square'],
+      },
+      {
+        name: "modLevelValue",
+        displayName: "mod amt",
+        unit: '',
+        minValue: 0,
+        maxValue: 3000,
+        value: 100,
+      },
+      {
+        name: "modDetune",
+        displayName: "fine",
+        unit: '',
+        minValue: -100,
+        maxValue: 100,
+        value: 0,
+      },
+    ];
+
+    const valuesToLoad = saveObjctModulationParams || this.modulationParams;
+    for (let i = 0; i < this.modulationParams.length; i++) {
+      this.setModulationParam(i, valuesToLoad[i].value);
+    }
+  }
+
+  setModulationParam(paramIndex, value) {
+    const modulationParam = this.modulationParams[paramIndex];
+    modulationParam.value = value;
+    this[modulationParam.name] = value;
   }
 
   setType(value) {
-    this.type = value; //todo: set in real time
+    this.type = value;
   }
 
   playNote(i) {
@@ -71,7 +157,6 @@ class Femod extends Node {
 
     modLevel.connect(oscillator.frequency);
     modLevel.gain.setValueAtTime(this.modLevelValue, t0);
-
     mod.type = this.modType;
 
     mod.frequency.setValueAtTime(freq, t0); //sync with note freq
@@ -118,104 +203,6 @@ class Femod extends Node {
     this.setNotInUse(index);
   }
 
-  initCustomParams() {
-    const setScaleNodeProperty = (prop, value) => {
-      this[prop] = value;
-    };
-
-    this.customParams = [
-      {
-        name: "attack",
-        displayName: "attack",
-        unit: 's',
-        minValue: 0,
-        maxValue: 5,
-        value: this.A,
-        set(v) { setScaleNodeProperty("A", v); }
-      },
-      {
-        name: "decay",
-        displayName: "decay",
-        unit: 's',
-        minValue: 0.01,
-        maxValue: 3,
-        value: this.D,
-        set(v) { setScaleNodeProperty("D", v); }
-      },
-      {
-        name: "sustain",
-        displayName: "sustain",
-        unit: '',
-        minValue: 0,
-        maxValue: 1,
-        value: this.S,
-        set(v) { setScaleNodeProperty("S", v); }
-      },
-      {
-        name: "release",
-        displayName: "release",
-        unit: 's',
-        minValue: 0.001,
-        maxValue: 5,
-        value: this.R,
-        set(v) { setScaleNodeProperty("R", v); }
-      },
-      {
-        name: "detune",
-        displayName: "fine",
-        unit: '%',
-        minValue: -100,
-        maxValue: 100,
-        value: 0,
-        set: (v) => {
-          //tiempo real agregar
-        }
-      },
-    ];
-  }
-
-  setCustomParam(index, value) {
-    const customParam = this.customParams[index];
-    customParam.value = value;
-    customParam.set(parseFloat(value));
-  }
-
-  initModulationParams() {
-    this.modulationParams = [
-      {
-        name: "type",
-        displayName: "mod type",
-        value: "triangle",
-        types: ['sine', 'triangle', 'sawtooth', 'square'],
-        set: (value) => { this.modType = value; }
-      },
-      {
-        name: "modLevel",
-        displayName: "mod amt",
-        unit: '',
-        minValue: 0,
-        maxValue: 3000,
-        value: 100,
-        set: (value) => { this.modLevelValue = value; }
-      },
-      {
-        name: "modDetune",
-        displayName: "fine",
-        unit: '',
-        minValue: -100,
-        maxValue: 100,
-        value: 0,
-        set: (value) => { this.modDetune = value; }
-      },
-    ];
-  }
-
-  setModulationParam(index, value) {
-    const modulationParams = this.modulationParams[index];
-    modulationParams.value = value;
-    modulationParams.set(value);
-  }
-
   // Polyphony helper functions
 
   getFirstAvailable() {
@@ -245,13 +232,22 @@ class Femod extends Node {
   }
 
   saveString() {
-    return JSON.stringify({
-      nodeRol: this.nodeRol,
-      nodeType: this.nodeType,
-      gain: this.gain,
-      customParams: this.customParams,
-      modulationParams: this.modulationParams
+    const jsonString = {
+      name: this.name,
+      type: this.type,
+      customParams: this.customParams.map(param => {
+        return { name: param.name, value: param.value };
+      }),
+      modulationParams: this.modulationParams.map(param => {
+        return { name: param.name, value: param.value };
+      }),
+    };
+
+    this.saveParams.forEach(param => {
+      jsonString[param.name] = param.value;
     });
+
+    return JSON.stringify(jsonString);
   }
 
   destroy() {

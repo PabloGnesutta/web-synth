@@ -23,13 +23,14 @@ class WhiteNoise extends Node {
     this.node = Node.context.createBiquadFilter();
     this.node.type = 'bandpass';
 
-    this.mod = Node.context.createOscillator();
-    this.mod.type = 'triangle';
     this.modGain = Node.context.createGain();
-    this.mod.connect(this.modGain);
-    this.mod.start();
     this.modGain.gain.value = 500;
     this.modGain.connect(this.node.frequency);
+
+    this.mod = Node.context.createOscillator();
+    this.mod.type = 'triangle';
+    this.mod.connect(this.modGain);
+    this.mod.start();
 
     this.node.connect(this.outputNode);
     this.inputNode.connect(this.outputNode);
@@ -59,9 +60,9 @@ class WhiteNoise extends Node {
     this.playing = false;
   }
 
-  onOtherKeyup(key) { }
-
   initAudioParams() {
+    hasAudioParams(this);
+
     this.audioParams = [
       {
         name: 'frequency', displayName: 'cutoff', unit: 'hz',
@@ -73,10 +74,14 @@ class WhiteNoise extends Node {
       },
     ];
 
-    hasAudioParams(this);
+    for (let i = 0; i < this.audioParams.length; i++) {
+      this.setAudioParam(i, this.audioParams[i].value);
+    }
   }
 
   initInnerNodeAudioParams() {
+    hasInnerNodeAudioParams(this);
+
     this.innerNodeAudioParams = [
       {
         name: 'modFrequency', displayName: 'mod freq', unit: 'hz',
@@ -90,7 +95,9 @@ class WhiteNoise extends Node {
       },
     ];
 
-    hasInnerNodeAudioParams(this);
+    for (let i = 0; i < this.innerNodeAudioParams.length; i++) {
+      this.setInnerNodeAudioParam(i, this.innerNodeAudioParams[i].value);
+    }
   }
 
   createWhiteNoiseBuffer() {

@@ -5,7 +5,6 @@ class Node {
     this.gain = initialGain;
     this.minGain = 0;
     this.maxGain = 3;
-    this.gainStep = 0.01;
     this.muted = false;
 
     this.nodeRol = nodeRole;  //Instrument/Effect
@@ -14,35 +13,33 @@ class Node {
     this.saveParams = [
       { name: 'nodeRol', value: this.nodeRol },
       { name: 'nodeType', value: this.nodeType },
-      { name: 'gain', value: this.gain },
     ];
-    this.destroyers = [];
 
     this.inputNode = Node.context.createGain();
     this.outputNode = Node.context.createGain();
 
     this.outputNode.gain.value = initialGain;
+
+    this.destroyers = [() => {
+      this.outputNode.disconnect();
+      this.outputNode = null;
+
+      if (this.node) {
+        this.node.disconnect();
+        this.node = null;
+      }
+
+      this.inputNode.disconnect();
+      this.inputNode = null;
+
+      // chequear que en los nodos que tengan custom/modulation params, los destruyan ellos
+      // if (this.customParams) this.customParams = null;
+      // if (this.modulationParams) this.modulationParams = null;
+    }];
   }
 
   destroy() {
-    this.outputNode.disconnect();
-    this.outputNode = null;
-
-    //habia problemas con poner y quitar un effecto, dejaba de sonar... chequear
-    if (this.node) {
-      this.node.disconnect();
-      this.node = null;
-    }
-
-    this.inputNode.disconnect();
-    this.inputNode = null;
-
-    if (this.customParams) this.customParams = null;
-    if (this.modulationParams) this.modulationParams = null;
-
-    this.destroyers.forEach(destroyer => {
-      destroyer();
-    });
+    this.destroyers.forEach(destroyer => { destroyer(); });
   }
 
   connect(Node) {

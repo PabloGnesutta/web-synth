@@ -1,5 +1,5 @@
 <template>
-  <div class="Click">
+  <div class="click">
     Click
     <div class="on-off" :class="{ 'click-on': clickActive }">
       <div v-if="clickActive" class="on" @click="turnOff">ON</div>
@@ -175,13 +175,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.Click {
+.click {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1em;
   background: #333;
-  padding: 0.3em;
+  padding: 0.25rem 0;
 }
 
 .on-off {

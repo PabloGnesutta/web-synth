@@ -17,7 +17,17 @@
             <div class="instrument-enabler-inner" :class="{ enabled: instrumentEnabled }"></div>
           </div>
 
-          <div v-if="Node.saveString" class="save-preset" @click="savePreset()">[G]</div>
+          <div v-if="Node.saveString" class="preset-icon" @click="savePreset()">[S]</div>
+          <div v-if="showPresetNames" class="preset-names">
+            <div
+              v-for="(presetName, presetIndex) in presetNames"
+              :key="presetName"
+              class="preset-name"
+              @click="loadPreset(presetIndex)"
+            >
+              {{ presetName }}
+            </div>
+          </div>
         </div>
 
         <div class="node-name" @click.stop="toggleFolded">{{ Node.name }}</div>
@@ -89,7 +99,6 @@ import BiquadFilterBody from './specific-nodes/BiquadFilterBody.vue';
 import ReverbBody from './specific-nodes/ReverbBody.vue';
 import CompressorBody from './specific-nodes/CompressorBody.vue';
 import DistortionBody from './specific-nodes/DistortionBody.vue';
-// import BaseNodeBody from './specific-nodes/BaseNodeBody.vue';
 
 export default {
   name: 'NodeRender',
@@ -107,7 +116,6 @@ export default {
     DistortionBody,
     SamplerBody,
     ReverbBody,
-    // BaseNodeBody,
   },
 
   props: ['Node', 'instrumentEnabled'],
@@ -117,6 +125,9 @@ export default {
       folded: false,
       loopStatus: 'CLEARED',
       presetCandidates: ['Surgeon', 'Femod'],
+      presetNames: [],
+      presets: [],
+      showPresetNames: false,
     };
   },
 
@@ -140,30 +151,33 @@ export default {
     },
 
     savePreset() {
+      const newPresetName = prompt('Nombre del preset a guardar');
+      if (!newPresetName) return;
+
       const presetsKey = this.Node.nodeType + '-presets';
-      const namesKey = presetsKey + '-names';
+      const presetNamesKey = this.Node.nodeType + '-preset-names';
 
-      let names = localStorage.getItem(namesKey);
+      let presetNames = localStorage.getItem(presetNamesKey);
+      presetNames = JSON.parse(presetNames);
 
-      if (!names) {
+      if (!presetNames) {
         localStorage.setItem(presetsKey, '[]');
-        localStorage.setItem(namesKey, '[]');
-        names = '[]';
+        localStorage.setItem(presetNamesKey, '[]');
+        presetNames = [];
       }
 
-      const newPresetName = prompt('Nombre del preset a guardar');
-      names = JSON.parse(names);
       //ver si existe
 
       let presets = localStorage.getItem(presetsKey);
       presets = JSON.parse(presets);
 
+      this.Node.name = newPresetName;
       const saveString = this.Node.saveString();
 
-      names.push(newPresetName);
+      presetNames.push(newPresetName);
       presets.push({ name: newPresetName, saveString });
 
-      localStorage.setItem(namesKey, JSON.stringify(names));
+      localStorage.setItem(presetNamesKey, JSON.stringify(presetNames));
       localStorage.setItem(presetsKey, JSON.stringify(presets));
     },
 
@@ -249,9 +263,20 @@ export default {
   gap: 0.5rem;
   .top-left {
     display: flex;
-    gap: 0.2em;
-    .save-preset {
+    gap: 0.5rem;
+    .preset-icon {
       cursor: pointer;
+      &:hover {
+        color: coral;
+      }
+    }
+    .preset-names {
+      position: absolute;
+      top: 1.5rem;
+      background: #111;
+      width: 100%;
+      text-align: left;
+      padding: 0.5rem;
     }
   }
   .node-name {
