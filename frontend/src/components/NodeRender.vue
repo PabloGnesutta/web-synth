@@ -219,18 +219,17 @@ export default {
 }
 
 .node {
-  border: 2px solid transparent;
-  padding-bottom: 0.5rem;
-  background: #333;
-  color: #f3f3f3;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: all 0.2s ease-out;
   gap: 0em;
-
-  max-height: 365px;
+  background: #333;
+  color: #f3f3f3;
+  border: 2px solid transparent;
+  padding-bottom: 0.5rem;
+  transition: all 0.2s ease-out;
+  text-align: center;
 }
 
 .node.folded {
@@ -241,7 +240,7 @@ export default {
     position: absolute;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.82);
     z-index: 1;
     cursor: pointer;
     .name-folded {
@@ -324,6 +323,7 @@ export default {
   padding: 0.3em 0.2em 0.5em;
   user-select: none;
   font-size: 0.9rem;
+  text-align: center;
 }
 
 .types {

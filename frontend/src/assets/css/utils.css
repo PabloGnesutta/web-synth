@@ -1,0 +1,28 @@
+.select-none {
+  user-select: none;
+}
+
+.cursor-default {
+  cursor: default;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 10px;
+  width: 12px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 2px #fff;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgb(228, 173, 154);
+}

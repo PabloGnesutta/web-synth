@@ -185,9 +185,9 @@ export default {
 }
 
 .on-off {
+  display: inline-block;
   user-select: none;
   cursor: pointer;
-  display: inline-block;
   div {
     padding: 0.5em;
     background: rosybrown;

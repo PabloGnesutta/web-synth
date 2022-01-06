@@ -1,0 +1,8 @@
+:root {
+  --color-1: teal;
+  --color-2: coral;
+  --top-section-height: 50px;
+  --bottom-section-height: 396px;
+  --click-wrapper-height: 52px;
+  --mid-section-height: calc(100vh - var(--top-section-height) - var(--bottom-section-height));
+}

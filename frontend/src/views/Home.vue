@@ -1,27 +1,28 @@
 <template>
   <div class="home">
-    <div class="inited" v-if="inited">
+    <div v-if="inited" class="home-inner">
       <div class="top-section">
-        <div class="header-wrapper">
-          <Header
-            :ref="'header'"
-            @startRec="startRec"
-            @stopRec="stopRec"
-            @playExport="playExport"
-            @downloadExport="downloadExport"
-            @stopPlayingExport="stopPlayingExport"
-            @loadSave="loadSave"
-            @toggleMapping="toggleMapping"
-            :tracks="tracks"
-            :playing="playing"
-            :recording="recording"
-            :recordingsAvailable="recordingsAvailable"
-          />
-        </div>
+        <Header
+          :ref="'header'"
+          @startRec="startRec"
+          @stopRec="stopRec"
+          @playExport="playExport"
+          @downloadExport="downloadExport"
+          @stopPlayingExport="stopPlayingExport"
+          @loadSave="loadSave"
+          @toggleMapping="toggleMapping"
+          :octave="octave"
+          :transpose="transpose"
+          :tracks="tracks"
+          :playing="playing"
+          :recording="recording"
+          :recordingsAvailable="recordingsAvailable"
+        />
       </div>
 
+      <!-- Mid Section: Sidebar, Click, Tracks -->
       <div class="mid-section">
-        <div class="left-col">
+        <div class="left-col sidebar-wrapper">
           <Sidebar
             @createInstrument="createInstrument"
             @createEffect="createAndInsertEffect"
@@ -33,7 +34,7 @@
           <!-- Click -->
           <div class="click-wrapper"><Click ref="click" /></div>
           <!-- Tracks -->
-          <div class="tracks custom-scrollbar" :class="{ mapping: mapping }">
+          <div class="tracks-container custom-scrollbar" :class="{ mapping: mapping }">
             <div
               :key="track.name"
               v-for="(track, t) in tracks"
@@ -45,7 +46,7 @@
                 <div @click="deleteTrack(t)" class="pointer">[X]</div>
                 <div class="select-none cursor-default" @click="selectTrack(t)">{{ track.name }}</div>
                 <div class="select-none cursor-default" @click="selectTrack(t)">
-                  {{ track.instrument.nodeType }}
+                  {{ track.instrument.name }}
                 </div>
               </div>
 
@@ -61,8 +62,8 @@
         </div>
       </div>
 
-      <!-- Current Track -->
-      <div class="bottom-section track-detail-container">
+      <!-- Bottom section: Current Track -->
+      <div class="bottom-section">
         <div
           v-if="currentTrack"
           class="track-detail custom-scrollbar"
@@ -168,7 +169,6 @@ const effectsDict = new Map([
   ['Distortion', Distortion],
   ['Compressor', Compressor],
   ['BiquadFilter', BiquadFilter],
-  // ['Gain', Gain],
 ]);
 
 import { mapMutations, mapGetters } from 'vuex';
@@ -250,12 +250,17 @@ export default {
     ...mapGetters(['context', 'appIsMapping', 'appConnecting']),
   },
 
+  beforeDestroy() {
+    this.setContext(null);
+    window.removeEventListener('keyup', this.onKeyup);
+    window.removeEventListener('keydown', this.onKeydown);
+  },
+
   mounted() {
     this.keyEnabled = Array(222).fill(true);
     if (navigator.requestMIDIAccess) {
       navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
     }
-
     document.querySelector('.home').addEventListener('click', this.init);
   },
 
@@ -274,7 +279,7 @@ export default {
 
       this.createMainGain();
 
-      this.createTrack(new Femod());
+      this.createTrack(new Surgeon());
       // this.createAndInsertEffect('BiquadFilter');
 
       window.addEventListener('keyup', this.onKeyup);
@@ -312,20 +317,22 @@ export default {
       this.currentTrack = this.tracks[this.currentTrackIndex];
 
       // Listeners
-      this.keypressListeners.push({
-        instrument,
-        trackName: this.currentTrack.name,
-      });
-      this.xyPadListeners.push({
-        instrument,
-        trackName: this.currentTrack.name,
-      });
 
-      if (instrument.nodeType === 'Drumkit')
+      if (instrument.nodeType === 'Drumkit') {
         this.numpadListeners.push({
           instrument,
           trackName: this.currentTrack.name,
         });
+      } else {
+        this.keypressListeners.push({
+          instrument,
+          trackName: this.currentTrack.name,
+        });
+        this.xyPadListeners.push({
+          instrument,
+          trackName: this.currentTrack.name,
+        });
+      }
 
       this.$nextTick(() => {
         window.scrollTo(0, document.body.scrollHeight);
@@ -652,6 +659,8 @@ export default {
       console.log('Could not access your MIDI devices.');
     },
 
+    // Load / Save
+
     loadSave(tracks) {
       tracks.forEach(track => {
         this.loadInstrument(t.instrument);
@@ -670,65 +679,15 @@ export default {
     loadInstrument(instSaveString) {
       const instrument = new (instrumentsDict.get(instSaveString.nodeType))(instSaveString);
       this.createTrack(instrument);
-      // if (instrument.customParams)
-      //   instSaveString.customParams.forEach((ins_cp, i) => {
-      //     instrument.setCustomParam(i, ins_cp.value);
-      //   });
-
-      // if (instrument.modulationParams)
-      //   instSaveString.modulationParams.forEach((ins_mp, i) => {
-      //     instrument.setModulationParam(i, ins_mp.value);
-      //   });
-
-      // if (instrument.surgeonParams) {
-      //   for (let o = 0; o < instrument.oscillatorsPerNote; o++) {
-      //     const state = instSaveString.oscillatorGroupProps[o];
-
-      //     instrument.setType(o, state.type);
-      //     instrument.setOscillatorTarget(o, state.destination);
-
-      //     instrument.setSurgeonParam(o, 0, state.A);
-      //     instrument.setSurgeonParam(o, 1, state.D);
-      //     instrument.setSurgeonParam(o, 2, state.S);
-      //     instrument.setSurgeonParam(o, 3, state.R);
-      //     instrument.setSurgeonParam(o, 4, state.detune);
-      //     instrument.setSurgeonParam(o, 5, state.gain);
-
-      //     instrument.setOctaveTranspose(o, 'octave', state.octave);
-      //     instrument.setOctaveTranspose(o, 'transpose', state.transpose);
-
-      //     instrument.setMute(o, state.muted);
-      //   }
-      // }
     },
 
     loadEffect(effectSaveString) {
-      console.log(effectSaveString);
       const effect = new (effectsDict.get(effectSaveString.nodeType))(effectSaveString);
-
-      // if (effect.type) effect.setType(effectSaveString.type);
-
-      // if (effect.audioParams)
-      //   effectSaveString.audioParams.forEach((ef_ap, i) => {
-      //     effect.setAudioParam(i, ef_ap.value);
-      //   });
-
-      // if (effect.innerNodeAudioParams)
-      //   effectSaveString.innerNodeAudioParams.forEach((ef_inap, i) => {
-      //     effect.setInnerNodeAudioParam(i, ef_inap.value);
-      //   });
-
-      // if (effect.customParams)
-      //   effectSaveString.customParams.forEach((ef_cp, i) => {
-      //     effect.setCustomParam(i, ef_cp.value);
-      //   });
-
-      // if (effect.dryWet) effect.setDryWet(effectSaveString.dryWet.value);
-
       this.insertEffect(effect);
     },
 
     // REC
+
     startRec() {
       const recordingTracks = this.tracks.filter(t => t.recEnabled);
       const total = recordingTracks.length;
@@ -921,57 +880,51 @@ export default {
       };
     },
   },
-
-  beforeDestroy() {
-    this.setContext(null);
-    window.removeEventListener('keyup', this.onKeyup);
-    window.removeEventListener('keydown', this.onKeydown);
-  },
 };
 </script>
 
 <style lang="scss">
 .home {
-  min-height: 90vh;
+  height: 100vh;
+  background: transparent;
+}
+.home-inner {
+  display: flex;
+  flex-direction: column;
 }
 
 .top-section {
   z-index: 1;
 }
 
-.header-wrapper {
-  position: relative;
-  top: 0;
-  z-index: 1;
+// Mid section
+
+.mid-section {
+  height: var(--mid-section-height);
+  display: flex;
+  gap: 0.25rem;
+  // .left-col {  }
+  .right-col {
+    background: black;
+    flex: 1;
+  }
 }
 
 .click-wrapper {
-  width: 100%;
-  border-bottom: 1px solid rgb(161, 161, 161);
-  border-top: 1px solid rgb(161, 161, 161);
-  padding: 0.25rem 0;
+  // width: 100%;
+  margin: 0.25rem;
 }
 
-.mid-section {
-  display: flex;
-  gap: 0.5rem;
-  .right-col {
-    flex: 1;
-  }
-  // flex-direction: column;
-  // justify-content: space-between;
-  // click height, header height
-  // height: calc(100vh - 46px - 50px);
-}
-
-.tracks {
-  flex: 1;
+.tracks-container {
+  height: calc(
+    100vh - var(--top-section-height) - var(--click-wrapper-height) - var(--bottom-section-height)
+  );
   overflow-y: auto;
   border: 2px solid transparent;
   padding: 0.25rem 0;
 }
 
-.tracks.mapping {
+.tracks-container.mapping {
   border-color: var(--color-1);
 }
 
@@ -988,12 +941,10 @@ export default {
 .track:last-child {
   margin: 0;
 }
-
 .track.selected {
   background: #333;
   border: 2px solid #ff857c;
 }
-
 .track-inner-left {
   display: flex;
   align-items: center;
@@ -1001,21 +952,18 @@ export default {
   padding: 0.5rem;
 }
 
-// Track Detail
-.track-detail-container {
-  padding: 0.5rem;
-  background: black;
-}
-
-.track-detail {
+// Bottom Section
+.bottom-section {
+  padding: 0.25rem 0;
   background: transparent;
+}
+.track-detail {
+  flex: 1;
   display: flex;
   gap: 1em;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 0.5rem;
   padding-right: 10rem;
-  flex: 1;
   height: 380px;
 }
 
@@ -1053,42 +1001,5 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 2rem;
-}
-
-.exporting-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background: rgba($color: #000000, $alpha: 0.9);
-  z-index: 10;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  .exporting-modal-content {
-    font-size: 2rem;
-  }
-}
-
-// Scoll Pane
-$spWidth: 200px;
-$spHeight: 200px;
-$scrollBarThickness: 17px;
-//@scroll
-$xMaxVal: 1000px; //e.srcElement.scrollLeft;
-$yMaxVal: 60px; //e.srcElement.scrollTop;
-.scroll-pane {
-  display: none;
-  height: $spHeight + $scrollBarThickness;
-  width: $spWidth + $scrollBarThickness;
-  background: black;
-  overflow: auto;
-  padding: 0;
-}
-
-.scroll-pane-inner {
-  height: $spHeight + $yMaxVal;
-  width: $spWidth + $xMaxVal;
 }
 </style>

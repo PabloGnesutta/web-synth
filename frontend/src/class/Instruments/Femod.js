@@ -203,34 +203,6 @@ class Femod extends Node {
     this.setNotInUse(index);
   }
 
-  // Polyphony helper functions
-
-  getFirstAvailable() {
-    let found = false;
-    let index = -1;
-    while (!found && index < polyphony) {
-      index++;
-      found = this.available[index];
-    }
-    if (!found) index = -1;
-    else this.available[index] = false;
-    return index;
-  }
-
-  setInUse(inUseIndex, noteIndex) {
-    this.inUse[inUseIndex] = true;
-    this.noteIndexInUse[inUseIndex] = noteIndex;
-  }
-
-  setNotInUse(index) {
-    this.inUse[index] = false;
-    this.available[index] = true;
-  }
-
-  getInuseIndexByNote(i) {
-    return this.noteIndexInUse.findIndex(ni => ni === i);
-  }
-
   saveString() {
     const jsonString = {
       name: this.name,
@@ -268,6 +240,34 @@ class Femod extends Node {
     this.ADSRGains = null;
     this.modulators = null;
     this.oscillators = null;
+  }
+
+  // Polyphony helper functions
+
+  getFirstAvailable() {
+    let found = false;
+    let index = -1;
+    while (!found && index < polyphony) {
+      index++;
+      found = this.available[index];
+    }
+    if (!found) index = -1;
+    else this.available[index] = false;
+    return index;
+  }
+
+  setInUse(inUseIndex, noteIndex) {
+    this.inUse[inUseIndex] = true;
+    this.noteIndexInUse[inUseIndex] = noteIndex;
+  }
+
+  setNotInUse(index) {
+    this.inUse[index] = false;
+    this.available[index] = true;
+  }
+
+  getInuseIndexByNote(i) {
+    return this.noteIndexInUse.findIndex(ni => ni === i);
   }
 }
 

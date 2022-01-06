@@ -3,24 +3,19 @@ const noteFrequencies = require("../../data/noteFrequencies");
 
 const polyphony = 12;
 
-const A = 0;
-const D = 0;
-const S = 1;
-const R = 0.1;
-
 const modulatorPeak = 2000;
 const carrierConstraints = { minValue: 0, maxValue: 1, value: 1 };
 const modulatorConstraints = { minValue: 0, maxValue: modulatorPeak, value: modulatorPeak };
 
 const initialGain = 0.7;
+const oscillatorsPerNote = 3;
 
 class Surgeon extends Node {
   static SurgeonCount = 0;
 
-  constructor() {
+  constructor(saveObject) {
     super(initialGain, "Instrument", "Surgeon");
-
-    this.name = "Surgeon " + ++Surgeon.SurgeonCount;
+    this.name = saveObject?.name || "Surgeon " + ++Surgeon.SurgeonCount;
 
     this.oscTypes = ["sine", "triangle", "sawtooth", "square"];
 
@@ -33,18 +28,118 @@ class Surgeon extends Node {
     this.groupOscillators = Array(polyphony);
     this.gains = Array(polyphony);
 
-    this.initOscillatorGroupProps();
+    this.groupGains = Array(oscillatorsPerNote);
 
-    this.groupGains = Array(this.oscillatorsPerNote);
-
-    for (let o = 0; o < this.oscillatorsPerNote; o++) {
+    for (let o = 0; o < oscillatorsPerNote; o++) {
       const gain = Node.context.createGain();
       gain.connect(this.outputNode);
       this.groupGains[o] = gain;
     }
 
     this.inputNode.connect(this.outputNode);
-    this.initSurgeonParams();
+
+    this.initOscillatorGroupProps(saveObject?.oscillatorGroupProps);
+    this.initSurgeonParams(saveObject?.minValues, saveObject?.maxValues);
+  }
+
+  initOscillatorGroupProps(saveObjectOscillatorGroupProps) {
+    //A D S R detune gain
+    this.oscillatorGroupProps = saveObjectOscillatorGroupProps ||
+      [
+        {
+          A: 2.6, D: 0.5, S: 1000, R: 0.3, detune: 0, gain: 0.5,
+          type: 'sawtooth', octave: 0, transpose: 0,
+          destinations: [['B', 1], ['C', 2], ['Out', 'OUTPUT']],
+          destination: 2,
+          peak: modulatorPeak, muted: false,
+          name: 'A'
+        },
+        {
+          A: 1.9, D: 0, S: 1, R: 0.1, detune: 0, gain: 0.2,
+          type: 'sawtooth', octave: 0, transpose: 0,
+          destinations: [['A', 0], ['C', 2], ['Out', 'OUTPUT']],
+          destination: 'OUTPUT',
+          peak: 1, muted: false,
+          name: 'B'
+        },
+        {
+          A: 0, D: 0.1, S: 1, R: 0.1, detune: 0, gain: 0.8,
+          type: 'sine', octave: 0, transpose: 0,
+          destinations: [['A', 0], ['B', 1], ['Out', 'OUTPUT']],
+          destination: 'OUTPUT',
+          peak: 1, muted: false,
+          name: 'C'
+        },
+      ];
+  }
+
+  initSurgeonParams(saveObjectMinValues, saveObjectMaxValues) {
+    //A D S R detune gain
+    this.minValues = saveObjectMinValues || [0, 0, 0, 0, -100, 0];
+    this.maxValues = saveObjectMaxValues ||
+      [
+        [5, 5, modulatorPeak, 5, 100, 1],
+        [5, 5, 1, 5, 100, 1],
+        [5, 5, 1, 5, 100, 1],
+      ];
+
+    // A D S R
+    const setOscillatorGroupProperty = (o, prop, value) => {
+      this.oscillatorGroupProps[o][prop] = value;
+    };
+
+    this.surgeonParams = [
+      {
+        name: "A",
+        displayName: "attack",
+        unit: 's',
+        set(i, v) { setOscillatorGroupProperty(i, "A", v); }
+      },
+      {
+        name: "D",
+        displayName: "decay",
+        unit: 's',
+        set(i, v) { setOscillatorGroupProperty(i, "D", v); }
+      },
+      {
+        name: "S",
+        displayName: "sustain",
+        unit: '',
+        set(i, v) { setOscillatorGroupProperty(i, "S", v); }
+      },
+      {
+        name: "R",
+        displayName: "release",
+        unit: 's',
+        set(i, v) { setOscillatorGroupProperty(i, "R", v); }
+      },
+      {
+        name: "detune",
+        displayName: "detune",
+        unit: '',
+        set: (index, value) => {
+          this.oscillatorGroupProps[index].detune = value;
+          this.groupOscillators.forEach(groupOscillator => {
+            groupOscillator[index].detune.setValueAtTime(value, 0);
+          });
+        }
+      },
+      {
+        name: "gain",
+        displayName: "level",
+        unit: '',
+        set: (index, value) => {
+          this.oscillatorGroupProps[index].gain = value;
+          this.gains.forEach(gain => {
+            gain[index].gain.value = value;
+          });
+        }
+      },
+    ];
+  }
+
+  setSurgeonParam(oscIndex, paramIndex, value) {
+    this.surgeonParams[paramIndex].set(oscIndex, parseFloat(value));
   }
 
   playNote(noteFreqIndex) {
@@ -53,20 +148,19 @@ class Surgeon extends Node {
     if (index === -1) return;
     this.setInUse(index, noteFreqIndex);
 
-    const gains = Array(this.oscillatorsPerNote.length);
-    const ADSRGains = Array(this.oscillatorsPerNote.length);
-    const oscillators = Array(this.oscillatorsPerNote.length);
+    const gains = Array(oscillatorsPerNote.length);
+    const ADSRGains = Array(oscillatorsPerNote.length);
+    const oscillators = Array(oscillatorsPerNote.length);
 
     // Create 3 oscillators
-    for (let o = 0; o < this.oscillatorsPerNote; o++) {
+    for (let o = 0; o < oscillatorsPerNote; o++) {
       oscillators[o] = Node.context.createOscillator();
     }
 
-    for (let o = 0; o < this.oscillatorsPerNote; o++) {
+    for (let o = 0; o < oscillatorsPerNote; o++) {
       const { A, D, S, detune, gain, octave, transpose, peak, type, destination } = this.oscillatorGroupProps[o];
 
-      // todo: add 1 instead of 12 in all instruments
-      let noteIndex = noteFreqIndex + 1 * octave + transpose;
+      let noteIndex = noteFreqIndex + 12 * octave + transpose;
       if (noteIndex < 0) noteIndex = 0;
       else if (noteIndex > noteFrequencies.length - 1) noteIndex = noteFrequencies.length - 1;
 
@@ -121,7 +215,7 @@ class Surgeon extends Node {
 
     const t = Node.context.currentTime;
 
-    for (let o = 0; o < this.oscillatorsPerNote; o++) {
+    for (let o = 0; o < oscillatorsPerNote; o++) {
       const { R } = this.oscillatorGroupProps[o];
       const ADSRGain = ADSRGains[o];
 
@@ -161,140 +255,44 @@ class Surgeon extends Node {
 
   setType(index, value) {
     this.oscillatorGroupProps[index].type = value;
-    this.groupOscillators.forEach(go => {
-      go[index].type = value;
+    this.groupOscillators.forEach(groupOscillator => {
+      groupOscillator[index].type = value;
     });
   }
 
-  setOscillatorTarget(origin, destination) {
-    const oscillatorGroup = this.oscillatorGroupProps[origin];
-    const maxValues = this.maxValues[origin];
+  setOscillatorTarget(originIndex, destination) {
+    const oscillatorGroup = this.oscillatorGroupProps[originIndex];
+    const maxValues = this.maxValues[originIndex];
 
     oscillatorGroup.destination = destination;
 
     if (destination === 'OUTPUT') {
       oscillatorGroup.peak = 1;
       oscillatorGroup.S = 1;
-      maxValues[2] = 1;
+      maxValues[2] = 1; // Sustain
       return carrierConstraints;
     } else {
       oscillatorGroup.peak = modulatorPeak;
       oscillatorGroup.S = 100;
-      maxValues[2] = modulatorPeak;
+      maxValues[2] = modulatorPeak; // Sustain
       return modulatorConstraints;
     }
-  }
-
-  initOscillatorGroupProps() {
-    //A D S R detune gain
-    this.oscillatorGroupProps = [
-      {
-        A: 2.6, D: 0.5, S: 1000, R: 0.3, detune: 0, gain: 0.5,
-        type: 'sawtooth', octave: 0, transpose: 0,
-        destinations: [['B', 1], ['C', 2], ['Out', 'OUTPUT']],
-        destination: 2,
-        peak: modulatorPeak, muted: false,
-        name: 'A'
-      },
-      {
-        A: 1.9, D: D, S: S, R, detune: 0, gain: 0.2,
-        type: 'sawtooth', octave: 0, transpose: 0,
-        destinations: [['A', 0], ['C', 2], ['Out', 'OUTPUT']],
-        destination: 'OUTPUT',
-        peak: 1, muted: false,
-        name: 'B'
-      },
-      {
-        A: A, D: 0.1, S: S, R: 0.1, detune: 0, gain: 0.8,
-        type: 'sine', octave: 0, transpose: 0,
-        destinations: [['A', 0], ['B', 1], ['Out', 'OUTPUT']],
-        destination: 'OUTPUT',
-        peak: 1, muted: false,
-        name: 'C'
-      },
-    ];
-
-    this.oscillatorsPerNote = this.oscillatorGroupProps.length;
   }
 
   addToOctaveTranspose(index, param, value) {
     this.oscillatorGroupProps[index][param] += value;
   }
 
-  setOctaveTranspose(index, param, value) {
-    this.oscillatorGroupProps[index][param] = value;
-  }
-
-  setSurgeonParam(oscIndex, paramIndex, value) {
-    this.surgeonParams[paramIndex].set(oscIndex, parseFloat(value));
-  }
-
-  initSurgeonParams() {
-    this.minValues = [0, 0, 0, 0, -100, 0];
-    this.maxValues = [
-      [5, 5, modulatorPeak, 5, 100, 1],
-      [5, 5, 1, 5, 100, 1],
-      [5, 5, 1, 5, 100, 1],
-    ];
-
-    //A D S R
-    const setScaleNodeProperty = (o, prop, value) => {
-      this.oscillatorGroupProps[o][prop] = value;
-    };
-
-    this.surgeonParams = [
-      {
-        name: "A",
-        displayName: "attack",
-        unit: 's',
-        set(i, v) { setScaleNodeProperty(i, "A", v); }
-      },
-      {
-        name: "D",
-        displayName: "decay",
-        unit: 's',
-        set(i, v) { setScaleNodeProperty(i, "D", v); }
-      },
-      {
-        name: "S",
-        displayName: "sustain",
-        unit: '',
-        set(i, v) { setScaleNodeProperty(i, "S", v); }
-      },
-      {
-        name: "R",
-        displayName: "release",
-        unit: 's',
-        set(i, v) { setScaleNodeProperty(i, "R", v); }
-      },
-      {
-        name: "detune",
-        displayName: "detune",
-        unit: '',
-        set: (index, value) => {
-          this.oscillatorGroupProps[index].detune = value;
-          this.groupOscillators.forEach(grpOsc => {
-            grpOsc[index].detune.setValueAtTime(value, 0);
-          });
-        }
-      },
-      {
-        name: "gain",
-        displayName: "level",
-        unit: '',
-        set: (index, value) => {
-          this.oscillatorGroupProps[index].gain = value;
-          this.gains.forEach(g => {
-            g[index].gain.value = value;
-          });
-        }
-      },
-    ];
-  }
+  // setOctaveTranspose(index, param, value) {
+  //   this.oscillatorGroupProps[index][param] = value;
+  // }
 
   saveString() {
     const jsonString = {
-      oscillatorGroupProps: this.oscillatorGroupProps
+      name: this.name,
+      oscillatorGroupProps: this.oscillatorGroupProps,
+      minValues: this.minValues,
+      maxValues: this.maxValues
     };
 
     this.saveParams.forEach(param => {
@@ -315,7 +313,7 @@ class Surgeon extends Node {
     this.surgeonParams = null;
     this.oscillatorGroupProps = null;
 
-    for (let o = 0; o < this.oscillatorsPerNote; o++) {
+    for (let o = 0; o < oscillatorsPerNote; o++) {
       this.groupGains[o].disconnect();
       this.groupGains[o] = null;
 

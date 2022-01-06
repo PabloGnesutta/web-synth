@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div v-if="presetNamesLoaded" class="sidebar">
+  <div class="sidebar-wrapper">
+    <div v-if="presetNamesLoaded" class="sidebar custom-scrollbar">
       <!-- Instruments -->
       <div class="menu instruments">
         <div class="label">Instrumentos</div>
@@ -41,12 +41,13 @@
               {{ effect.displayName }}
             </span>
           </div>
-          <div
-            v-for="(presetName, presetIndex) in effect.presetNames"
-            :key="presetName"
-            class="presets-container"
-          >
-            <div class="preset-item" @dblclick="loadPreset(effect.className, presetIndex)">
+          <div v-if="effect.showPresets" class="presets-container">
+            <div
+              v-for="(presetName, presetIndex) in effect.presetNames"
+              :key="presetName"
+              class="preset-item"
+              @dblclick="loadPreset(effect.className, presetIndex)"
+            >
               {{ presetName }}
             </div>
           </div>
@@ -57,27 +58,25 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from 'vuex';
-
 export default {
   name: 'Sidebar',
   data() {
     return {
       instruments: [
-        { displayName: 'Surgeon', className: 'Surgeon', showPresets: true },
-        { displayName: 'Femod', className: 'Femod', showPresets: true },
-        { displayName: 'Drumkit', className: 'Drumkit', showPresets: true },
-        { displayName: 'Noise', className: 'WhiteNoise', showPresets: true },
-        { displayName: 'Sampler', className: 'Sampler', showPresets: true },
+        { displayName: 'Surgeon', className: 'Surgeon', showPresets: false },
+        { displayName: 'Femod', className: 'Femod', showPresets: false },
+        { displayName: 'Drumkit', className: 'Drumkit', showPresets: false },
+        { displayName: 'Noise', className: 'WhiteNoise', showPresets: false },
+        { displayName: 'Sampler', className: 'Sampler', showPresets: false },
       ],
       effects: [
-        { displayName: 'Filter', className: 'BiquadFilter', showPresets: true },
-        { displayName: 'Delay', className: 'Delay', showPresets: true },
-        { displayName: 'Reverb', className: 'Reverb', showPresets: true },
-        { displayName: 'EQ3', className: 'EQ3', showPresets: true },
-        { displayName: 'Looper', className: 'Looper', showPresets: true },
-        { displayName: 'Compressor', className: 'Compressor', showPresets: true },
-        { displayName: 'Distortion', className: 'Distortion', showPresets: true },
+        { displayName: 'Filter', className: 'BiquadFilter', showPresets: false },
+        { displayName: 'Delay', className: 'Delay', showPresets: false },
+        { displayName: 'Reverb', className: 'Reverb', showPresets: false },
+        { displayName: 'EQ3', className: 'EQ3', showPresets: false },
+        { displayName: 'Looper', className: 'Looper', showPresets: false },
+        { displayName: 'Compressor', className: 'Compressor', showPresets: false },
+        { displayName: 'Distortion', className: 'Distortion', showPresets: false },
       ],
       presetNamesLoaded: false,
     };
@@ -129,16 +128,19 @@ export default {
 
 <style lang="scss" scoped>
 .sidebar {
+  padding: 0.25rem;
+  height: var(--mid-section-height);
+  overflow-y: auto;
   min-width: 200px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.5rem;
-  background: black;
+  background: #111;
 }
 
 .label {
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.5rem;
   background: #555;
   text-align: left;
   user-select: none;

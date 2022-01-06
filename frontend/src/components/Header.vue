@@ -1,7 +1,7 @@
 <template>
   <div class="Header">
     <div class="header" :class="{ recording, playing }">
-      <div v-if="false" class="backdrop" @click.self="hideMenues"></div>
+      <!-- <div v-if="false" class="backdrop" @click.self="hideMenues"></div> -->
 
       <div v-if="currentSave" class="current-save-name">{{ currentSave.name }}</div>
 
@@ -80,6 +80,7 @@
           </div>
         </div>
         <div class="map" @click="toggleMapping">Map MIDI</div>
+        <div>octave: {{ octave }} | transpose: {{ transpose }}</div>
       </div>
     </div>
   </div>
@@ -90,7 +91,7 @@ import { mapGetters, mapMutations } from 'vuex';
 
 export default {
   name: 'Header',
-  props: ['tracks', 'recording', 'playing', 'recordingsAvailable'],
+  props: ['tracks', 'recording', 'playing', 'recordingsAvailable', 'octave', 'transpose'],
   data() {
     return {
       saves: [],
@@ -251,25 +252,23 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #222;
+  padding: 0.4em;
+  width: 100%;
+  gap: 0.5em;
+  border: 3px solid transparent;
+}
 .header.recording {
   border-color: crimson;
 }
 .header.playing {
   border-color: green;
 }
-
-.header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: black;
-  padding: 0.4em;
-  width: 100%;
-  gap: 0.5em;
-  border: 3px solid transparent;
-}
-
 .buttons {
   display: flex;
   justify-content: center;
@@ -363,12 +362,12 @@ export default {
   background: var(--color-1);
 }
 
-.backdrop {
-  position: fixed;
-  top: var(--header-height);
-  left: 0;
-  width: 100%;
-  height: calc(100vh - var(--header-height));
-  background: transparent;
-}
+// .backdrop {
+//   position: fixed;
+//   top: var(--top-section-height);
+//   left: 0;
+//   width: 100%;
+//   height: calc(100vh - var(--top-section-height));
+//   background: transparent;
+// }
 </style>

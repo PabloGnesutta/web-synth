@@ -23,7 +23,7 @@ class Drumkit extends Node {
 
   async initSamplers() {
     let i = 0;
-    for (const ds of drumSamples) {
+    for (const drumSample of drumSamples) {
       let response = await fetch(dirName + drumSamples[i++]);
       let arrayBuffer = await response.arrayBuffer();
       let audioBuffer = await Node.context.decodeAudioData(arrayBuffer);
@@ -45,8 +45,7 @@ class Drumkit extends Node {
     // }
   }
 
-  stopNote(i) {
-  }
+  stopNote(i) { }
 
   destroy() {
     super.destroy();

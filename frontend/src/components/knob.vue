@@ -217,12 +217,16 @@ export default {
   margin-top: 0.3em;
   font-size: 0.7rem;
   padding: 0.1em 0.2em;
+  color: lightgreen;
+  background: #272727;
+  border-radius: 5px;
   position: absolute;
   bottom: 0;
   right: 0;
-  background: #272727;
   transform: translate(50%, 40%);
-  border-radius: 5px;
+}
+
+.set-default-value {
 }
 
 .mapped-cmd {

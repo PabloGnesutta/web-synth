@@ -50,7 +50,7 @@
         </div>
 
         <!-- Custom Params -->
-        <!-- A, D, S, R, Detune  -->
+        <!-- A, D, S, R, Detune, Level  -->
         <div class="params-container">
           <div v-for="(customParam, paramIndex) in Node.surgeonParams" :key="customParam.name" class="param">
             <div class="param-name">{{ customParam.displayName }}</div>
@@ -189,7 +189,7 @@ export default {
       margin: 0;
     }
   }
-  margin-bottom: 0.3em;
+  margin-bottom: 0.5rem;
 }
 
 .oscillator:last-child {
