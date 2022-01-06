@@ -101,7 +101,7 @@ export default {
       this.knobValue = knobValue;
       this.deg = knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
       const colorAmount = knobValue.map(0, this.maxKnobVal, 255, 10);
-      this.trackColor = `rgb(100, ${colorAmount},200);`;
+      this.trackColor = `rgb(100, ${colorAmount}, 200)`;
     },
 
     emitWithKnobValue(knobValue) {
