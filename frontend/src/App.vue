@@ -28,6 +28,7 @@ export default {
 body {
   color: #ddd;
   background: rgb(2, 29, 29);
+  cursor: default;
 }
 
 #app {

@@ -3,7 +3,7 @@
     <div v-if="presetNamesLoaded" class="sidebar custom-scrollbar">
       <!-- Instruments -->
       <div class="menu instruments">
-        <div class="label">Instrumentos</div>
+        <div class="label">Instruments</div>
         <div v-for="instrument in instruments" :key="instrument.className" class="nodes-container">
           <div class="node-item">
             <span
@@ -21,7 +21,7 @@
               v-for="(presetName, presetIndex) in instrument.presetNames"
               :key="presetName"
               class="preset-item"
-              @dblclick="loadPreset(instrument.className, presetIndex)"
+              @dblclick="loadPreset(instrument.className, presetIndex, 'instrument')"
             >
               {{ presetName }}
             </div>
@@ -31,7 +31,7 @@
 
       <!-- Effects -->
       <div class="menu effects">
-        <div class="label">Efectos</div>
+        <div class="label">Effects</div>
         <div v-for="effect in effects" :key="effect.className" class="nodes-container">
           <div class="node-item">
             <span @click="togglePresetsDropdown(effect)" class="arrow" :class="{ rotate: effect.showPresets }"
@@ -46,7 +46,7 @@
               v-for="(presetName, presetIndex) in effect.presetNames"
               :key="presetName"
               class="preset-item"
-              @dblclick="loadPreset(effect.className, presetIndex)"
+              @dblclick="loadPreset(effect.className, presetIndex, 'effect')"
             >
               {{ presetName }}
             </div>
@@ -60,6 +60,7 @@
 <script>
 export default {
   name: 'Sidebar',
+  props: ['instrumentIsLoaded'],
   data() {
     return {
       instruments: [
@@ -107,7 +108,7 @@ export default {
       this.$emit('createInstrument', className);
     },
     createEffect(className) {
-      this.$emit('createEffect', className);
+      if (this.instrumentIsLoaded) this.$emit('createEffect', className);
     },
 
     // Presets
@@ -116,7 +117,8 @@ export default {
       instrumentOrEffect.showPresets = !instrumentOrEffect.showPresets;
     },
 
-    loadPreset(className, presetIndex) {
+    loadPreset(className, presetIndex, instrumentOrEffect) {
+      if (instrumentOrEffect === 'effect' && !this.instrumentIsLoaded) return;
       const store = localStorage.getItem(className + '-presets');
       const preset = JSON.parse(store)[presetIndex];
       const saveString = JSON.parse(preset.saveString);

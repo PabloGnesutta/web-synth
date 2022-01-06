@@ -16,22 +16,22 @@
           <div v-if="playing" class="btn stop-playing" @click="stopPlayingExport">Stop</div>
         </div>
         <div v-if="recordingsAvailable && !recording" class="btn btn-export-download" @click="downloadExport">
-          Descargar
+          Download
         </div>
 
         <!-- SAVES -->
         <div class="saves-buttons" v-if="!recording">
-          <div v-if="currentSave" class="btn" @click="save">Guardar</div>
+          <div v-if="currentSave" class="btn" @click="save">Save</div>
           <div class="btn" @click="saveAs">
-            <span v-if="currentSave">Guardar como</span>
-            <span v-else>Guardar</span>
+            <span v-if="currentSave">Save as</span>
+            <span v-else>Save</span>
           </div>
           <div
             v-if="this.saves && this.saves.length > 0"
             class="btn load-work"
             @click="showSavedWorks = !showSavedWorks"
           >
-            <div>Cargar</div>
+            <div>Load</div>
             <div class="saved-works" :class="{ hidden: !showSavedWorks }">
               <div v-for="(savedWork, s) in saveNames" :key="s" class="saved-work">
                 <div class="saved-work-name" @click="loadSave(s)">

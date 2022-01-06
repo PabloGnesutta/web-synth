@@ -1,5 +1,5 @@
 <template>
-  <div class="home">
+  <div class="home-wrapper">
     <div v-if="inited" class="home-inner">
       <div class="top-section">
         <Header
@@ -27,6 +27,7 @@
             @createInstrument="createInstrument"
             @createEffect="createAndInsertEffect"
             @loadPreset="loadPreset"
+            :instrument-is-loaded="!!currentTrack"
           />
         </div>
 
@@ -44,8 +45,8 @@
             >
               <div class="track-inner-left">
                 <div @click="deleteTrack(t)" class="pointer">[X]</div>
-                <div class="select-none cursor-default" @click="selectTrack(t)">{{ track.name }}</div>
-                <div class="select-none cursor-default" @click="selectTrack(t)">
+                <div class="select-none" @click="selectTrack(t)">{{ track.name }}</div>
+                <div class="select-none" @click="selectTrack(t)">
                   {{ track.instrument.name }}
                 </div>
               </div>
@@ -96,6 +97,7 @@
             <div class="track-right-placeholder"></div>
           </div>
         </div>
+        <div v-else class="current-track-empty-state select-none">Double click an instrumentto start</div>
       </div>
 
       <!-- xyPad -->
@@ -122,7 +124,7 @@
       </div>
     </div>
 
-    <div v-else class="welcome-msg">
+    <div v-else class="welcome-msg select-none">
       <p>Welcome to web-synth</p>
       <p>Click anywhere to Start!</p>
     </div>
@@ -261,7 +263,7 @@ export default {
     if (navigator.requestMIDIAccess) {
       navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
     }
-    document.querySelector('.home').addEventListener('click', this.init);
+    document.querySelector('.home-wrapper').addEventListener('click', this.init);
   },
 
   methods: {
@@ -273,13 +275,13 @@ export default {
 
     init() {
       this.addConfirmLeaveHandler();
-      document.querySelector('.home').removeEventListener('click', this.init);
+      document.querySelector('.home-wrapper').removeEventListener('click', this.init);
       this.setContext(new (window.AudioContext || window.webkitAudioContext)());
       Node.context = this.context;
 
       this.createMainGain();
 
-      this.createTrack(new Surgeon());
+      // this.createTrack(new Surgeon());
       // this.createAndInsertEffect('BiquadFilter');
 
       window.addEventListener('keyup', this.onKeyup);
@@ -884,11 +886,12 @@ export default {
 </script>
 
 <style lang="scss">
-.home {
+.home-wrapper {
   height: 100vh;
   background: transparent;
 }
 .home-inner {
+  height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -954,8 +957,15 @@ export default {
 
 // Bottom Section
 .bottom-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 0.25rem 0;
   background: transparent;
+  .current-track-empty-state {
+    font-size: 1.75rem;
+  }
 }
 .track-detail {
   flex: 1;
