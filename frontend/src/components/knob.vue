@@ -5,7 +5,7 @@
     @mousedown="onMouseDown"
     @touchstart="onTouchStart"
   >
-    <div class="knob-inner" :style="`transform: rotate(${deg}deg); border-color: ${trackColor};`">
+    <div class="knob-inner" :style="`transform: rotate(${deg}deg); border-color: ${trackColor}`">
       <div class="knob-handle"></div>
     </div>
     <div class="mapped-cmd" v-if="appIsMapping">
@@ -35,7 +35,7 @@ export default {
       microTuneStep: 0.1,
 
       deg: 0,
-      trackColor: '#111',
+      trackColor: '',
       maxTurningDeg: 235,
       min_v: 0,
       max_v: 127,
@@ -101,7 +101,7 @@ export default {
       this.knobValue = knobValue;
       this.deg = knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
       const colorAmount = knobValue.map(0, this.maxKnobVal, 255, 10);
-      this.trackColor = "rgb(100, " + ${colorAmount} + ", 200)";
+      this.trackColor = "rgba(100, " + ${colorAmount} + ", 200, 1)";
     },
 
     emitWithKnobValue(knobValue) {
