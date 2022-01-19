@@ -1,7 +1,9 @@
 class Node {
   static context = null;
+  static nodeCount = 0;
 
   constructor(initialGain, nodeRole, nodeType) {
+    this.id = ++Node.nodeCount;
     this.gain = initialGain;
     this.minGain = 0;
     this.maxGain = 3;
@@ -11,6 +13,7 @@ class Node {
     this.nodeType = nodeType; //The specific node
 
     this.saveParams = [
+      { version: '1.0.0' },
       { name: 'nodeRol', value: this.nodeRol },
       { name: 'nodeType', value: this.nodeType },
     ];

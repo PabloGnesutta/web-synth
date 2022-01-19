@@ -1,7 +1,7 @@
 <template>
   <div class="inner">
     <!-- Mute/Rec enabled -->
-    <div v-if="Node.name === 'Track Gain'" class="node-controls">
+    <div class="node-controls">
       <div class="rec-enabled-disabled" @click="toggleRecEnabled">
         <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
         <div v-else class="rec-btn rec-disabled">Rec disabled</div>
@@ -26,9 +26,7 @@
     </div>
 
     <!-- Analyser -->
-    <div v-if="analyser">
-      <AnalyserRender :analyser="analyser" />
-    </div>
+    <AnalyserRender :analyser="analyser" />
   </div>
 </template>
 

@@ -1,6 +1,7 @@
 <template>
   <div class="home-wrapper">
     <div v-if="inited" class="home-inner">
+      <!-- Top Section -->
       <div class="top-section">
         <Header
           :ref="'header'"
@@ -20,7 +21,7 @@
         />
       </div>
 
-      <!-- Mid Section: Sidebar, Click, Tracks -->
+      <!-- Mid Section -->
       <div class="mid-section">
         <div class="left-col sidebar-wrapper">
           <Sidebar
@@ -34,30 +35,47 @@
         <div class="right-col">
           <!-- Click -->
           <div class="click-wrapper"><Click ref="click" /></div>
+
           <!-- Tracks -->
           <div class="tracks-container custom-scrollbar" :class="{ mapping: mapping }">
-            <div
-              :key="track.name"
-              v-for="(track, t) in tracks"
-              class="track"
-              :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
-              @click.self="selectTrack(t)"
-            >
-              <div class="track-inner-left">
-                <div @click="deleteTrack(t)" class="pointer">[X]</div>
-                <div class="select-none" @click="selectTrack(t)">{{ track.name }}</div>
-                <div class="select-none" @click="selectTrack(t)">
-                  {{ track.instrument.name }}
+            <div class="tracks-list">
+              <div
+                v-for="(track, t) in tracks"
+                :key="track.name"
+                class="track"
+                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
+                @click.self="selectTrack(t)"
+              >
+                <div class="track-inner-left">
+                  <div @click="deleteTrack(t)" class="pointer">[X]</div>
+                  <div class="select-none" @click="selectTrack(t)">{{ track.name }}</div>
+                  <div class="select-none" @click="selectTrack(t)">
+                    {{ track.instrument.name }}
+                  </div>
                 </div>
-              </div>
 
-              <!-- Track Gain and Controls -->
-              <GainBody
-                :Node="track.trackGain"
-                :analyser="track.trackGainAnalyser"
-                :recEnabled="track.recEnabled"
-                @knobClicked="knobClicked"
-              />
+                <!-- Track Gain and Controls -->
+                <GainBody
+                  :Node="track.trackGain"
+                  :analyser="track.trackGainAnalyser"
+                  :recEnabled="track.recEnabled"
+                  @knobClicked="knobClicked"
+                />
+              </div>
+            </div>
+
+            <!-- Master -->
+            <div class="track master">
+              <div class="track-inner-left">Master</div>
+              <div class="master-knob-wrapper" @click="knobClicked('MainGain')">
+                <Knob
+                  :ref="'MainGain'"
+                  minVal="0"
+                  maxVal="1"
+                  :initVal="mainGainKnob"
+                  @knobTurned="setMainGainValue"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -88,13 +106,13 @@
               v-for="(Node, effectIndex) in currentTrack.effects"
               :Node="Node"
               :analyser="Node.analyser"
-              :key="Node.name"
+              :key="Node.id"
               :ref="'Node-' + effectIndex"
               @deleteNode="deleteEffect(effectIndex)"
               @levelClicked="levelClicked(Node)"
               @knobClicked="knobClicked"
             />
-            <div class="track-right-placeholder"></div>
+            <div class="placeholder"></div>
           </div>
         </div>
         <div v-else class="current-track-empty-state select-none">Double click an instrumentto start</div>
@@ -110,7 +128,7 @@
       /> -->
 
       <!-- Main Gain -->
-      <div class="section-inner main-gain">
+      <!-- <div class="section-inner main-gain">
         <div class="knob-wrapper" @click="knobClicked('MainGain')">
           <Knob
             :ref="'MainGain'"
@@ -121,7 +139,7 @@
           />
         </div>
         <h3>Main Gain</h3>
-      </div>
+      </div> -->
     </div>
 
     <div v-else class="welcome-msg select-none">
@@ -281,8 +299,8 @@ export default {
 
       this.createMainGain();
 
-      // this.createTrack(new Surgeon());
-      // this.createAndInsertEffect('BiquadFilter');
+      this.createTrack(new Surgeon());
+      this.createAndInsertEffect('BiquadFilter');
 
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
@@ -297,9 +315,13 @@ export default {
 
     createTrack(instrument) {
       const trackGain = new Gain('Track Gain');
+      const trackCompressor = this.context.createDynamicsCompressor();
       const trackGainAnalyser = this.context.createAnalyser();
 
       instrument.connect(trackGain);
+      // trackGain.connectNativeNode(trackCompressor, 'Track Compressor');
+      // trackCompressor.connect(this.bufferGain);
+      // trackCompressor.connect(trackGainAnalyser);
       trackGain.connectNativeNode(this.bufferGain, 'Mixer Gain');
       trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
 
@@ -924,7 +946,10 @@ export default {
   );
   overflow-y: auto;
   border: 2px solid transparent;
-  padding: 0.25rem 0;
+  padding-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .tracks-container.mapping {
@@ -990,20 +1015,27 @@ export default {
   gap: 0.5em;
 }
 
-.main-gain {
-  position: fixed;
-  bottom: 5px;
-  right: 5px;
-  background: #222;
-  color: #f3f3f3;
-  padding: 0.75rem;
-  border: 1px solid #666;
-  h3 {
-    font-size: 1rem;
-    margin-top: 1rem;
-    user-select: none;
-  }
+.master {
+  padding: 0.75rem 0.5rem;
 }
+.master-knob-wrapper {
+  margin-right: 1rem;
+}
+
+// .main-gain {
+//   position: fixed;
+//   bottom: 5px;
+//   right: 5px;
+//   background: #222;
+//   color: #f3f3f3;
+//   padding: 0.75rem;
+//   border: 1px solid #666;
+//   h3 {
+//     font-size: 1rem;
+//     margin-top: 1rem;
+//     user-select: none;
+//   }
+// }
 
 .welcome-msg {
   position: fixed;
