@@ -31,9 +31,9 @@ export default {
 
       displayValue: 0,
 
-      calib: 2,
-      fineTuneStep: 0.2,
-      microTuneStep: 0.1,
+      movementMultiplier: 0.5,
+      fineStepMultiplier: 0.3,
+      microStepMultiplier: 0.15,
 
       deg: 0,
       trackColor: '',
@@ -70,21 +70,20 @@ export default {
     },
     moveKnob(e) {
       let translation = this.lastYPos - (e.clientY || e.touches[0].clientY);
-      if (translation < this.calib && translation > -this.calib) return;
+      // if (translation < this.calib && translation > -this.calib) return;
 
       this.lastYPos = e.clientY || e.touches[0].clientY;
-      let amount = 1;
+      let amount = translation * this.movementMultiplier; // before, amount = 2
 
-      if (e.ctrlKey || e.shiftKey) {
-        console.log('ctrl or shift');
-        amount = this.fineTuneStep;
-        if (e.ctrlKey && e.shiftKey) {
-          amount = this.microTuneStep;
+      if (e.ctrlKey || e.altKey) {
+        amount *= this.fineStepMultiplier
+        if (e.ctrlKey && e.altKey) {
+          amount *= this.microStepMultiplier
         }
       }
 
-      let knobValue = translation > 0 ? this.knobValue + amount : this.knobValue - amount;
-
+      // let knobValue = translation > 0 ? this.knobValue + amount : this.knobValue - amount;
+      let knobValue = this.knobValue + amount;
       if (knobValue < this.minKnobVal) knobValue = this.minKnobVal;
       else if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
 
