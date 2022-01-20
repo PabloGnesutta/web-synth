@@ -150,46 +150,13 @@
 </template>
 
 <script>
+import { createInstrument, createEffect } from '../factory/NodeFactory';
 const noteFrequencies = require('../data/noteFrequencies');
 const totalAmountOfNotes = noteFrequencies.length;
 const noteKeys = require('../data/noteKeys');
 
 const Node = require('../class/Node');
-// Instruments
-const Mic = require('../class/Instruments/Mic');
-const Femod = require('../class/Instruments/Femod');
-const Surgeon = require('../class/Instruments/Surgeon');
-const Carrier = require('../class/Instruments/Carrier');
-const Drumkit = require('../class/Instruments/Drumkit');
-const Sampler = require('../class/Instruments/Sampler');
-const WhiteNoise = require('../class/Instruments/WhiteNoise');
-const instrumentsDict = new Map([
-  ['Mic', Mic],
-  ['Femod', Femod],
-  ['Carrier', Carrier],
-  ['Drumkit', Drumkit],
-  ['Sampler', Sampler],
-  ['Surgeon', Surgeon],
-  ['WhiteNoise', WhiteNoise],
-]);
-// Effects
-const EQ3 = require('../class/Effects/EQ3');
 const Gain = require('../class/Effects/Gain');
-const Delay = require('../class/Effects/Delay');
-const Distortion = require('../class/Effects/Distortion');
-const Reverb = require('../class/Effects/Reverb');
-const Looper = require('../class/Effects/Looper');
-const Compressor = require('../class/Effects/Compressor');
-const BiquadFilter = require('../class/Effects/BiquadFilter');
-const effectsDict = new Map([
-  ['EQ3', EQ3],
-  ['Delay', Delay],
-  ['Reverb', Reverb],
-  ['Looper', Looper],
-  ['Distortion', Distortion],
-  ['Compressor', Compressor],
-  ['BiquadFilter', BiquadFilter],
-]);
 
 import { mapMutations, mapGetters } from 'vuex';
 import NodeRender from '../components/NodeRender';
@@ -230,7 +197,7 @@ export default {
       xyPadListeners: [],
 
       //MIDI
-      maps: [],
+      midiMappings: [],
       inputs: [],
       outputs: [],
       mapping: false,
@@ -248,10 +215,6 @@ export default {
       exports: [],
       chunks: [],
 
-      //canvas
-      showRecordWaveforms: false,
-      renderFinished: false,
-
       //play
       playing: false,
       playingBuffers: [],
@@ -260,9 +223,7 @@ export default {
       octave: 3,
       transpose: 0,
 
-      //keys - could be removed listening to event
       m_pressed: false,
-      ctrl_pressed: false,
     };
   },
 
@@ -299,7 +260,7 @@ export default {
 
       this.createMainGain();
 
-      this.createTrack(new Surgeon());
+      this.createTrack(createInstrument('Femod'));
       this.createAndInsertEffect('BiquadFilter');
 
       window.addEventListener('keyup', this.onKeyup);
@@ -309,13 +270,13 @@ export default {
     },
 
     createInstrument(className) {
-      const Node = new (instrumentsDict.get(className))();
+      const Node = createInstrument(className);
       this.createTrack(Node);
     },
 
     createTrack(instrument) {
       const trackGain = new Gain('Track Gain');
-      const trackCompressor = this.context.createDynamicsCompressor();
+      // const trackCompressor = this.context.createDynamicsCompressor();
       const trackGainAnalyser = this.context.createAnalyser();
 
       instrument.connect(trackGain);
@@ -390,8 +351,7 @@ export default {
 
       if (trackIndex === this.currentTrackIndex) {
         // todo: ensure to clean analyser node memory
-        // console.log(this.currentTrack);
-        // console.log(this.currentTrack.trackGainAnalyser);
+        // todo: select the next available track instead of nothing
         this.currentTrackIndex = null;
         this.currentTrack = null;
       }
@@ -401,7 +361,7 @@ export default {
 
     // Effects:
     createAndInsertEffect(className) {
-      const Node = new (effectsDict.get(className))();
+      const Node = createEffect(className);
       this.insertEffect(Node);
     },
 
@@ -442,19 +402,6 @@ export default {
       this.bufferGain = this.context.createGain();
 
       this.bufferGain.connect(this.mainGain);
-    },
-
-    createMic() {
-      const that = this;
-      navigator.mediaDevices
-        .getUserMedia({ audio: true, video: false })
-        .then(function (stream) {
-          that.createTrack(new Mic(stream));
-        })
-        .catch(function (err) {
-          console.log('err', err);
-          alert("Couldn't get user media, continuing without mic input. Error: " + err);
-        });
     },
 
     setMainGainValue(val) {
@@ -547,10 +494,33 @@ export default {
     },
 
     onOtherKeydown({ key, keyCode }) {
-      //m
-      if (keyCode === 77) this.m_pressed = true;
-      //ctrl
-      else if (keyCode === 17) this.ctrl_pressed = true;
+      console.log(keyCode);
+      if (keyCode === 77) {
+        // m key
+        this.m_pressed = true;
+      } else if (keyCode === 38) {
+        // up arrow
+        let futureTrackIndex = this.currentTrackIndex - 1;
+        if (futureTrackIndex < 0) {
+          futureTrackIndex = this.tracks.length - 1;
+        }
+
+        if (this.currentTrackIndex !== futureTrackIndex) {
+          this.selectTrack(futureTrackIndex);
+        }
+      } else if (keyCode === 40) {
+        // down  arrow
+        let futureTrackIndex = this.currentTrackIndex + 1;
+        if (futureTrackIndex > this.tracks.length - 1) {
+          futureTrackIndex = 0;
+        }
+        if (this.currentTrackIndex !== futureTrackIndex) {
+          this.selectTrack(futureTrackIndex);
+        }
+      } else if (keyCode === 46) {
+        // delete key
+        this.deleteTrack(this.currentTrackIndex);
+      }
       //1 a 9 numpad:
       else if (keyCode >= 97 && keyCode <= 105) {
         this.numpadListeners.forEach(scaleInterface => {
@@ -559,24 +529,24 @@ export default {
       }
     },
 
-    onOtherKeyup({ keyCode }) {
+    onOtherKeyup(e) {
       //1 a 9
-      if (keyCode >= 49 && keyCode <= 57) {
-        if (this.m_pressed) this.tracks[+key - 1].trackGain.toggleMute();
+      if (e.keyCode >= 49 && e.keyCode <= 57) {
+        if (this.m_pressed) {
+          this.tracks[+e.key - 1].trackGain.toggleMute();
+        }
       } else {
-        switch (keyCode) {
+        switch (e.keyCode) {
           case 77: //m
             this.m_pressed = false;
-            if (this.ctrl_pressed) this.currentTrack.trackGain.toggleMute();
+            if (e.ctrlKey) {
+              this.currentTrack.trackGain.toggleMute();
+            }
             break;
           case 81: //q
-            if (this.ctrl_pressed) this.deleteTrack(this.currentTrackIndex);
-            break;
-          case 17: //ctrl
-            this.ctrl_pressed = false;
-            break;
-          case 27: //esc
-            this.$refs.header.hideMenues();
+            if (e.ctrlKey) {
+              this.deleteTrack(this.currentTrackIndex);
+            }
             break;
           case 90: //z
             this.octave--;
@@ -636,9 +606,9 @@ export default {
 
       if (this.mapping) {
         let refName = this.refBeignMapped.$vnode.data.ref;
-        const existingMap = this.maps.find(m => m.refName === refName);
+        const existingMap = this.midiMappings.find(m => m.refName === refName);
         if (!existingMap) {
-          this.maps.push({
+          this.midiMappings.push({
             ref: this.refBeignMapped,
             refName,
             cmd: status,
@@ -662,7 +632,7 @@ export default {
         //   console.log("sustain pedal pressed", value);
         else {
           //turn knob
-          const mappedItem = this.maps.find(m => m.cmd === status && m.note === note);
+          const mappedItem = this.midiMappings.find(m => m.cmd === status && m.note === note);
           if (!mappedItem) return;
           const knob = mappedItem.ref;
           knob.receiveMidi(value);
@@ -696,17 +666,20 @@ export default {
     },
 
     loadPreset(saveString) {
-      if (saveString.nodeRol === 'Instrument') this.loadInstrument(saveString);
-      else this.loadEffect(saveString);
+      if (saveString.nodeRol === 'Instrument') {
+        this.loadInstrument(saveString);
+      } else {
+        this.loadEffect(saveString);
+      }
     },
 
     loadInstrument(instSaveString) {
-      const instrument = new (instrumentsDict.get(instSaveString.nodeType))(instSaveString);
+      const instrument = createInstrument(instSaveString.nodeType, instSaveString);
       this.createTrack(instrument);
     },
 
     loadEffect(effectSaveString) {
-      const effect = new (effectsDict.get(effectSaveString.nodeType))(effectSaveString);
+      const effect = createEffect(effectSaveString.nodeType, effectSaveString);
       this.insertEffect(effect);
     },
 

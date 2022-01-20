@@ -19,8 +19,9 @@ module.exports = function hasDryWet(target, initialValue = 1) {
   };
 
   target.setDryWet = function (value) {
-    target.wetGain.gain.value = value;
-    target.dryGain.gain.value = value - 1;
+    // Equal power crossfade
+    target.dryGain.gain.value = Math.cos(value * 0.5 * Math.PI);
+    target.wetGain.gain.value = Math.cos((1.0 - value) * 0.5 * Math.PI);
     target.dryWet.value = value;
   };
 
