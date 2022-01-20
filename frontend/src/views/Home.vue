@@ -7,7 +7,7 @@
           :ref="'header'"
           @startRec="startRec"
           @stopRec="stopRec"
-          @playExport="playExport"
+          @playExport="playRecording"
           @downloadExport="downloadExport"
           @stopPlayingExport="stopPlayingExport"
           @loadSave="loadSave"
@@ -61,6 +61,7 @@
                   :Node="track.trackGain"
                   :analyser="track.trackGainAnalyser"
                   :recEnabled="track.recEnabled"
+                  @toggleRecEnabled="toggleRecEnabled(t)"
                   @knobClicked="knobClicked"
                 />
               </div>
@@ -69,13 +70,13 @@
             <!-- Master -->
             <div class="track master">
               <div class="track-inner-left">Master</div>
-              <div class="master-knob-wrapper" @click="knobClicked('MainGain')">
+              <div class="master-knob-wrapper" @click="knobClicked('MasterGain')">
                 <Knob
-                  :ref="'MainGain'"
+                  :ref="'MasterGain'"
                   minVal="0"
                   maxVal="1"
-                  :initVal="mainGainKnob"
-                  @knobTurned="setMainGainValue"
+                  :initVal="masterGainKnob"
+                  @knobTurned="setMasterGainValue"
                 />
               </div>
             </div>
@@ -128,20 +129,6 @@
         @onPadTouchCancel="onPadTouchCancel"
         @onPadTouchMove="onPadTouchMove"
       /> -->
-
-      <!-- Main Gain -->
-      <!-- <div class="section-inner main-gain">
-        <div class="knob-wrapper" @click="knobClicked('MainGain')">
-          <Knob
-            :ref="'MainGain'"
-            minVal="0"
-            maxVal="1"
-            :initVal="mainGainKnob"
-            @knobTurned="setMainGainValue"
-          />
-        </div>
-        <h3>Main Gain</h3>
-      </div> -->
     </div>
 
     <div v-else class="welcome-msg select-none">
@@ -189,9 +176,9 @@ export default {
       currentTrack: null,
       currentTrackIndex: 0,
 
-      mainGain: null,
-      bufferGain: null,
-      mainGainKnob: 0.5,
+      masterGain: null,
+      preMasterGain: null,
+      masterGainKnob: 0.5,
 
       keyEnabled: [],
       keypressListeners: [],
@@ -241,11 +228,15 @@ export default {
     window.removeEventListener('keydown', this.onKeydown);
   },
 
-  mounted() {
+  created() {
+    this.addConfirmLeaveHandler();
     this.keyEnabled = Array(222).fill(true);
     if (navigator.requestMIDIAccess) {
       navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
     }
+  },
+
+  mounted() {
     document.querySelector('.home-wrapper').addEventListener('click', this.init);
   },
 
@@ -257,15 +248,15 @@ export default {
     },
 
     init() {
-      this.addConfirmLeaveHandler();
       document.querySelector('.home-wrapper').removeEventListener('click', this.init);
       this.setContext(new (window.AudioContext || window.webkitAudioContext)());
       Node.context = this.context;
 
-      this.createMainGain();
+      this.createMasterGain();
 
       this.createTrack(createInstrument('Femod'));
       this.createAndInsertEffect('BiquadFilter');
+      this.createTrack(createInstrument('Drumkit'));
 
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
@@ -280,14 +271,10 @@ export default {
 
     createTrack(instrument) {
       const trackGain = new Gain('Track Gain');
-      // const trackCompressor = this.context.createDynamicsCompressor();
       const trackGainAnalyser = this.context.createAnalyser();
 
       instrument.connect(trackGain);
-      // trackGain.connectNativeNode(trackCompressor, 'Track Compressor');
-      // trackCompressor.connect(this.bufferGain);
-      // trackCompressor.connect(trackGainAnalyser);
-      trackGain.connectNativeNode(this.bufferGain, 'Mixer Gain');
+      trackGain.connectNativeNode(this.preMasterGain, 'Mixer Gain');
       trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
 
       this.tracks.push({
@@ -342,11 +329,15 @@ export default {
       if (index !== -1) this.numpadListeners.splice(index, 1);
       index = this.xyPadListeners.findIndex(listener => listener.trackName === track.name);
       if (index !== -1) this.xyPadListeners.splice(index, 1);
-      // remove track - check if this actually cleans more memory than simply nulling the track
+
       track.instrument.destroy();
       track.instrument = null;
+
+      track.trackGain.disconnectNativeNode(this.preMasterGain);
+      track.trackGain.disconnectNativeNode(track.trackGainAnalyser);
       track.trackGain.destroy();
       track.trackGain = null;
+
       track.effects.forEach(effect => {
         effect.destroy();
         effect = null;
@@ -354,13 +345,21 @@ export default {
       track = null;
 
       if (trackIndex === this.currentTrackIndex) {
-        // todo: ensure to clean analyser node memory
-        // todo: select the next available track instead of nothing
         this.currentTrackIndex = null;
         this.currentTrack = null;
       }
 
       this.tracks.splice(trackIndex, 1);
+
+      let futureTrackIndex = trackIndex;
+      if (futureTrackIndex > this.tracks.length - 1) {
+        futureTrackIndex--;
+        if (futureTrackIndex >= 0) {
+          this.selectTrack(futureTrackIndex);
+        }
+      } else {
+        this.selectTrack(futureTrackIndex);
+      }
     },
 
     // Effects:
@@ -398,21 +397,22 @@ export default {
       effects.splice(effectIndex, 1);
     },
 
-    createMainGain() {
-      this.mainGain = this.context.createGain();
-      this.mainGain.gain.value = this.mainGainKnob;
-      this.mainGain.connect(this.context.destination);
+    createMasterGain() {
+      this.masterGain = this.context.createGain();
+      this.masterGain.gain.value = this.masterGainKnob;
 
-      this.bufferGain = this.context.createGain();
-
-      this.bufferGain.connect(this.mainGain);
+      this.preMasterGain = this.context.createGain();
+      this.preMasterGain.connect(this.masterGain);
+      this.masterGain.connect(this.context.destination);
     },
 
-    setMainGainValue(val) {
-      this.mainGain.gain.setValueAtTime(val, 0);
+    setMasterGainValue(val) {
+      this.masterGain.gain.setValueAtTime(val, 0);
     },
 
     selectTrack(t) {
+      if (this.currentTrackIndex === t) return;
+
       this.currentTrackIndex = t;
       this.currentTrack = null;
       this.$nextTick(() => {
@@ -494,10 +494,17 @@ export default {
     },
 
     onOtherKeydown({ key, keyCode }) {
-      // console.log(keyCode);
+      console.log(keyCode);
       if (keyCode === 77) {
         // m key
         this.m_pressed = true;
+      } else if (keyCode === 32) {
+        // space bar
+        if (this.recording) {
+          this.stopRec();
+        } else {
+          this.startRec();
+        }
       } else if (keyCode === 38) {
         // up arrow
         let futureTrackIndex = this.currentTrackIndex - 1;
@@ -686,17 +693,16 @@ export default {
     // RECORDING
 
     startRec() {
-      const recordingTracks = this.tracks.filter(t => t.recEnabled);
-      const total = recordingTracks.length;
-
       this.recordingCount++;
       this.recording = true;
+      this.startExportRec();
+      this.startTracksRec();
+    },
 
-      // record entire mix
-
+    startExportRec() {
       let exportChunks = [];
       this.exportDestination = this.context.createMediaStreamDestination();
-      this.mainGain.connect(this.exportDestination);
+      this.masterGain.connect(this.exportDestination);
 
       this.exportMediaRecorder = new MediaRecorder(this.exportDestination.stream);
 
@@ -726,11 +732,13 @@ export default {
       };
 
       this.exportMediaRecorder.start();
+    },
 
-      // Record each track separately
-
-      let c = 0;
+    startTracksRec() {
       const scene = [];
+      const recordingTracks = this.tracks.filter(t => t.recEnabled);
+      const total = recordingTracks.length;
+      let c = 0;
 
       recordingTracks.forEach(t => {
         this.setupWaveformRender(t);
@@ -739,11 +747,11 @@ export default {
         let mediaStreamDestination = this.context.createMediaStreamDestination();
         t.trackGain.connectNativeNode(mediaStreamDestination);
 
-        let mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
+        const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
         this.mediaRecorders.push(mediaRecorder);
 
-        mediaRecorder.ondataavailable = evt => {
-          chunks.push(evt.data);
+        mediaRecorder.ondataavailable = event => {
+          chunks.push(event.data);
         };
 
         mediaRecorder.onstop = () => {
@@ -772,7 +780,7 @@ export default {
     },
 
     stopRec() {
-      this.mainGain.disconnect(this.exportDestination);
+      this.masterGain.disconnect(this.exportDestination);
       this.exportDestination = null;
       this.exportMediaRecorder.stop();
       this.exportMediaRecorder = null;
@@ -811,7 +819,6 @@ export default {
       index = parseInt(index);
 
       if (!index) return alert('Only numers from 1 to ' + length);
-
       if (index > length || index < 1) return alert('There is no such recording!');
 
       let fileName = 'websynth_export_' + index + ' - ' + new Date().toLocaleDateString('es-AR');
@@ -823,7 +830,7 @@ export default {
       this.downloadBlob(this.exportBlobs[index], fileName);
     },
 
-    playExport() {
+    playRecording() {
       let index = prompt(
         'Which recording do you want to play? Choose number: 1 to ' + this.recordings.length,
         1
@@ -831,31 +838,31 @@ export default {
       index = parseInt(index);
 
       if (!index) return alert('Only numers from 1 to ' + this.recordings.length);
-
       if (index > this.recordings.length || index < 1) return alert('There is no such recording!');
 
       index--;
 
+      // this.playExport(index);
+      this.playAllTracks(index);
+    },
+
+    playExport(index) {
       this.exportSource = this.context.createBufferSource();
       this.exportSource.buffer = this.exports[index].audioBuffer;
-
-      this.exportSource.connect(this.context.destination);
+      this.exportSource.connect(this.masterGain);
       this.exportSource.start();
       this.playing = true;
-
       this.exportSource.onended = () => {
         this.playing = false;
       };
-
-      this.playAllTracks(index);
     },
 
     playAllTracks(index) {
       this.recordings[index].scene.forEach(scene => {
-        // const source = this.context.createBufferSource();
-        // source.buffer = s.audioBuffer;
-        // source.connect(this.mainGain);
-        // source.start();
+        const source = this.context.createBufferSource();
+        source.buffer = scene.audioBuffer;
+        source.connect(this.masterGain);
+        source.start();
         console.log('trackId: ' + scene.trackId + ' - download URL: ' + URL.createObjectURL(scene.blob));
       });
     },
@@ -888,7 +895,6 @@ export default {
         bars: [],
       };
 
-      // Thanks to David Torroija - codepen.io/davidtorroija/pen/ZZzLpb
       this[`renderWaveformDraw${track.id}`] = (ctx, bars) => {
         for (let i = 0; i < bars.length; i++) {
           const bar = bars[i];
@@ -939,6 +945,7 @@ export default {
 
     addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {
+        // remove if statement to enable
         if (1 == 2) {
           e = e || window.event;
           if (e) e.returnValue = 'Sure?';

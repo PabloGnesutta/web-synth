@@ -18,6 +18,11 @@ class Gain extends Node {
     return node;
   }
 
+  disconnectNativeNode(node) {
+    this.outputNode.disconnect(node);
+    return node;
+  }
+
   destroy() {
     super.destroy();
   }
