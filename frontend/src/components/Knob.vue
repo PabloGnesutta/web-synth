@@ -33,7 +33,7 @@ export default {
 
       movementMultiplier: 0.5,
       fineStepMultiplier: 0.3,
-      microStepMultiplier: 0.15,
+      microStepMultiplier: 0.2,
 
       deg: 0,
       trackColor: '',
@@ -70,19 +70,16 @@ export default {
     },
     moveKnob(e) {
       let translation = this.lastYPos - (e.clientY || e.touches[0].clientY);
-      // if (translation < this.calib && translation > -this.calib) return;
 
       this.lastYPos = e.clientY || e.touches[0].clientY;
       let amount = translation * this.movementMultiplier; // before, amount = 2
 
-      if (e.ctrlKey || e.altKey) {
+      if (e.ctrlKey && e.altKey) {
+        amount *= this.microStepMultiplier
+      } else if (e.ctrlKey && e.altKey) {
         amount *= this.fineStepMultiplier
-        if (e.ctrlKey && e.altKey) {
-          amount *= this.microStepMultiplier
-        }
       }
 
-      // let knobValue = translation > 0 ? this.knobValue + amount : this.knobValue - amount;
       let knobValue = this.knobValue + amount;
       if (knobValue < this.minKnobVal) knobValue = this.minKnobVal;
       else if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
