@@ -455,12 +455,8 @@ export default {
       });
     },
 
-    onPadTouchCancel(e) {
-      console.log('onPadTouchCancel', e);
-    },
-    onPadTouchMove(e) {
-      console.log('onPadTouchMove', e);
-    },
+    onPadTouchCancel(e) {},
+    onPadTouchMove(e) {},
 
     // Keyboard
     onKeydown(e) {
@@ -498,7 +494,7 @@ export default {
     },
 
     onOtherKeydown({ key, keyCode }) {
-      console.log(keyCode);
+      // console.log(keyCode);
       if (keyCode === 77) {
         // m key
         this.m_pressed = true;
@@ -790,13 +786,13 @@ export default {
       this.rAFs.forEach(rAF => {
         window.cancelAnimationFrame(rAF);
       });
+      this.rAFs = [];
       for (let i = 0; i < this.renderWaveformDrawFunctions.length; i++) {
         delete this[this.renderWaveformDrawFunctions[i]];
         delete this[this.renderWaveformLoopFunctions[i]];
       }
       this.renderWaveformDrawFunctions = [];
       this.renderWaveformLoopFunctions = [];
-      console.log(this);
     },
 
     recordingsReady(scene) {
@@ -807,7 +803,6 @@ export default {
         scene,
       });
       this.recordingsAvailable = true;
-      this.scene = [];
     },
 
     downloadExport() {
