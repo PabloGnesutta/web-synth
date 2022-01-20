@@ -26,3 +26,9 @@
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgb(228, 173, 154);
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  height: 1px;
+  width: 1px;
+  display: none;
+}

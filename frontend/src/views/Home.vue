@@ -45,7 +45,7 @@
                 :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
                 @click.self="selectTrack(t)"
               >
-                <div class="track-inner-left">
+                <div class="track-inner-left no-scrollbar">
                   <div @click="deleteTrack(t)" class="pointer">[X]</div>
                   <div class="select-none" @click="selectTrack(t)">{{ track.name }}</div>
                   <div class="select-none" @click="selectTrack(t)">
@@ -208,16 +208,16 @@ export default {
       //REC
       recordingCount: 0,
       recordings: [],
-      scene: [],
       mediaRecorders: [],
       recording: false,
-      blobs: [],
       exportDestination: null,
       exportBlobs: [],
       exports: [],
-      chunks: [],
+      //Rendering
       timeOffset: 10,
-      now: 0,
+      renderWaveformLoopFunctions: [],
+      renderWaveformDrawFunctions: [],
+      rAFs: [],
 
       //play
       playing: false,
@@ -698,27 +698,23 @@ export default {
 
       // record entire mix
 
-      this.chunks = [];
+      let exportChunks = [];
       this.exportDestination = this.context.createMediaStreamDestination();
       this.mainGain.connect(this.exportDestination);
 
       this.exportMediaRecorder = new MediaRecorder(this.exportDestination.stream);
 
       this.exportMediaRecorder.ondataavailable = evt => {
-        this.chunks.push(evt.data);
+        exportChunks.push(evt.data);
       };
 
       this.exportMediaRecorder.onstop = () => {
-        const blob = new Blob(this.chunks, {
+        const blob = new Blob(exportChunks, {
           type: 'audio/ogg; codecs=opus',
         });
 
         this.exportBlobs.push(blob);
-
-        // PARA UPLOAD:
-        // const audioFile = new File([blob], "audio.ogg", {
-        //   type: 'audio/ogg; codecs="opus"',
-        // });
+        exportChunks = null;
 
         const exportFileReader = new FileReader();
 
@@ -735,8 +731,10 @@ export default {
 
       this.exportMediaRecorder.start();
 
-      // record each track separately
+      // Record each track separately
+
       let c = 0;
+      const scene = [];
 
       recordingTracks.forEach(t => {
         this.setupWaveformRender(t);
@@ -752,7 +750,7 @@ export default {
           chunks.push(evt.data);
         };
 
-        mediaRecorder.onstop = evt => {
+        mediaRecorder.onstop = () => {
           const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
           chunks = null;
 
@@ -762,11 +760,10 @@ export default {
             const arrayBuffer = fileReader.result;
 
             this.context.decodeAudioData(arrayBuffer, audioBuffer => {
-              this.scene.push({ audioBuffer, blob, trackId: t.id });
-              // t.trackGain.disconnectNativeNode(mediaStreamDestination)
+              scene.push({ audioBuffer, blob, trackId: t.id });
               mediaStreamDestination = null;
               if (++c === total) {
-                this.recordingsReady();
+                this.recordingsReady(scene);
               }
             });
           };
@@ -783,19 +780,31 @@ export default {
       this.exportDestination = null;
       this.exportMediaRecorder.stop();
       this.exportMediaRecorder = null;
-      this.mediaRecorders.forEach(mr => {
-        mr.stop();
+      this.mediaRecorders.forEach(mediaRecorder => {
+        mediaRecorder.stop();
       });
       this.mediaRecorders = [];
       this.recording = false;
+
+      // Cancel animation frames and remove rendering functions
+      this.rAFs.forEach(rAF => {
+        window.cancelAnimationFrame(rAF);
+      });
+      for (let i = 0; i < this.renderWaveformDrawFunctions.length; i++) {
+        delete this[this.renderWaveformDrawFunctions[i]];
+        delete this[this.renderWaveformLoopFunctions[i]];
+      }
+      this.renderWaveformDrawFunctions = [];
+      this.renderWaveformLoopFunctions = [];
+      console.log(this);
     },
 
-    recordingsReady() {
+    recordingsReady(scene) {
       const name = prompt('Recording Name', 'Recording Nº ' + this.recordingCount);
       this.recordings.push({
         id: this.recordingCount,
         name,
-        scene: this.scene,
+        scene,
       });
       this.recordingsAvailable = true;
       this.scene = [];
@@ -847,12 +856,12 @@ export default {
     },
 
     playAllTracks(index) {
-      this.recordings[index].scene.forEach(s => {
+      this.recordings[index].scene.forEach(scene => {
         // const source = this.context.createBufferSource();
         // source.buffer = s.audioBuffer;
         // source.connect(this.mainGain);
         // source.start();
-        console.log('trackId: ' + s.trackId + ' - download URL: ' + URL.createObjectURL(s.blob));
+        console.log('trackId: ' + scene.trackId + ' - download URL: ' + URL.createObjectURL(scene.blob));
       });
     },
 
@@ -871,74 +880,66 @@ export default {
     setupWaveformRender(track) {
       const analyser = track.trackGainAnalyser;
       const canvas = this.$refs[`rec-canvas-${track.id}`][0];
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const ctx = canvas.getContext('2d');
-      const bufferLength = analyser.fftSize;
-      console.log(this.bufferLength);
-      const frequencyArray = new Float32Array(bufferLength);
-      const bars = [];
-      this.now = parseInt(performance.now()) / this.timeOffset;
-      this.renderWaveromLoop({
+
+      const dataObj = {
+        trackId: track.id,
         analyser,
+        frequencyArray: new Float32Array(analyser.fftSize),
         canvas,
-        canvasWidth,
-        canvasHeight,
-        ctx,
-        frequencyArray,
-        bars,
-      });
-    },
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        ctx: canvas.getContext('2d'),
+        now: parseInt(performance.now()) / this.timeOffset,
+        bars: [],
+      };
 
-    // Thanks to David Torroija - codepen.io/davidtorroija/pen/ZZzLpb
-    renderWaveromLoop({ analyser, canvas, canvasWidth, canvasHeight, ctx, frequencyArray, bars }) {
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      // Thanks to David Torroija - codepen.io/davidtorroija/pen/ZZzLpb
+      this[`renderWaveformDraw${track.id}`] = (ctx, bars) => {
+        for (let i = 0; i < bars.length; i++) {
+          const bar = bars[i];
+          ctx.fillRect(bar.x, bar.y, bar.width, bar.height);
+          bar.x = bar.x - 1;
 
-      if (parseInt(performance.now() / this.timeOffset) > this.now) {
-        this.now = parseInt(performance.now() / this.timeOffset);
-        analyser.getFloatTimeDomainData(frequencyArray);
-
-        let sumOfSquares = 0;
-        for (let i = 0; i < frequencyArray.length; i++) {
-          sumOfSquares += frequencyArray[i] ** 2;
+          if (bar.x < 1) {
+            bars.splice(i, 1);
+          }
         }
-        const avgPower = sumOfSquares / frequencyArray.length;
-        const freq = avgPower.map(0, 1, 2, canvasHeight);
+      };
 
-        bars.push({
-          x: canvasWidth,
-          y: canvasHeight / 2 - freq / 2,
-          height: freq,
-          width: 1,
-        });
-      }
+      this[`renderWaveformLoop${track.id}`] = dataObj => {
+        let { analyser, canvasWidth, canvasHeight, ctx, frequencyArray, bars, now, trackId } = dataObj;
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-      this.renderWaveromDraw(ctx, bars);
+        if (parseInt(performance.now() / this.timeOffset) > now) {
+          now = parseInt(performance.now() / this.timeOffset);
+          analyser.getFloatTimeDomainData(frequencyArray);
 
-      requestAnimationFrame(
-        this.renderWaveromLoop.bind(null, {
-          analyser,
-          canvas,
-          canvasWidth,
-          canvasHeight,
-          ctx,
-          frequencyArray,
-          bars,
-        })
-      );
-    },
+          let sumOfSquares = 0;
+          for (let i = 0; i < frequencyArray.length; i++) {
+            sumOfSquares += frequencyArray[i] ** 2;
+          }
+          const avgPower = sumOfSquares / frequencyArray.length;
+          const freq = avgPower.map(0, 1, 2, canvasHeight);
 
-    renderWaveromDraw(ctx, bars) {
-      for (let i = 0; i < bars.length; i++) {
-        const bar = bars[i];
-        ctx.fillStyle = '#000';
-        ctx.fillRect(bar.x, bar.y, bar.width, bar.height);
-        bar.x = bar.x - 1;
-
-        if (bar.x < 1) {
-          bars.splice(i, 1);
+          bars.push({
+            x: canvasWidth,
+            y: canvasHeight / 2 - freq / 2,
+            height: freq,
+            width: 1,
+          });
         }
-      }
+
+        this[`renderWaveformDraw${trackId}`](ctx, bars);
+
+        this.rAFs[track.id] = requestAnimationFrame(
+          this[`renderWaveformLoop${track.id}`].bind(null, dataObj)
+        );
+      };
+
+      this.renderWaveformDrawFunctions.push(`renderWaveformDraw${track.id}`);
+      this.renderWaveformLoopFunctions.push(`renderWaveformLoop${track.id}`);
+
+      this[`renderWaveformLoop${track.id}`](dataObj);
     },
 
     addConfirmLeaveHandler() {
@@ -1023,12 +1024,17 @@ export default {
   align-items: center;
   gap: 1rem;
   padding: 0.5rem;
+  width: 180px;
+  overflow: auto;
+  white-space: nowrap;
+  padding-right: 2rem;
 }
 
 .rec-canvas {
   background: white;
   flex: 1;
   height: 60px;
+  margin-left: 0.5rem;
 }
 
 canvas {
