@@ -23,14 +23,13 @@
 
       <!-- Mid Section -->
       <div class="mid-section">
-        <div class="left-col sidebar-wrapper">
-          <Sidebar
-            @createInstrument="createInstrument"
-            @createEffect="createAndInsertEffect"
-            @loadPreset="loadPreset"
-            :instrument-is-loaded="!!currentTrack"
-          />
-        </div>
+        <Sidebar
+          class="left-col"
+          @createInstrument="createInstrument"
+          @createEffect="createAndInsertEffect"
+          @loadPreset="loadPreset"
+          :instrument-is-loaded="!!currentTrack"
+        />
 
         <div class="right-col">
           <!-- Click -->
@@ -38,10 +37,10 @@
 
           <!-- Tracks -->
           <div class="tracks-container custom-scrollbar" :class="{ mapping: mapping }">
-            <div class="tracks-list">
+            <div class="track-list">
               <div
                 v-for="(track, t) in tracks"
-                :key="track.name"
+                :key="track.id"
                 class="track"
                 :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
                 @click.self="selectTrack(t)"
@@ -53,6 +52,9 @@
                     {{ track.instrument.name }}
                   </div>
                 </div>
+
+                <!-- Rec Canvas -->
+                <div class="rec-canvas"><canvas :ref="`rec-canvas-${track.id}`"></canvas></div>
 
                 <!-- Track Gain and Controls -->
                 <GainBody
@@ -214,6 +216,8 @@ export default {
       exportBlobs: [],
       exports: [],
       chunks: [],
+      timeOffset: 10,
+      now: 0,
 
       //play
       playing: false,
@@ -683,16 +687,14 @@ export default {
       this.insertEffect(effect);
     },
 
-    // REC
+    // RECORDING
 
     startRec() {
       const recordingTracks = this.tracks.filter(t => t.recEnabled);
       const total = recordingTracks.length;
-      let c = 0;
 
       this.recordingCount++;
       this.recording = true;
-      this.renderFinished = false;
 
       // record entire mix
 
@@ -733,16 +735,17 @@ export default {
 
       this.exportMediaRecorder.start();
 
-      console.log('rec start');
+      // record each track separately
+      let c = 0;
 
-      //record each track
+      recordingTracks.forEach(t => {
+        this.setupWaveformRender(t);
 
-      recordingTracks.forEach((t, i) => {
         let chunks = [];
-        let dest = this.context.createMediaStreamDestination();
-        t.trackGain.connectNativeNode(dest);
+        let mediaStreamDestination = this.context.createMediaStreamDestination();
+        t.trackGain.connectNativeNode(mediaStreamDestination);
 
-        let mediaRecorder = new MediaRecorder(dest.stream);
+        let mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
         this.mediaRecorders.push(mediaRecorder);
 
         mediaRecorder.ondataavailable = evt => {
@@ -760,9 +763,11 @@ export default {
 
             this.context.decodeAudioData(arrayBuffer, audioBuffer => {
               this.scene.push({ audioBuffer, blob, trackId: t.id });
-              // t.trackGain.disconnectNativeNode(dest)
-              dest = null;
-              if (++c === total) this.recordingsReady();
+              // t.trackGain.disconnectNativeNode(mediaStreamDestination)
+              mediaStreamDestination = null;
+              if (++c === total) {
+                this.recordingsReady();
+              }
             });
           };
 
@@ -863,8 +868,77 @@ export default {
       a.click();
     },
 
-    getCssNodeName(name) {
-      return name.replace(new RegExp(' ', 'g'), '-');
+    setupWaveformRender(track) {
+      const analyser = track.trackGainAnalyser;
+      const canvas = this.$refs[`rec-canvas-${track.id}`][0];
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ctx = canvas.getContext('2d');
+      const bufferLength = analyser.fftSize;
+      console.log(this.bufferLength);
+      const frequencyArray = new Float32Array(bufferLength);
+      const bars = [];
+      this.now = parseInt(performance.now()) / this.timeOffset;
+      this.renderWaveromLoop({
+        analyser,
+        canvas,
+        canvasWidth,
+        canvasHeight,
+        ctx,
+        frequencyArray,
+        bars,
+      });
+    },
+
+    // Thanks to David Torroija - codepen.io/davidtorroija/pen/ZZzLpb
+    renderWaveromLoop({ analyser, canvas, canvasWidth, canvasHeight, ctx, frequencyArray, bars }) {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+      if (parseInt(performance.now() / this.timeOffset) > this.now) {
+        this.now = parseInt(performance.now() / this.timeOffset);
+        analyser.getFloatTimeDomainData(frequencyArray);
+
+        let sumOfSquares = 0;
+        for (let i = 0; i < frequencyArray.length; i++) {
+          sumOfSquares += frequencyArray[i] ** 2;
+        }
+        const avgPower = sumOfSquares / frequencyArray.length;
+        const freq = avgPower.map(0, 1, 2, canvasHeight);
+
+        bars.push({
+          x: canvasWidth,
+          y: canvasHeight / 2 - freq / 2,
+          height: freq,
+          width: 1,
+        });
+      }
+
+      this.renderWaveromDraw(ctx, bars);
+
+      requestAnimationFrame(
+        this.renderWaveromLoop.bind(null, {
+          analyser,
+          canvas,
+          canvasWidth,
+          canvasHeight,
+          ctx,
+          frequencyArray,
+          bars,
+        })
+      );
+    },
+
+    renderWaveromDraw(ctx, bars) {
+      for (let i = 0; i < bars.length; i++) {
+        const bar = bars[i];
+        ctx.fillStyle = '#000';
+        ctx.fillRect(bar.x, bar.y, bar.width, bar.height);
+        bar.x = bar.x - 1;
+
+        if (bar.x < 1) {
+          bars.splice(i, 1);
+        }
+      }
     },
 
     addConfirmLeaveHandler() {
@@ -909,7 +983,6 @@ export default {
 }
 
 .click-wrapper {
-  // width: 100%;
   margin: 0.25rem;
 }
 
@@ -933,7 +1006,6 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5em;
 
   background: #111;
   border: 2px solid transparent;
@@ -951,6 +1023,24 @@ export default {
   align-items: center;
   gap: 1rem;
   padding: 0.5rem;
+}
+
+.rec-canvas {
+  background: white;
+  flex: 1;
+  height: 60px;
+}
+
+canvas {
+  height: 100%;
+  width: 100%;
+}
+
+.master {
+  padding: 0.75rem 0.5rem;
+}
+.master-knob-wrapper {
+  margin-right: 1rem;
 }
 
 // Bottom Section
@@ -987,28 +1077,6 @@ export default {
   display: flex;
   gap: 0.5em;
 }
-
-.master {
-  padding: 0.75rem 0.5rem;
-}
-.master-knob-wrapper {
-  margin-right: 1rem;
-}
-
-// .main-gain {
-//   position: fixed;
-//   bottom: 5px;
-//   right: 5px;
-//   background: #222;
-//   color: #f3f3f3;
-//   padding: 0.75rem;
-//   border: 1px solid #666;
-//   h3 {
-//     font-size: 1rem;
-//     margin-top: 1rem;
-//     user-select: none;
-//   }
-// }
 
 .welcome-msg {
   position: fixed;

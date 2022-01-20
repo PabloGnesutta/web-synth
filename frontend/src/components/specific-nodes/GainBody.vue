@@ -1,5 +1,5 @@
 <template>
-  <div class="inner">
+  <div class="gain-body">
     <!-- Mute/Rec enabled -->
     <div class="node-controls">
       <div class="rec-enabled-disabled" @click="toggleRecEnabled">
@@ -68,7 +68,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.inner {
+.gain-body {
   display: flex;
   align-items: center;
   gap: 1rem;

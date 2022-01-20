@@ -10,7 +10,7 @@ class Node {
     this.muted = false;
 
     this.nodeRol = nodeRole;  //Instrument/Effect
-    this.nodeType = nodeType; //The specific node
+    this.nodeType = nodeType; //The specific node's class name
 
     this.saveParams = [
       { version: '1.0.0' },
@@ -18,6 +18,7 @@ class Node {
       { name: 'nodeType', value: this.nodeType },
     ];
 
+    // todo: remove inputNode as a Gain from all nodes, and replace what now is this.node for node.inputNode, and check connections
     this.inputNode = Node.context.createGain();
     this.outputNode = Node.context.createGain();
 
@@ -34,10 +35,6 @@ class Node {
 
       this.inputNode.disconnect();
       this.inputNode = null;
-
-      // chequear que en los nodos que tengan custom/modulation params, los destruyan ellos
-      // if (this.customParams) this.customParams = null;
-      // if (this.modulationParams) this.modulationParams = null;
     }];
   }
 

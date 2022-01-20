@@ -23,17 +23,17 @@ class Distortion extends Node {
     hasDryWet(this, saveObject?.dryWet);
   }
 
-  initCustomParams(saveObjctCustomParams) {
+  initCustomParams(saveObjectCustomParams) {
     this.customParams = [
       {
         name: 'curveAmount', displayName: 'boost', unit: '', //%
         minValue: 20, maxValue: 100,
-        value: saveObjctCustomParams ? saveObjctCustomParams[0].value : 30,
+        value: saveObjectCustomParams ? saveObjectCustomParams[0].value : 30,
       },
       {
         name: 'harshAmount', displayName: 'harsh', unit: '', //%
         minValue: 0, maxValue: 3,
-        value: saveObjctCustomParams ? saveObjctCustomParams[1].value : 1.2,
+        value: saveObjectCustomParams ? saveObjectCustomParams[1].value : 1.2,
       },
     ];
 
@@ -86,6 +86,7 @@ class Distortion extends Node {
 
   destroy() {
     super.destroy();
+    this.customParams = null
   }
 }
 

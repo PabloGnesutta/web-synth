@@ -8,14 +8,13 @@ const initialGain = 0.5;
 class Femod extends Node {
   static femodCount = 0;
 
-  constructor(saveObjct) {
+  constructor(saveObject) {
     super(initialGain, "Instrument", "Femod");
 
-    ++Femod.femodCount;
-    this.name = saveObjct?.name || "Femod " + Femod.femodCount;
+    this.name = saveObject?.name || "Femod " + ++Femod.femodCount;
 
     this.types = ["sine", "triangle", "sawtooth", "square"];
-    this.type = saveObjct?.type || "sawtooth";
+    this.type = saveObject?.type || "sawtooth";
 
     this.noteIndexInUse = Array(polyphony).fill(null);
     this.available = Array(polyphony).fill(true);
@@ -28,11 +27,11 @@ class Femod extends Node {
 
     this.inputNode.connect(this.outputNode);
 
-    this.initModulationParams(saveObjct?.modulationParams);
-    this.initCustomParams(saveObjct?.customParams);
+    this.initModulationParams(saveObject?.modulationParams);
+    this.initCustomParams(saveObject?.customParams);
   }
 
-  initCustomParams(saveObjctCustomParams) {
+  initCustomParams(saveObjectCustomParams) {
     this.customParams = [
       {
         name: "A",
@@ -76,7 +75,7 @@ class Femod extends Node {
       },
     ];
 
-    const valuesToLoad = saveObjctCustomParams || this.customParams;
+    const valuesToLoad = saveObjectCustomParams || this.customParams;
     for (let i = 0; i < this.customParams.length; i++) {
       this.setCustomParam(i, valuesToLoad[i].value);
     }
@@ -88,7 +87,7 @@ class Femod extends Node {
     this[customParam.name] = parseFloat(value);
   }
 
-  initModulationParams(saveObjctModulationParams) {
+  initModulationParams(saveObjectModulationParams) {
     this.modulationParams = [
       {
         name: "modType",
@@ -114,7 +113,7 @@ class Femod extends Node {
       },
     ];
 
-    const valuesToLoad = saveObjctModulationParams || this.modulationParams;
+    const valuesToLoad = saveObjectModulationParams || this.modulationParams;
     for (let i = 0; i < this.modulationParams.length; i++) {
       this.setModulationParam(i, valuesToLoad[i].value);
     }
@@ -229,6 +228,7 @@ class Femod extends Node {
     this.available = null;
     this.noteIndexInUse = null;
     this.modulationParams = null;
+    this.customParams = null
 
     for (let i = 0; i < polyphony; i++)
       if (this.ADSRGains[i]) {

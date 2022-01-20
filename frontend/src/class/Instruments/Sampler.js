@@ -98,6 +98,7 @@ class Sampler extends Node {
   destroy() {
     super.destroy();
     this.buffer = null;
+    this.customParams = null
   }
 }
 
