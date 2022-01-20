@@ -878,15 +878,13 @@ export default {
         this.globalX += 10;
       }
 
-      console.log(this.globalX);
-
       this.recordingBars.forEach(recordingBar => {
         const canvas = this.$refs[`rec-canvas-${recordingBar.trackId}`][0];
         const ctx = canvas.getContext('2d');
         const bars = recordingBar.bars;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        for (let i = 0; i < bars.length; i++) {
+        for (let i = 0; i < bars.length - this.globalX; i++) {
           const bar = bars[i + this.globalX] || { y: canvas.height / 2, width: 1, height: 0 };
           ctx.fillRect(i, bar.y, bar.width, bar.height);
         }
