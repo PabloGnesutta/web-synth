@@ -263,9 +263,9 @@ export default {
 
       this.createMasterGain();
 
-      // this.createTrack(createInstrument('Femod'));
-      // this.createAndInsertEffect('BiquadFilter');
       this.createTrack(createInstrument('Drumkit'));
+      this.createTrack(createInstrument('Femod'));
+      this.createAndInsertEffect('BiquadFilter');
 
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
@@ -721,7 +721,6 @@ export default {
       this.currentRecordingPlaybackIndex = index;
 
       this.playAllTracks(index);
-      this.moveTimielineWithPlayback(performance.now() / this.timeOffset);
     },
 
     playAllTracks(index) {
@@ -745,6 +744,9 @@ export default {
           this.moveCanvas(0);
         };
       });
+      this.globalX = 0;
+      this.moveCanvas(0);
+      this.moveTimielineWithPlayback(performance.now() / this.timeOffset);
     },
 
     stopAllTracks() {
