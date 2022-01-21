@@ -6,22 +6,22 @@ class Node {
     this.id = ++Node.nodeCount;
     this.gain = initialGain;
     this.minGain = 0;
-    this.maxGain = 3;
+    this.maxGain = 2;
     this.muted = false;
 
     this.nodeRol = nodeRole;  //Instrument/Effect
     this.nodeType = nodeType; //The specific node's class name
+
+    this.inputNode = Node.context.createGain();
+    this.outputNode = Node.context.createGain();
+
+    this.outputNode.gain.value = initialGain;
 
     this.saveParams = [
       { version: '1.0.0' },
       { name: 'nodeRol', value: this.nodeRol },
       { name: 'nodeType', value: this.nodeType },
     ];
-
-    this.inputNode = Node.context.createGain();
-    this.outputNode = Node.context.createGain();
-
-    this.outputNode.gain.value = initialGain;
 
     this.destroyers = [() => {
       this.outputNode.disconnect();

@@ -39,7 +39,7 @@
           <div
             class="tracks-container custom-scrollbar"
             :class="{ mapping: mapping }"
-            @mousewheel="moveCanvas"
+            @mousewheel="onTrackContainerWheel"
           >
             <div class="track-list">
               <div
@@ -214,6 +214,7 @@ export default {
       renderWaveformLoopFunctions: [],
       recordingBars: [],
       animationFrameRequests: [],
+      playbackAnimationFrameRequest: null,
 
       //play
       playing: false,
@@ -262,8 +263,8 @@ export default {
 
       this.createMasterGain();
 
-      this.createTrack(createInstrument('Femod'));
-      this.createAndInsertEffect('BiquadFilter');
+      // this.createTrack(createInstrument('Femod'));
+      // this.createAndInsertEffect('BiquadFilter');
       this.createTrack(createInstrument('Drumkit'));
 
       window.addEventListener('keyup', this.onKeyup);
@@ -607,7 +608,6 @@ export default {
         let chunks = [];
         let mediaStreamDestination = this.context.createMediaStreamDestination();
         track.trackGain.connectNativeNode(mediaStreamDestination);
-        console.log(track.trackGain);
         const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
         this.mediaRecorders.push(mediaRecorder);
 
@@ -622,7 +622,7 @@ export default {
           blobFileReader.onloadend = () => {
             const arrayBuffer = blobFileReader.result;
             this.context.decodeAudioData(arrayBuffer, audioBuffer => {
-              scenes.push({ trackId: track.id, audioBuffer, blob });
+              scenes.push({ trackId: track.id, audioBuffer, blob, waveformBarCount: 0 });
               if (++processedTracks === totalRecordingTracks) {
                 this.recordingIsReady(scenes);
               }
@@ -655,7 +655,6 @@ export default {
 
           this.context.decodeAudioData(arrayBuffer, audioBuffer => {
             this.exports.push({ id: this.recordingIdCount, audioBuffer, blob });
-            console.log(this.exports);
           });
         };
         exportFileReader.readAsArrayBuffer(blob);
@@ -685,7 +684,12 @@ export default {
       }
       this.renderWaveformLoopFunctions = [];
 
-      this.globalX = this.recordingBars[0].bars.length - this.recCanvasWidth;
+      // this.globalX = this.recordingBars[0].bars.length - this.recCanvasWidth;
+      // for (let i = 0; )
+      console.log('recordong bars', this.recordingBars);
+      console.log('recordings', this.recordings);
+      this.globalX = 0;
+      this.moveCanvas(0);
     },
     stopRecExport() {
       this.masterGain.disconnect(this.exportDestination);
@@ -711,14 +715,13 @@ export default {
         1
       );
       index = parseInt(index);
-
       if (!index) return alert('Only numers from 1 to ' + this.recordings.length);
       if (index > this.recordings.length || index < 1) return alert('There is no such recording!');
-
       index--;
       this.currentRecordingPlaybackIndex = index;
 
       this.playAllTracks(index);
+      this.moveTimielineWithPlayback(performance.now() / this.timeOffset);
     },
 
     playAllTracks(index) {
@@ -727,7 +730,20 @@ export default {
         scene.source = this.context.createBufferSource();
         scene.source.buffer = scene.audioBuffer;
         scene.source.connect(this.masterGain);
-        scene.source.start();
+
+        const offset = 0;
+        console.log('duration', scene.source.buffer.duration);
+        console.log('globalX', this.globalX);
+        console.log('offset', offset);
+
+        scene.source.start(0, offset);
+
+        scene.source.onended = () => {
+          this.playing = false;
+          window.cancelAnimationFrame(this.playbackAnimationFrameRequest);
+          this.globalX = 0;
+          this.moveCanvas(0);
+        };
       });
     },
 
@@ -736,6 +752,7 @@ export default {
         scene.source.stop(0);
         delete scene.source;
       });
+      window.cancelAnimationFrame(this.playbackAnimationFrameRequest);
       this.playing = false;
     },
 
@@ -769,6 +786,8 @@ export default {
         trackId: track.id,
         bars: [],
       };
+      // todo: make recording bars a table with recording ID so the we can
+      // copute de ratio between amount of bars / buffer duration
       this.recordingBars.push(recordingBarsObject);
 
       const dataObj = {
@@ -779,17 +798,23 @@ export default {
         canvasWidth: canvas.width,
         canvasHeight: canvas.height,
         ctx: canvas.getContext('2d'),
-        now: parseInt(performance.now()) / this.timeOffset,
+        now: performance.now() / this.timeOffset,
         bars: recordingBarsObject.bars,
         xCoords: [],
       };
+
+      // this.t1 = 0;
+      // this.t2 = 0;
 
       this[`renderWaveformLoop${track.id}`] = dataObj => {
         let { analyser, canvasWidth, canvasHeight, ctx, frequencyArray, bars, xCoords, now } = dataObj;
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-        if (parseInt(performance.now() / this.timeOffset) > now) {
-          now = parseInt(performance.now() / this.timeOffset);
+        if (performance.now() / this.timeOffset > now) {
+          // console.log('elap', this.t2, 'track', track.id);
+          // this.t2 = 0;
+
+          now = performance.now() / this.timeOffset;
           analyser.getFloatTimeDomainData(frequencyArray);
 
           let sumOfSquares = 0;
@@ -808,6 +833,10 @@ export default {
         this.animationFrameRequests[track.id] = requestAnimationFrame(
           this[`renderWaveformLoop${track.id}`].bind(null, dataObj)
         );
+
+        // const elap = this.animationFrameRequests[track.id] - this.t1;
+        // this.t1 = this.animationFrameRequests[track.id];
+        // this.t2 += elap;
       };
 
       this.renderWaveformLoopFunctions.push(`renderWaveformLoop${track.id}`);
@@ -823,12 +852,16 @@ export default {
       }
     },
 
-    moveCanvas(e) {
-      if (e.wheelDelta > 0) {
-        this.globalX -= 10;
-      } else {
-        this.globalX += 10;
+    onTrackContainerWheel(event) {
+      let amount = 10;
+      if (event.wheelDelta > 0) {
+        amount = -10;
       }
+      this.moveCanvas(amount);
+    },
+
+    moveCanvas(amount) {
+      this.globalX += amount;
 
       this.recordingBars.forEach(recordingBar => {
         const canvas = this.$refs[`rec-canvas-${recordingBar.trackId}`][0];
@@ -841,6 +874,17 @@ export default {
           ctx.fillRect(x, canvas.height / 2 - bar.height / 2, this.recBarWidth, bar.height);
         }
       });
+    },
+
+    moveTimielineWithPlayback(now) {
+      if (performance.now() / this.timeOffset > now) {
+        now = performance.now() / this.timeOffset;
+        this.moveCanvas(1);
+      }
+
+      this.playbackAnimationFrameRequest = requestAnimationFrame(
+        this.moveTimielineWithPlayback.bind(null, now)
+      );
     },
 
     // MIDI
