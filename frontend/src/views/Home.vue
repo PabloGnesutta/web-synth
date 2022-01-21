@@ -9,7 +9,7 @@
           @stopRec="stopRec"
           @playExport="playRecording"
           @downloadExport="downloadExport"
-          @stopPlayingExport="stopPlayingExport"
+          @stopPlayingExport="stopAllTracks"
           @loadSave="loadSave"
           @toggleMapping="toggleMapping"
           :octave="octave"
@@ -17,7 +17,7 @@
           :tracks="tracks"
           :playing="playing"
           :recording="recording"
-          :recordingsAvailable="recordingsAvailable"
+          :recordingsAvailable="recordings.length"
         />
       </div>
 
@@ -178,7 +178,7 @@ export default {
       inited: false,
 
       tracks: [],
-      trackCount: 0,
+      trackIdCount: 0,
       currentTrack: null,
       currentTrackIndex: 0,
 
@@ -193,31 +193,31 @@ export default {
 
       //MIDI
       midiMappings: [],
-      inputs: [],
-      outputs: [],
+      midiInputs: [],
+      midiOutputs: [],
       mapping: false,
       refBeignMapped: null,
 
       //REC
-      recordingCount: 0,
-      recordings: [],
-      mediaRecorders: [],
       recording: false,
+      recordings: [],
+      recordingIdCount: 0,
+      mediaRecorders: [],
       exportDestination: null,
-      exportBlobs: [],
       exports: [],
 
       //Rendering
+      recBarWidth: 1,
       timeOffset: 10,
+      globalX: 0,
+      recCanvasWidth: 0,
       renderWaveformLoopFunctions: [],
       recordingBars: [],
-      rAFs: [],
-      globalX: 0,
+      animationFrameRequests: [],
 
       //play
       playing: false,
       playingBuffers: [],
-      recordingsAvailable: false,
 
       octave: 3,
       transpose: 0,
@@ -272,6 +272,8 @@ export default {
       this.inited = true;
     },
 
+    // Tracks, Instruments & Effects
+
     createInstrument(className) {
       const Node = createInstrument(className);
       this.createTrack(Node);
@@ -282,13 +284,13 @@ export default {
       const trackGainAnalyser = this.context.createAnalyser();
 
       instrument.connect(trackGain);
-      trackGain.connectNativeNode(this.preMasterGain, 'Mixer Gain');
       trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
+      trackGain.connectNativeNode(this.preMasterGain, 'Mixer Gain');
 
       this.tracks.push({
-        id: ++this.trackCount,
-        name: 'Track ' + this.trackCount,
-        displayName: 'Track ' + this.trackCount,
+        id: ++this.trackIdCount,
+        name: 'Track ' + this.trackIdCount,
+        displayName: 'Track ' + this.trackIdCount,
         instrument,
         effects: [],
         trackGain,
@@ -300,8 +302,7 @@ export default {
       this.currentTrackIndex = this.tracks.length - 1;
       this.currentTrack = this.tracks[this.currentTrackIndex];
 
-      // Listeners
-
+      // key/touch listeners
       if (instrument.nodeType === 'Drumkit') {
         this.numpadListeners.push({
           instrument,
@@ -318,14 +319,12 @@ export default {
         });
       }
 
-      this.$nextTick(() => {
-        window.scrollTo(0, document.body.scrollHeight);
-      });
+      // this.$nextTick(() => { // todo: scroll to bottom of container });
     },
 
     deleteTrack(trackIndex) {
-      if (trackIndex === undefined) {
-        trackIndex = this.currentTrackIndex;
+      if (typeof trackIndex !== 'number') {
+        return;
       }
 
       let track = this.tracks[trackIndex];
@@ -346,17 +345,17 @@ export default {
       track.trackGain.destroy();
       track.trackGain = null;
 
+      track.trackGainAnalyser = null;
+
       track.effects.forEach(effect => {
         effect.destroy();
         effect = null;
       });
+
+      this.currentTrackIndex = null;
+      this.currentTrack = null;
+
       track = null;
-
-      if (trackIndex === this.currentTrackIndex) {
-        this.currentTrackIndex = null;
-        this.currentTrack = null;
-      }
-
       this.tracks.splice(trackIndex, 1);
 
       let futureTrackIndex = trackIndex;
@@ -375,7 +374,6 @@ export default {
       const Node = createEffect(className);
       this.insertEffect(Node);
     },
-
     insertEffect(Node) {
       const effects = this.currentTrack.effects;
       const prev = effects[effects.length - 1] || this.currentTrack.instrument;
@@ -394,7 +392,6 @@ export default {
 
     deleteEffect(effectIndex) {
       const effects = this.currentTrack.effects;
-
       const prev = effects[effectIndex - 1] || this.currentTrack.instrument;
       const next = effects[effectIndex + 1] || this.currentTrack.trackGain;
 
@@ -403,6 +400,16 @@ export default {
       effects[effectIndex].destroy();
       effects[effectIndex] = null;
       effects.splice(effectIndex, 1);
+    },
+
+    selectTrack(t) {
+      if (this.currentTrackIndex === t) return;
+
+      this.currentTrackIndex = t;
+      this.currentTrack = null;
+      this.$nextTick(() => {
+        this.currentTrack = this.tracks[this.currentTrackIndex];
+      });
     },
 
     createMasterGain() {
@@ -417,18 +424,6 @@ export default {
     setMasterGainValue(val) {
       this.masterGain.gain.setValueAtTime(val, 0);
     },
-
-    selectTrack(t) {
-      if (this.currentTrackIndex === t) return;
-
-      this.currentTrackIndex = t;
-      this.currentTrack = null;
-      this.$nextTick(() => {
-        this.currentTrack = this.tracks[this.currentTrackIndex];
-      });
-    },
-
-    // User Interface (UI):
 
     toggleInstrumentEnabled() {
       this.currentTrack.instrumentEnabled = !this.currentTrack.instrumentEnabled;
@@ -446,6 +441,8 @@ export default {
       }
     },
 
+    // CONTROLS
+
     // Touch
     onPadTouchStart(currentIndex) {
       const noteKeyIndex = currentIndex;
@@ -454,7 +451,6 @@ export default {
         scaleInterface.instrument.playNote(noteIndex);
       });
     },
-
     onPadTouchEnd(currentIndex) {
       const noteKeyIndex = currentIndex;
       let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
@@ -462,7 +458,6 @@ export default {
         scaleInterface.instrument.stopNote(noteIndex);
       });
     },
-
     onPadTouchCancel(e) {},
     onPadTouchMove(e) {},
 
@@ -470,7 +465,6 @@ export default {
     onKeydown(e) {
       if (!this.keyEnabled[e.keyCode]) return;
       this.keyEnabled[e.keyCode] = false;
-
       const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
 
       if (noteKeyIndex !== -1) {
@@ -485,7 +479,6 @@ export default {
         this.onOtherKeydown(e);
       }
     },
-
     onKeyup(e) {
       this.keyEnabled[e.keyCode] = true;
       const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
@@ -500,83 +493,354 @@ export default {
         this.onOtherKeyup(e);
       }
     },
-
-    onOtherKeydown({ key, keyCode }) {
-      console.log(keyCode);
-      if (keyCode === 77) {
-        // m key
-        this.m_pressed = true;
-      } else if (keyCode === 32) {
-        // space bar
-        if (this.recording) {
-          this.stopRec();
-        } else {
-          this.startRec();
-        }
-      } else if (keyCode === 38) {
-        // up arrow
-        let futureTrackIndex = this.currentTrackIndex - 1;
-        if (futureTrackIndex < 0) {
-          futureTrackIndex = this.tracks.length - 1;
-        }
-
-        if (this.currentTrackIndex !== futureTrackIndex) {
-          this.selectTrack(futureTrackIndex);
-        }
-      } else if (keyCode === 40) {
-        // down  arrow
-        let futureTrackIndex = this.currentTrackIndex + 1;
-        if (futureTrackIndex > this.tracks.length - 1) {
-          futureTrackIndex = 0;
-        }
-        if (this.currentTrackIndex !== futureTrackIndex) {
-          this.selectTrack(futureTrackIndex);
-        }
-      } else if (keyCode === 46) {
-        // delete key
-        this.deleteTrack(this.currentTrackIndex);
-      }
-      //1 a 9 numpad:
-      else if (keyCode >= 97 && keyCode <= 105) {
+    onOtherKeydown(e) {
+      if (e.keyCode >= 97 && e.keyCode <= 105) {
+        //1-9:
         this.numpadListeners.forEach(scaleInterface => {
-          scaleInterface.instrument.playNote(parseInt(key));
+          scaleInterface.instrument.playNote(+e.key);
         });
+      } else {
+        switch (e.keyCode) {
+          case 38: //arrow   up - select track
+            var futureTrackIndex = this.currentTrackIndex - 1;
+            if (futureTrackIndex < 0) {
+              futureTrackIndex = this.tracks.length - 1;
+            }
+            this.selectTrack(futureTrackIndex);
+            break;
+          case 40: //arrow down - select track
+            var futureTrackIndex = this.currentTrackIndex + 1;
+            if (futureTrackIndex > this.tracks.length - 1) {
+              futureTrackIndex = 0;
+            }
+            this.selectTrack(futureTrackIndex);
+            break;
+          case 77: //m
+            this.m_pressed = true;
+            break;
+        }
       }
     },
-
     onOtherKeyup(e) {
-      //1 a 9
+      //1-9
       if (e.keyCode >= 49 && e.keyCode <= 57) {
         if (this.m_pressed) {
           this.tracks[+e.key - 1].trackGain.toggleMute();
         }
       } else {
         switch (e.keyCode) {
-          case 77: //m
+          case 32: //space bar - rec/stop
+            if (this.recording) this.stopRec();
+            else this.startRec();
+            break;
+
+          case 46: //delete - delete cuurrent track
+            this.deleteTrack(this.currentTrackIndex);
+            break;
+          case 77: //m - mute current track
             this.m_pressed = false;
-            if (e.ctrlKey) {
-              this.currentTrack.trackGain.toggleMute();
-            }
+            if (e.ctrlKey) this.currentTrack.trackGain.toggleMute();
             break;
-          case 81: //q
-            if (e.ctrlKey) {
-              this.deleteTrack(this.currentTrackIndex);
-            }
-            break;
-          case 90: //z
+          case 90: //z - octave down
             this.octave--;
             break;
-          case 88: //x
+          case 88: //x - octave up
             this.octave++;
             break;
-          case 67: //c
+          case 67: //c - transpose down
             this.transpose--;
             break;
-          case 86: //v
+          case 86: //v - transpose up
             this.transpose++;
+            break;
+          default:
+            console.log(e.keyCode);
             break;
         }
       }
+    },
+
+    // SAVE/LOAD
+
+    loadSave(tracks) {
+      tracks.forEach(track => {
+        this.loadInstrument(t.instrument);
+
+        track.effects.forEach(effectSaveString => {
+          this.loadEffect(effectSaveString);
+        });
+      });
+    },
+    loadPreset(saveString) {
+      if (saveString.nodeRol === 'Instrument') {
+        this.loadInstrument(saveString);
+      } else {
+        this.loadEffect(saveString);
+      }
+    },
+    loadInstrument(instSaveString) {
+      const instrument = createInstrument(instSaveString.nodeType, instSaveString);
+      this.createTrack(instrument);
+    },
+    loadEffect(effectSaveString) {
+      const effect = createEffect(effectSaveString.nodeType, effectSaveString);
+      this.insertEffect(effect);
+    },
+
+    // RECORDING
+
+    startRec() {
+      this.recordingIdCount++;
+      this.recording = true;
+      this.startExportRec();
+      this.startTracksRec();
+    },
+    startTracksRec() {
+      const scenes = [];
+      const recordingTracks = this.tracks.filter(track => track.recEnabled);
+      const totalRecordingTracks = recordingTracks.length;
+      let processedTracks = 0;
+
+      recordingTracks.forEach(track => {
+        this.setupWaveformRender(track);
+
+        let chunks = [];
+        let mediaStreamDestination = this.context.createMediaStreamDestination();
+        track.trackGain.connectNativeNode(mediaStreamDestination);
+        console.log(track.trackGain);
+        const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
+        this.mediaRecorders.push(mediaRecorder);
+
+        mediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
+
+        // When recording's finished, process the data chunk
+        // into a Blob, and save it for future use
+        mediaRecorder.onstop = () => {
+          const blobFileReader = new FileReader();
+          const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
+
+          blobFileReader.onloadend = () => {
+            const arrayBuffer = blobFileReader.result;
+            this.context.decodeAudioData(arrayBuffer, audioBuffer => {
+              scenes.push({ trackId: track.id, audioBuffer, blob });
+              if (++processedTracks === totalRecordingTracks) {
+                this.recordingIsReady(scenes);
+              }
+            });
+          };
+
+          blobFileReader.readAsArrayBuffer(blob);
+          mediaStreamDestination = null;
+          chunks = null;
+        };
+
+        mediaRecorder.start();
+      });
+    },
+    startExportRec() {
+      let exportChunks = [];
+      this.exportDestination = this.context.createMediaStreamDestination();
+      this.masterGain.connect(this.exportDestination);
+      this.exportMediaRecorder = new MediaRecorder(this.exportDestination.stream);
+      this.exportMediaRecorder.ondataavailable = evt => {
+        exportChunks.push(evt.data);
+      };
+      this.exportMediaRecorder.onstop = () => {
+        const blob = new Blob(exportChunks, {
+          type: 'audio/ogg; codecs=opus',
+        });
+        const exportFileReader = new FileReader();
+        exportFileReader.onloadend = () => {
+          const arrayBuffer = exportFileReader.result;
+
+          this.context.decodeAudioData(arrayBuffer, audioBuffer => {
+            this.exports.push({ id: this.recordingIdCount, audioBuffer, blob });
+            console.log(this.exports);
+          });
+        };
+        exportFileReader.readAsArrayBuffer(blob);
+        exportChunks = null;
+      };
+      this.exportMediaRecorder.start();
+    },
+
+    stopRec() {
+      this.stopRecAllTracks();
+      this.stopRecExport();
+      this.recording = false;
+    },
+    stopRecAllTracks() {
+      this.mediaRecorders.forEach(mediaRecorder => {
+        mediaRecorder.stop();
+      });
+      this.mediaRecorders = [];
+
+      // Cancel animation frames and remove rendering functions
+      this.animationFrameRequests.forEach(rAF => {
+        window.cancelAnimationFrame(rAF);
+      });
+      this.animationFrameRequests = [];
+      for (let i = 0; i < this.renderWaveformLoopFunctions.length; i++) {
+        delete this[this.renderWaveformLoopFunctions[i]];
+      }
+      this.renderWaveformLoopFunctions = [];
+
+      this.globalX = this.recordingBars[0].bars.length - this.recCanvasWidth;
+    },
+    stopRecExport() {
+      this.masterGain.disconnect(this.exportDestination);
+      this.exportDestination = null;
+      this.exportMediaRecorder.stop();
+      this.exportMediaRecorder = null;
+    },
+
+    recordingIsReady(scenes) {
+      const name = prompt('Recording Name', 'Recording Nº ' + this.recordingIdCount);
+      this.recordings.push({
+        id: this.recordingIdCount,
+        name,
+        scenes,
+      });
+    },
+
+    // PLAYBACK
+
+    playRecording() {
+      let index = prompt(
+        'Which recording do you want to play? Choose number: 1 to ' + this.recordings.length,
+        1
+      );
+      index = parseInt(index);
+
+      if (!index) return alert('Only numers from 1 to ' + this.recordings.length);
+      if (index > this.recordings.length || index < 1) return alert('There is no such recording!');
+
+      index--;
+      this.currentRecordingPlaybackIndex = index;
+
+      this.playAllTracks(index);
+    },
+
+    playAllTracks(index) {
+      this.playing = true;
+      this.recordings[index].scenes.forEach(scene => {
+        scene.source = this.context.createBufferSource();
+        scene.source.buffer = scene.audioBuffer;
+        scene.source.connect(this.masterGain);
+        scene.source.start();
+      });
+    },
+
+    stopAllTracks() {
+      this.recordings[this.currentRecordingPlaybackIndex].scenes.forEach(scene => {
+        scene.source.stop(0);
+        delete scene.source;
+      });
+      this.playing = false;
+    },
+
+    downloadExport() {
+      const length = this.recordings.length;
+      let index = prompt('Which recording do you want to download? Choose number: 1 to ' + length, 1);
+      index = parseInt(index);
+      if (!index) return alert('Only numers from 1 to ' + length);
+      if (index > length || index < 1) return alert('There is no such recording!');
+      let fileName = 'websynth_export_' + index + ' - ' + new Date().toLocaleDateString('es-AR');
+      fileName = prompt('Export name: ', fileName);
+      if (!fileName) return;
+      index--;
+      this.downloadBlob(this.exports[index].blob, fileName);
+    },
+
+    downloadBlob(blob, fileName) {
+      const a = document.createElement('a');
+      a.setAttribute('href', URL.createObjectURL(blob));
+      a.setAttribute('download', fileName);
+      a.click();
+    },
+
+    // RENDERING
+
+    setupWaveformRender(track) {
+      const analyser = track.trackGainAnalyser;
+      const canvas = this.$refs[`rec-canvas-${track.id}`][0];
+      this.recCanvasWidth = canvas.width;
+      const recordingBarsObject = {
+        trackId: track.id,
+        bars: [],
+      };
+      this.recordingBars.push(recordingBarsObject);
+
+      const dataObj = {
+        trackId: track.id,
+        analyser,
+        frequencyArray: new Float32Array(analyser.fftSize),
+        canvas,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        ctx: canvas.getContext('2d'),
+        now: parseInt(performance.now()) / this.timeOffset,
+        bars: recordingBarsObject.bars,
+        xCoords: [],
+      };
+
+      this[`renderWaveformLoop${track.id}`] = dataObj => {
+        let { analyser, canvasWidth, canvasHeight, ctx, frequencyArray, bars, xCoords, now } = dataObj;
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        if (parseInt(performance.now() / this.timeOffset) > now) {
+          now = parseInt(performance.now() / this.timeOffset);
+          analyser.getFloatTimeDomainData(frequencyArray);
+
+          let sumOfSquares = 0;
+          for (let i = 0; i < frequencyArray.length; i++) {
+            sumOfSquares += frequencyArray[i] ** 2;
+          }
+          const avgPower = sumOfSquares / frequencyArray.length;
+          const barHeight = avgPower.map(0, 1, 2, canvasHeight);
+
+          bars.push({ height: barHeight });
+          xCoords.push(canvasWidth);
+        }
+
+        this.renderWaveformDraw(ctx, bars, xCoords, canvasHeight);
+
+        this.animationFrameRequests[track.id] = requestAnimationFrame(
+          this[`renderWaveformLoop${track.id}`].bind(null, dataObj)
+        );
+      };
+
+      this.renderWaveformLoopFunctions.push(`renderWaveformLoop${track.id}`);
+
+      this[`renderWaveformLoop${track.id}`](dataObj);
+    },
+
+    renderWaveformDraw(ctx, bars, xCoords, canvasHeight) {
+      for (let x = 0; x < bars.length; x++) {
+        const bar = bars[x];
+        ctx.fillRect(xCoords[x], canvasHeight / 2 - bar.height / 2, this.recBarWidth, bar.height);
+        xCoords[x]--;
+      }
+    },
+
+    moveCanvas(e) {
+      if (e.wheelDelta > 0) {
+        this.globalX -= 10;
+      } else {
+        this.globalX += 10;
+      }
+
+      this.recordingBars.forEach(recordingBar => {
+        const canvas = this.$refs[`rec-canvas-${recordingBar.trackId}`][0];
+        const ctx = canvas.getContext('2d');
+        const bars = recordingBar.bars;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let x = 0; x < bars.length - this.globalX; x++) {
+          const bar = bars[x + this.globalX] || { y: 0, height: 0 };
+          ctx.fillRect(x, canvas.height / 2 - bar.height / 2, this.recBarWidth, bar.height);
+        }
+      });
     },
 
     // MIDI
@@ -656,304 +920,16 @@ export default {
     },
 
     onMIDISuccess(midiAccess) {
-      this.inputs = midiAccess.inputs;
-      this.outputs = midiAccess.outputs;
+      this.midiInputs = midiAccess.inputs;
+      this.midiOutputs = midiAccess.outputs;
 
-      for (var input of this.inputs.values()) {
+      for (var input of this.midiInputs.values()) {
         input.onmidimessage = this.onMIDIMessage;
       }
     },
 
     onMIDIFailure() {
       console.log('Could not access your MIDI devices.');
-    },
-
-    // Load / Save
-
-    loadSave(tracks) {
-      tracks.forEach(track => {
-        this.loadInstrument(t.instrument);
-
-        track.effects.forEach(effectSaveString => {
-          this.loadEffect(effectSaveString);
-        });
-      });
-    },
-
-    loadPreset(saveString) {
-      if (saveString.nodeRol === 'Instrument') {
-        this.loadInstrument(saveString);
-      } else {
-        this.loadEffect(saveString);
-      }
-    },
-
-    loadInstrument(instSaveString) {
-      const instrument = createInstrument(instSaveString.nodeType, instSaveString);
-      this.createTrack(instrument);
-    },
-
-    loadEffect(effectSaveString) {
-      const effect = createEffect(effectSaveString.nodeType, effectSaveString);
-      this.insertEffect(effect);
-    },
-
-    // RECORDING
-
-    startRec() {
-      this.recordingCount++;
-      this.recording = true;
-      this.startExportRec();
-      this.startTracksRec();
-    },
-
-    startExportRec() {
-      let exportChunks = [];
-      this.exportDestination = this.context.createMediaStreamDestination();
-      this.masterGain.connect(this.exportDestination);
-
-      this.exportMediaRecorder = new MediaRecorder(this.exportDestination.stream);
-
-      this.exportMediaRecorder.ondataavailable = evt => {
-        exportChunks.push(evt.data);
-      };
-
-      this.exportMediaRecorder.onstop = () => {
-        const blob = new Blob(exportChunks, {
-          type: 'audio/ogg; codecs=opus',
-        });
-
-        this.exportBlobs.push(blob);
-        exportChunks = null;
-
-        const exportFileReader = new FileReader();
-
-        exportFileReader.onloadend = () => {
-          const arrayBuffer = exportFileReader.result;
-
-          this.context.decodeAudioData(arrayBuffer, audioBuffer => {
-            this.exports.push({ id: this.recordingCount, audioBuffer });
-          });
-        };
-
-        exportFileReader.readAsArrayBuffer(blob);
-      };
-
-      this.exportMediaRecorder.start();
-    },
-
-    startTracksRec() {
-      const scenes = [];
-      const recordingTracks = this.tracks.filter(t => t.recEnabled);
-      const totalRecordingTracks = recordingTracks.length;
-      let processedTracks = 0;
-
-      recordingTracks.forEach(track => {
-        this.setupWaveformRender(track);
-
-        let chunks = [];
-        let mediaStreamDestination = this.context.createMediaStreamDestination();
-        track.trackGain.connectNativeNode(mediaStreamDestination);
-
-        const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
-        this.mediaRecorders.push(mediaRecorder);
-
-        mediaRecorder.ondataavailable = event => {
-          chunks.push(event.data);
-        };
-
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
-          chunks = null;
-
-          const fileReader = new FileReader();
-
-          fileReader.onloadend = () => {
-            const arrayBuffer = fileReader.result;
-
-            this.context.decodeAudioData(arrayBuffer, audioBuffer => {
-              scenes.push({ audioBuffer, blob, trackId: track.id });
-              mediaStreamDestination = null;
-              if (++processedTracks === totalRecordingTracks) {
-                this.recordingsReady(scenes);
-              }
-            });
-          };
-
-          fileReader.readAsArrayBuffer(blob);
-        };
-
-        mediaRecorder.start();
-      });
-    },
-
-    stopRec() {
-      this.masterGain.disconnect(this.exportDestination);
-      this.exportDestination = null;
-      this.exportMediaRecorder.stop();
-      this.exportMediaRecorder = null;
-      this.mediaRecorders.forEach(mediaRecorder => {
-        mediaRecorder.stop();
-      });
-      this.mediaRecorders = [];
-      this.recording = false;
-
-      // Cancel animation frames and remove rendering functions
-      this.rAFs.forEach(rAF => {
-        window.cancelAnimationFrame(rAF);
-      });
-      this.rAFs = [];
-      for (let i = 0; i < this.renderWaveformLoopFunctions.length; i++) {
-        delete this[this.renderWaveformLoopFunctions[i]];
-      }
-      this.renderWaveformLoopFunctions = [];
-
-      console.log(this.recordingBars[0].bars);
-    },
-
-    recordingsReady(scenes) {
-      const name = prompt('Recording Name', 'Recording Nº ' + this.recordingCount);
-      this.recordings.push({
-        id: this.recordingCount,
-        name,
-        scenes,
-      });
-      this.recordingsAvailable = true;
-    },
-
-    playRecording() {
-      let index = prompt(
-        'Which recording do you want to play? Choose number: 1 to ' + this.recordings.length,
-        1
-      );
-      index = parseInt(index);
-
-      if (!index) return alert('Only numers from 1 to ' + this.recordings.length);
-      if (index > this.recordings.length || index < 1) return alert('There is no such recording!');
-
-      index--;
-
-      this.playAllTracks(index);
-    },
-
-    playAllTracks(index) {
-      this.recordings[index].scenes.forEach(scene => {
-        const source = this.context.createBufferSource();
-        source.buffer = scene.audioBuffer;
-        source.connect(this.masterGain);
-        source.start();
-        console.log('trackId: ' + scene.trackId + ' - download URL: ' + URL.createObjectURL(scene.blob));
-      });
-    },
-
-    stopPlayingExport() {
-      this.exportSource.stop(0);
-      this.playing = false;
-    },
-
-    downloadExport() {
-      const length = this.recordings.length;
-      let index = prompt('Which recording do you want to download? Choose number: 1 to ' + length, 1);
-      index = parseInt(index);
-      if (!index) return alert('Only numers from 1 to ' + length);
-      if (index > length || index < 1) return alert('There is no such recording!');
-      let fileName = 'websynth_export_' + index + ' - ' + new Date().toLocaleDateString('es-AR');
-      fileName = prompt('Export name: ', fileName);
-      if (!fileName) return;
-      index--;
-      this.downloadBlob(this.exportBlobs[index], fileName);
-    },
-
-    downloadBlob(blob, fileName) {
-      const a = document.createElement('a');
-      a.setAttribute('href', URL.createObjectURL(blob));
-      a.setAttribute('download', fileName);
-      a.click();
-    },
-
-    moveCanvas(e) {
-      if (e.wheelDelta > 0) {
-        this.globalX -= 10;
-      } else {
-        this.globalX += 10;
-      }
-
-      this.recordingBars.forEach(recordingBar => {
-        const canvas = this.$refs[`rec-canvas-${recordingBar.trackId}`][0];
-        const ctx = canvas.getContext('2d');
-        const bars = recordingBar.bars;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        for (let i = 0; i < bars.length - this.globalX; i++) {
-          const bar = bars[i + this.globalX] || { y: canvas.height / 2, width: 1, height: 0 };
-          ctx.fillRect(i, bar.y, bar.width, bar.height);
-        }
-      });
-    },
-
-    setupWaveformRender(track) {
-      const analyser = track.trackGainAnalyser;
-      const canvas = this.$refs[`rec-canvas-${track.id}`][0];
-      const recordingBarsObject = {
-        trackId: track.id,
-        bars: [],
-      };
-      this.recordingBars.push(recordingBarsObject);
-
-      const dataObj = {
-        trackId: track.id,
-        analyser,
-        frequencyArray: new Float32Array(analyser.fftSize),
-        canvas,
-        canvasWidth: canvas.width,
-        canvasHeight: canvas.height,
-        ctx: canvas.getContext('2d'),
-        now: parseInt(performance.now()) / this.timeOffset,
-        bars: recordingBarsObject.bars,
-      };
-
-      // function renderWaveformLoop()
-      this[`renderWaveformLoop${track.id}`] = dataObj => {
-        let { analyser, canvasWidth, canvasHeight, ctx, frequencyArray, bars, now, trackId } = dataObj;
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-        if (parseInt(performance.now() / this.timeOffset) > now) {
-          now = parseInt(performance.now() / this.timeOffset);
-          analyser.getFloatTimeDomainData(frequencyArray);
-
-          let sumOfSquares = 0;
-          for (let i = 0; i < frequencyArray.length; i++) {
-            sumOfSquares += frequencyArray[i] ** 2;
-          }
-          const avgPower = sumOfSquares / frequencyArray.length;
-          const freq = avgPower.map(0, 1, 2, canvasHeight);
-
-          bars.push({
-            x: canvasWidth,
-            y: canvasHeight / 2 - freq / 2,
-            height: freq,
-            width: 1,
-          });
-        }
-
-        this.renderWaveformDraw(ctx, bars);
-
-        this.rAFs[track.id] = requestAnimationFrame(
-          this[`renderWaveformLoop${track.id}`].bind(null, dataObj)
-        );
-      };
-
-      this.renderWaveformLoopFunctions.push(`renderWaveformLoop${track.id}`);
-
-      this[`renderWaveformLoop${track.id}`](dataObj);
-    },
-
-    renderWaveformDraw(ctx, bars) {
-      for (let i = 0; i < bars.length; i++) {
-        const bar = bars[i];
-        ctx.fillRect(bar.x, bar.y, bar.width, bar.height);
-        bar.x = bar.x - 1;
-      }
     },
 
     addConfirmLeaveHandler() {

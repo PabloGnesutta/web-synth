@@ -44,11 +44,6 @@
       <!-- Node Body -->
       <component :is="`${Node.nodeType}Body`" :Node="Node" @knobClicked="knobClickedWithRef" />
 
-      <div class="start-stop" v-if="Node.nodeType === 'Carrier'">
-        <div class="start" @click="startOsc()" v-if="Node.status === 'STOPPED'">START</div>
-        <div class="stop" v-else @click="stopOsc()">STOP</div>
-      </div>
-
       <!-- Node Footer -->
       <div class="node-footer">
         <!-- Dry/Wet -->
@@ -198,14 +193,6 @@ export default {
       this.$emit('knobClicked', knobRef);
     },
 
-    startOsc() {
-      this.Node.start(0);
-    },
-
-    stopOsc() {
-      this.Node.stop(0);
-    },
-
     getCssNodeName(name) {
       return name.replace(new RegExp(' ', 'g'), '-');
     },
@@ -337,7 +324,7 @@ export default {
     width: 15px;
     height: 15px;
     background: red;
-    transition: background-color 0.2s ease-out;
+    // transition: background-color 0.2s ease-out;
   }
   .instrument-enabler-inner.enabled {
     background: green;
@@ -345,79 +332,12 @@ export default {
 }
 
 // Specific Node Styles:
-
-.Femod {
-  width: 205px;
-}
-
-.Duette {
-  width: 350px;
-}
-.Surgeon {
-  width: 350px;
-}
-
-.Carrier,
-.WhiteNoise,
-.Drumkit {
-  width: 160px;
-}
-
-.BufferSource {
-  width: 100px;
-}
-
-.EQ3 {
-  width: 210px;
-}
-
-.Delay {
-  width: 160px;
-  .param {
-    min-width: 78px;
-  }
-}
-
-.Looper {
-  width: 140px;
-}
-
 .Compressor {
   width: 200px;
-}
-
-.BiquadFilter {
-  width: 200px;
-}
-
-.Gain {
-  width: 80px;
 }
 
 .node-footer {
   display: flex;
   justify-content: space-around;
-}
-
-.octave-transpose {
-  user-select: none;
-  text-align: right;
-  font-size: 0.9rem;
-  margin-right: 0.5em;
-  .value {
-    color: var(--color-2);
-  }
-}
-
-.start,
-.stop {
-  cursor: pointer;
-  border: 1px solid var(--color-1);
-  padding: 0.2em 0 0.1em;
-  font-weight: bold;
-}
-
-.stop {
-  border: 1px solid red;
 }
 </style>

@@ -131,10 +131,6 @@ export default {
     ...mapGetters(['secondsPerBeat', 'tempo']),
   },
 
-  mounted() {
-    console.log('bq load', this.Node);
-  },
-
   methods: {
     ...mapMutations(['setTempo', 'setSecondsPerBeat']),
 
