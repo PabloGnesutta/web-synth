@@ -12,10 +12,9 @@ class Modulator extends Oscillator {
   static modCount = 0;
 
   constructor() {
-    super(initialGain);
+    super(initialGain, "Modulator", "Modulator");
 
     this.name = "Mod " + ++Modulator.modCount;
-    this.nodeType = "Modulator";
     this.type = "triangle";
     this.frequency = initialFrequency;
 

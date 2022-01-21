@@ -18,7 +18,6 @@ class Node {
       { name: 'nodeType', value: this.nodeType },
     ];
 
-    // todo: remove inputNode as a Gain from all nodes, and replace what now is this.node for node.inputNode, and check connections
     this.inputNode = Node.context.createGain();
     this.outputNode = Node.context.createGain();
 
@@ -27,14 +26,13 @@ class Node {
     this.destroyers = [() => {
       this.outputNode.disconnect();
       this.outputNode = null;
+      this.inputNode.disconnect();
+      this.inputNode = null;
 
       if (this.node) {
         this.node.disconnect();
         this.node = null;
       }
-
-      this.inputNode.disconnect();
-      this.inputNode = null;
     }];
   }
 

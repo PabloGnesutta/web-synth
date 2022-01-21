@@ -2,8 +2,7 @@ const Node = require("../Node");
 
 class Oscillator extends Node {
   constructor(initialGain) {
-    super(initialGain);
-    // this.nodeType = "Oscillator"
+    super(initialGain, "Instrument", "Oscillator");
     this.types = ['sine', 'triangle', 'sawtooth', 'square'];
     this.type = 'triangle';
     this.status = "STOPPED";

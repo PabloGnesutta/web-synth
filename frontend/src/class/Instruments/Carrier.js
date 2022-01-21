@@ -11,11 +11,9 @@ class Carrier extends Oscillator {
   static carrierCount = 0;
 
   constructor() {
-    super(initialGain);
+    super(initialGain, "Instrument", "Carrier");
 
     this.name = "Osc " + ++Carrier.carrierCount;
-    this.nodeType = "Carrier";
-    this.nodeRol = "Instrument";
     this.status = "STOPPED";
 
     this.frequency = initFreq;

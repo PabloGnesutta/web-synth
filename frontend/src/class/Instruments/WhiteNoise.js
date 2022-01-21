@@ -11,11 +11,9 @@ class WhiteNoise extends Node {
   static noiseCount = 0;
 
   constructor() {
-    super(initialGain);
+    super(initialGain, "Instrument", "WhiteNoise");
 
     this.name = name || "Noise " + ++WhiteNoise.noiseCount;
-    this.nodeType = "WhiteNoise";
-    this.nodeRol = "Instrument";
 
     this.playing = false;
 

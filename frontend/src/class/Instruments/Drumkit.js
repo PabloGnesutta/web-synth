@@ -8,11 +8,9 @@ class Drumkit extends Node {
   static drumkitCount = 0;
 
   constructor() {
-    super(initialGain);
+    super(initialGain, "Instrument", "Drumkit");
 
     this.name = "Drumkit " + ++Drumkit.drumkitCount;
-    this.nodeType = "Drumkit";
-    this.nodeRol = "Instrument";
     this.buffers = [];
     this.source = null;
 
