@@ -165,6 +165,8 @@ import Knob from '../components/Knob';
 const timelineProps = {
   recBarWidth: 1,
   timeOffset: 10,
+  backgroundClipColor: '#e59797',
+  carretMovementAmount: 50,
 };
 
 export default {
@@ -215,9 +217,10 @@ export default {
       //Rendering
 
       globalX: 0,
+      globalCanvasWidth: 0,
       renderWaveformLoopFunctions: [],
       recordingBars: [],
-      animationFrameRequests: [],
+      recordingAnimationFrameRequest: null,
       playbackAnimationFrameRequest: null,
 
       //play
@@ -659,10 +662,9 @@ export default {
       this.mediaRecorders = [];
 
       // Cancel animation frames and remove rendering functions
-      this.animationFrameRequests.forEach(rAF => {
-        window.cancelAnimationFrame(rAF);
-      });
-      this.animationFrameRequests = [];
+      window.cancelAnimationFrame(this.recordingAnimationFrameRequest);
+      this.recordingAnimationFrameRequest = null;
+
       for (let i = 0; i < this.renderWaveformLoopFunctions.length; i++) {
         delete this[this.renderWaveformLoopFunctions[i]];
       }
@@ -742,10 +744,13 @@ export default {
 
     setupWaveformRender(tracks) {
       this.recordingBars.push({ recordingId: 1, tracksBars: [] });
+      const dataObject = { barsAdded: 0, renderDataObjects: [] };
 
       tracks.forEach(track => {
         const analyser = track.trackGainAnalyser;
         const canvas = this.$refs[`rec-canvas-${track.id}`][0];
+
+        this.globalCanvasWidth = canvas.width; // todo: ver otra manera de obtener este dato
 
         const recordingBarsObject = {
           trackId: track.id,
@@ -763,41 +768,66 @@ export default {
           bars: recordingBarsObject.bars,
         };
 
-        this[`renderWaveformLoop${track.id}`] = dataObj => {
-          let { analyser, canvasHeight, frequencyArray, bars, now } = dataObj;
-
-          if (performance.now() / timelineProps.timeOffset > now) {
-            now = performance.now() / timelineProps.timeOffset;
-            analyser.getFloatTimeDomainData(frequencyArray);
-
-            let sumOfSquares = 0;
-            for (let i = 0; i < frequencyArray.length; i++) {
-              sumOfSquares += frequencyArray[i] ** 2;
-            }
-            const avgPower = sumOfSquares / frequencyArray.length;
-            const barHeight = avgPower.map(0, 1, 2, canvasHeight);
-
-            bars.push({ height: barHeight });
-          }
-          this.moveCanvas(0);
-
-          this.animationFrameRequests[track.id] = requestAnimationFrame(
-            this[`renderWaveformLoop${track.id}`].bind(null, dataObj)
-          );
-        };
-
-        this.renderWaveformLoopFunctions.push(`renderWaveformLoop${track.id}`);
-
-        this[`renderWaveformLoop${track.id}`](dataObj);
+        dataObject.renderDataObjects.push(dataObj);
       });
+      this.renderWaveformLoop(dataObject, performance.now() / timelineProps.timeOffset);
     },
 
-    renderWaveformDraw(ctx, bars, xCoords, canvasHeight) {
-      for (let x = 0; x < bars.length; x++) {
-        const bar = bars[x];
-        ctx.fillRect(xCoords[x], canvasHeight / 2 - bar.height / 2, timelineProps.recBarWidth, bar.height);
-        xCoords[x] -= timelineProps.recBarWidth;
+    renderWaveformLoop(dataObject, now) {
+      if (performance.now() / timelineProps.timeOffset > now) {
+        dataObject.renderDataObjects.forEach(renderDataObject => {
+          let { analyser, canvasHeight, frequencyArray, bars } = renderDataObject;
+
+          now = performance.now() / timelineProps.timeOffset;
+          analyser.getFloatTimeDomainData(frequencyArray);
+
+          let sumOfSquares = 0;
+          for (let i = 0; i < frequencyArray.length; i++) {
+            sumOfSquares += frequencyArray[i] ** 2;
+          }
+          const avgPower = sumOfSquares / frequencyArray.length;
+          const barHeight = avgPower.map(0, 1, 2, canvasHeight);
+
+          bars.push({ height: barHeight });
+        });
+
+        // Move Carret
+        dataObject.barsAdded++;
+        if (dataObject.barsAdded >= this.globalCanvasWidth) {
+          this.moveCanvas(timelineProps.carretMovementAmount);
+          dataObject.barsAdded -= timelineProps.carretMovementAmount;
+        }
       }
+      this.moveCanvas(0);
+
+      this.recordingAnimationFrameRequest = requestAnimationFrame(
+        this.renderWaveformLoop.bind(null, dataObject, now)
+      );
+    },
+
+    moveCanvas(amount) {
+      this.globalX += amount;
+
+      this.recordingBars[this.currentRecIndex].tracksBars.forEach(trackBars => {
+        const canvas = this.$refs[`rec-canvas-${trackBars.trackId}`][0];
+        const ctx = canvas.getContext('2d');
+        const bars = trackBars.bars;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let x = 0; x < bars.length - this.globalX; x++) {
+          const bar = bars[x + this.globalX];
+          if (bar) {
+            ctx.fillStyle = timelineProps.backgroundClipColor;
+            ctx.fillRect(x * timelineProps.recBarWidth, 0, timelineProps.recBarWidth, canvas.height);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(
+              x * timelineProps.recBarWidth,
+              canvas.height / 2 - bar.height / 2,
+              timelineProps.recBarWidth,
+              bar.height
+            );
+          }
+        }
+      });
     },
 
     onTrackContainerWheel(event) {
@@ -811,36 +841,12 @@ export default {
         timelineProps.recBarWidth += 1 * delta;
         if (timelineProps.recBarWidth < 1) {
           timelineProps.recBarWidth = 1;
+        } else if (timelineProps.recBarWidth > 3) {
+          timelineProps.recBarWidth = 3;
         }
       }
 
       this.moveCanvas(amount * delta);
-    },
-
-    moveCanvas(amount) {
-      this.globalX += amount;
-
-      this.recordingBars[this.currentRecIndex].tracksBars.forEach(trackBars => {
-        const canvas = this.$refs[`rec-canvas-${trackBars.trackId}`][0];
-        const ctx = canvas.getContext('2d');
-        const bars = trackBars.bars;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // ctx.fillRect(this.globalX, 0, 20, canvas.height);
-        for (let x = 0; x < bars.length - this.globalX; x++) {
-          const bar = bars[x + this.globalX];
-          if (bar) {
-            ctx.fillStyle = '#f00';
-            ctx.fillRect(x * timelineProps.recBarWidth, 0, timelineProps.recBarWidth, canvas.height);
-            ctx.fillStyle = '#000';
-            ctx.fillRect(
-              x * timelineProps.recBarWidth,
-              canvas.height / 2 - bar.height / 2,
-              timelineProps.recBarWidth,
-              bar.height
-            );
-          }
-        }
-      });
     },
 
     moveTimielineWithPlayback(now) {
