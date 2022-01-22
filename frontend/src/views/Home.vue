@@ -207,6 +207,7 @@ export default {
       recording: false,
       recordings: [],
       recordingIdCount: 0,
+      currentRecIndex: 0,
       mediaRecorders: [],
       exportDestination: null,
       exports: [],
@@ -214,7 +215,6 @@ export default {
       //Rendering
 
       globalX: 0,
-      // recCanvasWidth: 0,
       renderWaveformLoopFunctions: [],
       recordingBars: [],
       animationFrameRequests: [],
@@ -559,37 +559,10 @@ export default {
             this.transpose++;
             break;
           default:
-            console.log(e.keyCode);
+            // console.log(e.keyCode);
             break;
         }
       }
-    },
-
-    // SAVE/LOAD
-
-    loadSave(tracks) {
-      tracks.forEach(track => {
-        this.loadInstrument(t.instrument);
-
-        track.effects.forEach(effectSaveString => {
-          this.loadEffect(effectSaveString);
-        });
-      });
-    },
-    loadPreset(saveString) {
-      if (saveString.nodeRol === 'Instrument') {
-        this.loadInstrument(saveString);
-      } else {
-        this.loadEffect(saveString);
-      }
-    },
-    loadInstrument(instSaveString) {
-      const instrument = createInstrument(instSaveString.nodeType, instSaveString);
-      this.createTrack(instrument);
-    },
-    loadEffect(effectSaveString) {
-      const effect = createEffect(effectSaveString.nodeType, effectSaveString);
-      this.insertEffect(effect);
     },
 
     // RECORDING
@@ -601,6 +574,8 @@ export default {
       this.startRecAllTracks();
     },
     startRecAllTracks() {
+      this.currentRecIndex = this.recordings.length;
+
       const recordingObject = {
         id: this.recordingIdCount,
         trackClips: [],
@@ -609,7 +584,8 @@ export default {
       this.recordings.push(recordingObject);
 
       const recordingTracks = this.tracks.filter(track => track.recEnabled);
-
+      const tracksTotal = recordingTracks.length;
+      let tracksProcessed = 0;
       recordingTracks.forEach(track => {
         let chunks = [];
         let mediaStreamDestination = this.context.createMediaStreamDestination();
@@ -629,6 +605,10 @@ export default {
             const arrayBuffer = blobFileReader.result;
             this.context.decodeAudioData(arrayBuffer, audioBuffer => {
               recordingObject.trackClips.push({ trackId: track.id, audioBuffer, blob, waveformBarCount: 0 });
+              tracksProcessed++;
+              if (tracksProcessed >= tracksTotal) {
+                this.onRecordingFinished();
+              }
             });
           };
 
@@ -688,10 +668,19 @@ export default {
       }
       this.renderWaveformLoopFunctions = [];
 
-      console.log('recording bars', this.recordingBars);
-      console.log('recordings', this.recordings);
       this.globalX = 0;
       this.moveCanvas(0);
+    },
+    onRecordingFinished() {
+      const currentRecording = this.recordings[this.currentRecIndex];
+      const duration = currentRecording.trackClips[0].audioBuffer.duration;
+      const recordingBarCount = this.recordingBars[this.currentRecIndex].tracksBars[0].bars.length;
+      currentRecording.duration = duration;
+      currentRecording.recordingBarCount = recordingBarCount;
+      currentRecording.barTimeSpan = duration / recordingBarCount;
+      currentRecording.startingBar = this.recordings[this.currentRecIndex - 1]
+        ? this.recordings[this.currentRecIndex - 1].recordingBarCount + 1
+        : 0;
     },
     stopRecExport() {
       this.masterGain.disconnect(this.exportDestination);
@@ -711,20 +700,23 @@ export default {
       if (!index) return alert('Only numers from 1 to ' + this.recordings.length);
       if (index > this.recordings.length || index < 1) return alert('There is no such recording!');
       index--;
-      // let index = 0; // comment this
-      this.currentRecordingPlaybackIndex = index;
+      this.currentRecIndex = index;
 
-      this.playAllTracks(index);
+      this.playAllTracks();
     },
 
-    playAllTracks(index) {
+    playAllTracks() {
+      const offset = this.recordings[this.currentRecIndex].barTimeSpan * this.globalX;
+      if (offset < 0) {
+        return;
+      }
+
       this.playing = true;
-      this.recordings[index].trackClips.forEach(trackClip => {
+      this.recordings[this.currentRecIndex].trackClips.forEach(trackClip => {
         trackClip.source = this.context.createBufferSource();
         trackClip.source.buffer = trackClip.audioBuffer;
         trackClip.source.connect(this.masterGain);
 
-        const offset = 0;
         trackClip.source.start(0, offset);
 
         trackClip.source.onended = () => {
@@ -734,13 +726,11 @@ export default {
           this.moveCanvas(0);
         };
       });
-      this.globalX = 0;
-      this.moveCanvas(0);
       this.moveTimielineWithPlayback(performance.now() / timelineProps.timeOffset);
     },
 
     stopAllTracks() {
-      this.recordings[this.currentRecordingPlaybackIndex].trackClips.forEach(trackClip => {
+      this.recordings[this.currentRecIndex].trackClips.forEach(trackClip => {
         trackClip.source.stop(0);
         delete trackClip.source;
       });
@@ -748,29 +738,11 @@ export default {
       this.playing = false;
     },
 
-    downloadExport() {
-      const length = this.recordings.length;
-      let index = prompt('Which recording do you want to download? Choose number: 1 to ' + length, 1);
-      index = parseInt(index);
-      if (!index) return alert('Only numers from 1 to ' + length);
-      if (index > length || index < 1) return alert('There is no such recording!');
-      let fileName = 'websynth_export_' + index + ' - ' + new Date().toLocaleDateString('es-AR');
-      fileName = prompt('Export name: ', fileName);
-      if (!fileName) return;
-      index--;
-      this.downloadBlob(this.exports[index].blob, fileName);
-    },
-
-    downloadBlob(blob, fileName) {
-      const a = document.createElement('a');
-      a.setAttribute('href', URL.createObjectURL(blob));
-      a.setAttribute('download', fileName);
-      a.click();
-    },
-
     // RENDERING
 
     setupWaveformRender(tracks) {
+      this.recordingBars.push({ recordingId: 1, tracksBars: [] });
+
       tracks.forEach(track => {
         const analyser = track.trackGainAnalyser;
         const canvas = this.$refs[`rec-canvas-${track.id}`][0];
@@ -779,24 +751,20 @@ export default {
           trackId: track.id,
           bars: [],
         };
-        this.recordingBars.push(recordingBarsObject);
+        this.recordingBars[this.currentRecIndex].tracksBars.push(recordingBarsObject);
 
         const dataObj = {
           trackId: track.id,
           analyser,
           frequencyArray: new Float32Array(analyser.fftSize),
           canvas,
-          canvasWidth: canvas.width,
           canvasHeight: canvas.height,
-          ctx: canvas.getContext('2d'),
           now: performance.now() / timelineProps.timeOffset,
           bars: recordingBarsObject.bars,
-          // xCoords: [],
         };
 
         this[`renderWaveformLoop${track.id}`] = dataObj => {
-          let { analyser, canvasWidth, canvasHeight, ctx, frequencyArray, bars, xCoords, now } = dataObj;
-          ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+          let { analyser, canvasHeight, frequencyArray, bars, now } = dataObj;
 
           if (performance.now() / timelineProps.timeOffset > now) {
             now = performance.now() / timelineProps.timeOffset;
@@ -852,23 +820,25 @@ export default {
     moveCanvas(amount) {
       this.globalX += amount;
 
-      this.recordingBars.forEach(recordingBar => {
-        const canvas = this.$refs[`rec-canvas-${recordingBar.trackId}`][0];
+      this.recordingBars[this.currentRecIndex].tracksBars.forEach(trackBars => {
+        const canvas = this.$refs[`rec-canvas-${trackBars.trackId}`][0];
         const ctx = canvas.getContext('2d');
-        const bars = recordingBar.bars;
-        // ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const bars = trackBars.bars;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         // ctx.fillRect(this.globalX, 0, 20, canvas.height);
         for (let x = 0; x < bars.length - this.globalX; x++) {
-          const bar = bars[x + this.globalX] || { y: 0, height: 0 };
-          ctx.fillStyle = '#f00';
-          ctx.fillRect(x * timelineProps.recBarWidth, 0, timelineProps.recBarWidth, canvas.height);
-          ctx.fillStyle = '#000';
-          ctx.fillRect(
-            x * timelineProps.recBarWidth,
-            canvas.height / 2 - bar.height / 2,
-            timelineProps.recBarWidth,
-            bar.height
-          );
+          const bar = bars[x + this.globalX];
+          if (bar) {
+            ctx.fillStyle = '#f00';
+            ctx.fillRect(x * timelineProps.recBarWidth, 0, timelineProps.recBarWidth, canvas.height);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(
+              x * timelineProps.recBarWidth,
+              canvas.height / 2 - bar.height / 2,
+              timelineProps.recBarWidth,
+              bar.height
+            );
+          }
         }
       });
     },
@@ -882,6 +852,55 @@ export default {
       this.playbackAnimationFrameRequest = requestAnimationFrame(
         this.moveTimielineWithPlayback.bind(null, now)
       );
+    },
+
+    // SAVE/LOAD
+
+    loadSave(tracks) {
+      tracks.forEach(track => {
+        this.loadInstrument(t.instrument);
+
+        track.effects.forEach(effectSaveString => {
+          this.loadEffect(effectSaveString);
+        });
+      });
+    },
+    loadPreset(saveString) {
+      if (saveString.nodeRol === 'Instrument') {
+        this.loadInstrument(saveString);
+      } else {
+        this.loadEffect(saveString);
+      }
+    },
+    loadInstrument(instSaveString) {
+      const instrument = createInstrument(instSaveString.nodeType, instSaveString);
+      this.createTrack(instrument);
+    },
+    loadEffect(effectSaveString) {
+      const effect = createEffect(effectSaveString.nodeType, effectSaveString);
+      this.insertEffect(effect);
+    },
+
+    // EXPORT
+
+    downloadExport() {
+      const length = this.recordings.length;
+      let index = prompt('Which recording do you want to download? Choose number: 1 to ' + length, 1);
+      index = parseInt(index);
+      if (!index) return alert('Only numers from 1 to ' + length);
+      if (index > length || index < 1) return alert('There is no such recording!');
+      let fileName = 'websynth_export_' + index + ' - ' + new Date().toLocaleDateString('es-AR');
+      fileName = prompt('Export name: ', fileName);
+      if (!fileName) return;
+      index--;
+      this.downloadBlob(this.exports[index].blob, fileName);
+    },
+
+    downloadBlob(blob, fileName) {
+      const a = document.createElement('a');
+      a.setAttribute('href', URL.createObjectURL(blob));
+      a.setAttribute('download', fileName);
+      a.click();
     },
 
     // MIDI
