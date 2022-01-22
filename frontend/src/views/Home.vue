@@ -949,6 +949,7 @@ export default {
       const note = data[1];
       const value = data[2];
 
+      // todo: dynamically point to the propper function insted of this if statement
       if (this.mapping) {
         let refName = this.refBeignMapped.$vnode.data.ref;
         const existingMap = this.midiMappings.find(m => m.refName === refName);
@@ -970,13 +971,16 @@ export default {
         const command = binary.substr(0, 4);
         const channel = parseInt(binary.substr(4, 4), 2) + 1;
 
-        //note on / note off / sustain pedal
-        if (command === '1001') this.triggerNoteOn(note, channel);
-        else if (command === '1000') this.triggerNoteOff(note, channel);
-        // else if (command === "1011")
-        //   console.log("sustain pedal pressed", value);
-        else {
-          //turn knob
+        if (command === '1001') {
+          // note on
+          this.triggerNoteOn(note, channel);
+        } else if (command === '1000') {
+          // note off
+          this.triggerNoteOff(note, channel);
+        } else if (command === '1011') {
+          // sustain pedal
+        } else {
+          // knob
           const mappedItem = this.midiMappings.find(m => m.cmd === status && m.note === note);
           if (!mappedItem) return;
           const knob = mappedItem.ref;
