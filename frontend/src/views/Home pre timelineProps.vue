@@ -162,11 +162,6 @@ import Sidebar from '../components/Sidebar';
 import Click from '../components/Click';
 import Knob from '../components/Knob';
 
-const timelineProps = {
-  recBarWidth: 1,
-  timeOffset: 10,
-};
-
 export default {
   name: 'Home',
   components: {
@@ -212,9 +207,10 @@ export default {
       exports: [],
 
       //Rendering
-
+      recBarWidth: 1,
+      timeOffset: 10,
       globalX: 0,
-      // recCanvasWidth: 0,
+      recCanvasWidth: 0,
       renderWaveformLoopFunctions: [],
       recordingBars: [],
       animationFrameRequests: [],
@@ -597,20 +593,18 @@ export default {
     startRec() {
       this.recordingIdCount++;
       this.recording = true;
-      this.startRecExport();
-      this.startRecAllTracks();
+      this.startExportRec();
+      this.startTracksRec();
     },
-    startRecAllTracks() {
-      const recordingObject = {
-        id: this.recordingIdCount,
-        trackClips: [],
-      };
-
-      this.recordings.push(recordingObject);
-
+    startTracksRec() {
+      const scenes = [];
       const recordingTracks = this.tracks.filter(track => track.recEnabled);
+      const totalRecordingTracks = recordingTracks.length;
+      let processedTracks = 0;
 
       recordingTracks.forEach(track => {
+        this.setupWaveformRender(track);
+
         let chunks = [];
         let mediaStreamDestination = this.context.createMediaStreamDestination();
         track.trackGain.connectNativeNode(mediaStreamDestination);
@@ -628,7 +622,10 @@ export default {
           blobFileReader.onloadend = () => {
             const arrayBuffer = blobFileReader.result;
             this.context.decodeAudioData(arrayBuffer, audioBuffer => {
-              recordingObject.trackClips.push({ trackId: track.id, audioBuffer, blob, waveformBarCount: 0 });
+              scenes.push({ trackId: track.id, audioBuffer, blob, waveformBarCount: 0 });
+              if (++processedTracks === totalRecordingTracks) {
+                this.recordingIsReady(scenes);
+              }
             });
           };
 
@@ -639,9 +636,8 @@ export default {
 
         mediaRecorder.start();
       });
-      this.setupWaveformRender(recordingTracks);
     },
-    startRecExport() {
+    startExportRec() {
       let exportChunks = [];
       this.exportDestination = this.context.createMediaStreamDestination();
       this.masterGain.connect(this.exportDestination);
@@ -688,7 +684,9 @@ export default {
       }
       this.renderWaveformLoopFunctions = [];
 
-      console.log('recording bars', this.recordingBars);
+      // this.globalX = this.recordingBars[0].bars.length - this.recCanvasWidth;
+      // for (let i = 0; )
+      console.log('recordong bars', this.recordingBars);
       console.log('recordings', this.recordings);
       this.globalX = 0;
       this.moveCanvas(0);
@@ -698,6 +696,15 @@ export default {
       this.exportDestination = null;
       this.exportMediaRecorder.stop();
       this.exportMediaRecorder = null;
+    },
+
+    recordingIsReady(scenes) {
+      const name = prompt('Recording Name', 'Recording Nº ' + this.recordingIdCount);
+      this.recordings.push({
+        id: this.recordingIdCount,
+        name,
+        scenes,
+      });
     },
 
     // PLAYBACK
@@ -711,7 +718,6 @@ export default {
       if (!index) return alert('Only numers from 1 to ' + this.recordings.length);
       if (index > this.recordings.length || index < 1) return alert('There is no such recording!');
       index--;
-      // let index = 0; // comment this
       this.currentRecordingPlaybackIndex = index;
 
       this.playAllTracks(index);
@@ -719,15 +725,19 @@ export default {
 
     playAllTracks(index) {
       this.playing = true;
-      this.recordings[index].trackClips.forEach(trackClip => {
-        trackClip.source = this.context.createBufferSource();
-        trackClip.source.buffer = trackClip.audioBuffer;
-        trackClip.source.connect(this.masterGain);
+      this.recordings[index].scenes.forEach(scene => {
+        scene.source = this.context.createBufferSource();
+        scene.source.buffer = scene.audioBuffer;
+        scene.source.connect(this.masterGain);
 
         const offset = 0;
-        trackClip.source.start(0, offset);
+        console.log('duration', scene.source.buffer.duration);
+        console.log('globalX', this.globalX);
+        console.log('offset', offset);
 
-        trackClip.source.onended = () => {
+        scene.source.start(0, offset);
+
+        scene.source.onended = () => {
           this.playing = false;
           window.cancelAnimationFrame(this.playbackAnimationFrameRequest);
           this.globalX = 0;
@@ -736,13 +746,13 @@ export default {
       });
       this.globalX = 0;
       this.moveCanvas(0);
-      this.moveTimielineWithPlayback(performance.now() / timelineProps.timeOffset);
+      this.moveTimielineWithPlayback(performance.now() / this.timeOffset);
     },
 
     stopAllTracks() {
-      this.recordings[this.currentRecordingPlaybackIndex].trackClips.forEach(trackClip => {
-        trackClip.source.stop(0);
-        delete trackClip.source;
+      this.recordings[this.currentRecordingPlaybackIndex].scenes.forEach(scene => {
+        scene.source.stop(0);
+        delete scene.source;
       });
       window.cancelAnimationFrame(this.playbackAnimationFrameRequest);
       this.playing = false;
@@ -770,83 +780,86 @@ export default {
 
     // RENDERING
 
-    setupWaveformRender(tracks) {
-      tracks.forEach(track => {
-        const analyser = track.trackGainAnalyser;
-        const canvas = this.$refs[`rec-canvas-${track.id}`][0];
+    setupWaveformRender(track) {
+      const analyser = track.trackGainAnalyser;
+      const canvas = this.$refs[`rec-canvas-${track.id}`][0];
+      this.recCanvasWidth = canvas.width;
+      const recordingBarsObject = {
+        trackId: track.id,
+        bars: [],
+      };
+      // todo: make recording bars a table with recording ID so the we can
+      // copute de ratio between amount of bars / buffer duration
+      this.recordingBars.push(recordingBarsObject);
 
-        const recordingBarsObject = {
-          trackId: track.id,
-          bars: [],
-        };
-        this.recordingBars.push(recordingBarsObject);
+      const dataObj = {
+        trackId: track.id,
+        analyser,
+        frequencyArray: new Float32Array(analyser.fftSize),
+        canvas,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        ctx: canvas.getContext('2d'),
+        now: performance.now() / this.timeOffset,
+        bars: recordingBarsObject.bars,
+        xCoords: [],
+      };
 
-        const dataObj = {
-          trackId: track.id,
-          analyser,
-          frequencyArray: new Float32Array(analyser.fftSize),
-          canvas,
-          canvasWidth: canvas.width,
-          canvasHeight: canvas.height,
-          ctx: canvas.getContext('2d'),
-          now: performance.now() / timelineProps.timeOffset,
-          bars: recordingBarsObject.bars,
-          // xCoords: [],
-        };
+      // this.t1 = 0;
+      // this.t2 = 0;
 
-        this[`renderWaveformLoop${track.id}`] = dataObj => {
-          let { analyser, canvasWidth, canvasHeight, ctx, frequencyArray, bars, xCoords, now } = dataObj;
-          ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      this[`renderWaveformLoop${track.id}`] = dataObj => {
+        let { analyser, canvasWidth, canvasHeight, ctx, frequencyArray, bars, xCoords, now } = dataObj;
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-          if (performance.now() / timelineProps.timeOffset > now) {
-            now = performance.now() / timelineProps.timeOffset;
-            analyser.getFloatTimeDomainData(frequencyArray);
+        if (performance.now() / this.timeOffset > now) {
+          // console.log('elap', this.t2, 'track', track.id);
+          // this.t2 = 0;
 
-            let sumOfSquares = 0;
-            for (let i = 0; i < frequencyArray.length; i++) {
-              sumOfSquares += frequencyArray[i] ** 2;
-            }
-            const avgPower = sumOfSquares / frequencyArray.length;
-            const barHeight = avgPower.map(0, 1, 2, canvasHeight);
+          now = performance.now() / this.timeOffset;
+          analyser.getFloatTimeDomainData(frequencyArray);
 
-            bars.push({ height: barHeight });
+          let sumOfSquares = 0;
+          for (let i = 0; i < frequencyArray.length; i++) {
+            sumOfSquares += frequencyArray[i] ** 2;
           }
-          this.moveCanvas(0);
+          const avgPower = sumOfSquares / frequencyArray.length;
+          const barHeight = avgPower.map(0, 1, 2, canvasHeight);
 
-          this.animationFrameRequests[track.id] = requestAnimationFrame(
-            this[`renderWaveformLoop${track.id}`].bind(null, dataObj)
-          );
-        };
+          bars.push({ height: barHeight });
+          xCoords.push(canvasWidth);
+        }
 
-        this.renderWaveformLoopFunctions.push(`renderWaveformLoop${track.id}`);
+        this.renderWaveformDraw(ctx, bars, xCoords, canvasHeight);
 
-        this[`renderWaveformLoop${track.id}`](dataObj);
-      });
+        this.animationFrameRequests[track.id] = requestAnimationFrame(
+          this[`renderWaveformLoop${track.id}`].bind(null, dataObj)
+        );
+
+        // const elap = this.animationFrameRequests[track.id] - this.t1;
+        // this.t1 = this.animationFrameRequests[track.id];
+        // this.t2 += elap;
+      };
+
+      this.renderWaveformLoopFunctions.push(`renderWaveformLoop${track.id}`);
+
+      this[`renderWaveformLoop${track.id}`](dataObj);
     },
 
     renderWaveformDraw(ctx, bars, xCoords, canvasHeight) {
       for (let x = 0; x < bars.length; x++) {
         const bar = bars[x];
-        ctx.fillRect(xCoords[x], canvasHeight / 2 - bar.height / 2, timelineProps.recBarWidth, bar.height);
-        xCoords[x] -= timelineProps.recBarWidth;
+        ctx.fillRect(xCoords[x], canvasHeight / 2 - bar.height / 2, this.recBarWidth, bar.height);
+        xCoords[x]--;
       }
     },
 
     onTrackContainerWheel(event) {
       let amount = 10;
-      let delta = 1;
       if (event.wheelDelta > 0) {
-        delta = -1;
+        amount = -10;
       }
-      if (event.shiftKey) {
-        amount = 0;
-        timelineProps.recBarWidth += 1 * delta;
-        if (timelineProps.recBarWidth < 1) {
-          timelineProps.recBarWidth = 1;
-        }
-      }
-
-      this.moveCanvas(amount * delta);
+      this.moveCanvas(amount);
     },
 
     moveCanvas(amount) {
@@ -856,26 +869,18 @@ export default {
         const canvas = this.$refs[`rec-canvas-${recordingBar.trackId}`][0];
         const ctx = canvas.getContext('2d');
         const bars = recordingBar.bars;
-        // ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // ctx.fillRect(this.globalX, 0, 20, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
         for (let x = 0; x < bars.length - this.globalX; x++) {
           const bar = bars[x + this.globalX] || { y: 0, height: 0 };
-          ctx.fillStyle = '#f00';
-          ctx.fillRect(x * timelineProps.recBarWidth, 0, timelineProps.recBarWidth, canvas.height);
-          ctx.fillStyle = '#000';
-          ctx.fillRect(
-            x * timelineProps.recBarWidth,
-            canvas.height / 2 - bar.height / 2,
-            timelineProps.recBarWidth,
-            bar.height
-          );
+          ctx.fillRect(x, canvas.height / 2 - bar.height / 2, this.recBarWidth, bar.height);
         }
       });
     },
 
     moveTimielineWithPlayback(now) {
-      if (performance.now() / timelineProps.timeOffset > now) {
-        now = performance.now() / timelineProps.timeOffset;
+      if (performance.now() / this.timeOffset > now) {
+        now = performance.now() / this.timeOffset;
         this.moveCanvas(1);
       }
 
