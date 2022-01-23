@@ -9,7 +9,7 @@
           @stopRec="stopRec"
           @playExport="playRecording"
           @downloadExport="downloadExport"
-          @stopPlayingExport="stopAllTracks"
+          @stopPlayingExport="stopPlaybackAllTracks"
           @loadSave="loadSave"
           @toggleMapping="toggleMapping"
           :octave="octave"
@@ -59,7 +59,7 @@
 
                 <!-- Rec Canvas -->
                 <div class="rec-canvas">
-                  <canvas :ref="`rec-canvas-${track.id}`"></canvas>
+                  <canvas :ref="`rec-canvas-${track.id}`" height="64"></canvas>
                 </div>
 
                 <!-- Track Gain and Controls -->
@@ -67,6 +67,7 @@
                   :Node="track.trackGain"
                   :analyser="track.trackGainAnalyser"
                   :recEnabled="track.recEnabled"
+                  :selected="currentTrackIndex === t"
                   @toggleRecEnabled="toggleRecEnabled(t)"
                   @knobClicked="knobClicked"
                 />
@@ -167,6 +168,7 @@ const timelineProps = {
   timeOffset: 10,
   backgroundClipColor: '#e59797',
   carretMovementAmount: 50,
+  height: 64,
 };
 
 export default {
@@ -562,7 +564,7 @@ export default {
             this.transpose++;
             break;
           default:
-            // console.log(e.keyCode);
+            // console.llllog(e.keyCode);
             break;
         }
       }
@@ -669,9 +671,6 @@ export default {
         delete this[this.renderWaveformLoopFunctions[i]];
       }
       this.renderWaveformLoopFunctions = [];
-
-      this.globalX = 0;
-      this.moveCanvas(0);
     },
     onRecordingFinished() {
       const currentRecording = this.recordings[this.currentRecIndex];
@@ -724,14 +723,12 @@ export default {
         trackClip.source.onended = () => {
           this.playing = false;
           window.cancelAnimationFrame(this.playbackAnimationFrameRequest);
-          this.globalX = 0;
-          this.moveCanvas(0);
         };
       });
       this.moveTimielineWithPlayback(performance.now() / timelineProps.timeOffset);
     },
 
-    stopAllTracks() {
+    stopPlaybackAllTracks() {
       this.recordings[this.currentRecIndex].trackClips.forEach(trackClip => {
         trackClip.source.stop(0);
         delete trackClip.source;
@@ -748,7 +745,9 @@ export default {
 
       tracks.forEach(track => {
         const analyser = track.trackGainAnalyser;
+        const canvasContainer = document.querySelector('.rec-canvas');
         const canvas = this.$refs[`rec-canvas-${track.id}`][0];
+        canvas.width = canvasContainer.offsetWidth;
 
         this.globalCanvasWidth = canvas.width; // todo: ver otra manera de obtener este dato
 
@@ -763,7 +762,6 @@ export default {
           analyser,
           frequencyArray: new Float32Array(analyser.fftSize),
           canvas,
-          canvasHeight: canvas.height,
           now: performance.now() / timelineProps.timeOffset,
           bars: recordingBarsObject.bars,
         };
@@ -776,7 +774,7 @@ export default {
     renderWaveformLoop(dataObject, now) {
       if (performance.now() / timelineProps.timeOffset > now) {
         dataObject.renderDataObjects.forEach(renderDataObject => {
-          let { analyser, canvasHeight, frequencyArray, bars } = renderDataObject;
+          let { analyser, frequencyArray, bars } = renderDataObject;
 
           now = performance.now() / timelineProps.timeOffset;
           analyser.getFloatTimeDomainData(frequencyArray);
@@ -786,7 +784,7 @@ export default {
             sumOfSquares += frequencyArray[i] ** 2;
           }
           const avgPower = sumOfSquares / frequencyArray.length;
-          const barHeight = avgPower.map(0, 1, 2, canvasHeight);
+          const barHeight = avgPower.map(0, 1, 2, timelineProps.height);
 
           bars.push({ height: barHeight });
         });
@@ -806,22 +804,24 @@ export default {
     },
 
     moveCanvas(amount) {
-      this.globalX += amount;
+      if (this.globalX + amount >= 0) {
+        this.globalX += amount;
+      }
 
       this.recordingBars[this.currentRecIndex].tracksBars.forEach(trackBars => {
         const canvas = this.$refs[`rec-canvas-${trackBars.trackId}`][0];
         const ctx = canvas.getContext('2d');
         const bars = trackBars.bars;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, timelineProps.height);
         for (let x = 0; x < bars.length - this.globalX; x++) {
           const bar = bars[x + this.globalX];
           if (bar) {
             ctx.fillStyle = timelineProps.backgroundClipColor;
-            ctx.fillRect(x * timelineProps.recBarWidth, 0, timelineProps.recBarWidth, canvas.height);
+            ctx.fillRect(x * timelineProps.recBarWidth, 0, timelineProps.recBarWidth, timelineProps.height);
             ctx.fillStyle = '#000';
             ctx.fillRect(
               x * timelineProps.recBarWidth,
-              canvas.height / 2 - bar.height / 2,
+              timelineProps.height / 2 - bar.height / 2,
               timelineProps.recBarWidth,
               bar.height
             );
@@ -998,9 +998,7 @@ export default {
       }
     },
 
-    onMIDIFailure() {
-      console.log('Could not access your MIDI devices.');
-    },
+    onMIDIFailure() {},
 
     addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {
@@ -1070,15 +1068,10 @@ export default {
   justify-content: space-between;
 
   background: #111;
-  border: 2px solid transparent;
-  margin: 0 auto 0.5em;
-}
-.track:last-child {
-  margin: 0;
+  margin-bottom: 1px;
 }
 .track.selected {
   background: #333;
-  border: 2px solid #ff857c;
 }
 .track-inner-left {
   display: flex;
@@ -1094,7 +1087,7 @@ export default {
 .rec-canvas {
   background: white;
   flex: 1;
-  height: 60px;
+  height: 64px;
   margin-left: 0.5rem;
 }
 
