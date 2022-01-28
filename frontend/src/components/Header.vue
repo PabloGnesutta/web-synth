@@ -7,13 +7,13 @@
 
       <div class="buttons">
         <!-- REC -->
-        <div v-if="!recording && !playing" class="btn btn-2 rec" @click="startRec">REC</div>
+        <div v-if="!recording" class="btn btn-2 rec" @click="startRec">REC</div>
         <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">STOP REC</div>
 
         <!-- PLAY/STOP -->
         <div class="play-stop" v-if="recordingsAvailable">
           <div v-if="!playing && !recording" class="btn start-playing" @click="playExport">Play</div>
-          <div v-if="playing" class="btn stop-playing" @click="stopPlayingExport">Stop</div>
+          <div v-if="playing && !recording" class="btn stop-playing" @click="stopPlayingExport">Stop</div>
         </div>
         <div v-if="recordingsAvailable && !recording" class="btn btn-export-download" @click="downloadExport">
           Download

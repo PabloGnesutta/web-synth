@@ -64,7 +64,11 @@
                 </div>
 
                 <!-- Rec Canvas -->
-                <div class="rec-canvas">
+                <div
+                  class="rec-canvas-container"
+                  :ref="`rec-canvas-container-${track.id}`"
+                  @click="onCanvasClick($event, track.id)"
+                >
                   <canvas :ref="`rec-canvas-${track.id}`" :height="timeline.height"></canvas>
                 </div>
 
@@ -80,7 +84,7 @@
                 />
               </div>
 
-              <div class="canvas-overlay" @click="positionCursor">
+              <div class="canvas-overlay">
                 <canvas ref="canvas-overlay" :width="timeline.width"></canvas>
               </div>
             </div>
@@ -219,7 +223,31 @@ export default {
       exportDestination: null,
       exports: [],
 
-      trackClips: {},
+      // define tracClips
+      trackClips: {
+        /*
+        trackId0: [
+          {
+            clipId: int,
+            blob,
+            buffer,
+            bars,
+            duration,
+            barCount,
+            barDuration,
+            xPos,
+            playing: bool,
+            source: audioBufferSource (temporary)
+          },
+          {
+            clipId: int,
+            (...)
+          }
+        ],
+        trackId1: [...]
+        
+      */
+      },
 
       //Rendering
 
@@ -227,28 +255,24 @@ export default {
         barWidth: 1,
         timeOffset: 10,
         bgColor: '#e5979750',
+        selectedColor: '#1a7cc150',
         carretMovementAmount: 50,
         height: 64,
-        width: 0,
+        width: undefined,
       },
-
       trackProps: {
         width: undefined,
         gainBodyWidth: 247,
         innerLefttWidth: 180,
         innerLefttMargin: 8,
       },
-
       globalX: 0,
       cursorX: 0,
-      globalCanvasWidth: 0,
-      recordingBars: [],
-      recordingAnimationFrameRequest: null,
-      playbackAnimationFrameRequest: null,
+      recordingRaf: null,
+      playbackRaf: null,
 
       //play
       playing: false,
-      playingBuffers: [],
 
       octave: 3,
       transpose: 0,
@@ -362,6 +386,7 @@ export default {
 
       this.trackClips[this.trackIdCount] = [];
       this.canvasOverlay.height = this.timeline.height * this.tracks.length;
+      this.renderCursor();
 
       // key/touch listeners
       if (instrument.nodeType === 'Drumkit') {
@@ -379,8 +404,7 @@ export default {
           trackName: this.currentTrack.name,
         });
       }
-
-      // this.$nextTick(() => { // todo: scroll to bottom of container });
+      // scroll
     },
 
     deleteTrack(trackIndex) {
@@ -590,9 +614,20 @@ export default {
         }
       } else {
         switch (e.keyCode) {
-          case 32: //space bar - rec/stop
+          case 13: //enter - rec/stop
             if (this.recording) this.stopRec();
             else this.startRec();
+            break;
+          case 32: //space bar - play/pause
+            if (this.recording) return this.stopRec();
+            if (this.playing) this.onStop();
+            else this.onPlay();
+            break;
+          case 37: //arrow left - move cursor
+            if (!this.recording && !this.playing) this.moveCursor(-20);
+            break;
+          case 39: //arrow right - move cursor
+            if (!this.recording && !this.playing) this.moveCursor(20);
             break;
 
           case 46: //delete - delete current track
@@ -615,7 +650,7 @@ export default {
             this.transpose++;
             break;
           default:
-            // console.llllog(e.keyCode);
+            console.log(e.keyCode);
             break;
         }
       }
@@ -627,13 +662,13 @@ export default {
     startRec() {
       this.recordingIdCount++;
       this.recording = true;
-      // this.startRecExport();
       this.startRecAllTracks();
     },
     startRecAllTracks() {
       const recordingTracks = this.tracks.filter(track => track.recEnabled);
       const tracksTotal = recordingTracks.length;
       let tracksProcessed = 0;
+
       recordingTracks.forEach(track => {
         let chunks = [];
         let mediaStreamDestination = this.context.createMediaStreamDestination();
@@ -648,12 +683,14 @@ export default {
 
         //init trackClip
         this.trackClips[track.id].push({
-          xPos: newClipXPos,
-          playing: false,
           id: this.trackClips[track.id].length,
+          xPos: this.cursorX,
+          playing: true,
         });
 
-        this.cursorX = newClipXPos;
+        const clip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
+
+        // this.cursorX = newClipXPos;
         this.renderCursor();
 
         // When recording's finished, process data chunk
@@ -665,8 +702,8 @@ export default {
           blobFileReader.onloadend = () => {
             const arrayBuffer = blobFileReader.result;
             this.context.decodeAudioData(arrayBuffer, audioBuffer => {
-              this.trackClips[track.id][this.trackClips[track.id].length - 1].blob = blob;
-              this.trackClips[track.id][this.trackClips[track.id].length - 1].buffer = audioBuffer;
+              clip.blob = blob;
+              clip.buffer = audioBuffer;
 
               tracksProcessed++;
               if (tracksProcessed >= tracksTotal) {
@@ -690,6 +727,7 @@ export default {
     stopRec() {
       this.stopRecAllTracks();
       this.recording = false;
+      this.playing = false;
     },
     stopRecAllTracks() {
       this.mediaRecorders.forEach(mediaRecorder => {
@@ -697,8 +735,8 @@ export default {
       });
       this.mediaRecorders = [];
 
-      window.cancelAnimationFrame(this.recordingAnimationFrameRequest);
-      this.recordingAnimationFrameRequest = null;
+      window.cancelAnimationFrame(this.recordingRaf);
+      this.recordingRaf = null;
     },
 
     onRecFinish(recordingTracks) {
@@ -727,22 +765,26 @@ export default {
     },
 
     onStop() {
-      window.cancelAnimationFrame(this.playbackAnimationFrameRequest);
+      window.cancelAnimationFrame(this.playbackRaf);
       this.playing = false;
-      // this.globalX = 0;
-      this.renderCanvas();
-      this.renderCursor();
+      for (const trackId in this.trackClips) {
+        this.trackClips[trackId].forEach(clip => {
+          if (clip.playing) {
+            clip.source.stop(0);
+          }
+        });
+      }
     },
 
     // RENDERING
 
     setupCaptureBars(tracks) {
-      this.recordingBars.push({ recordingId: 1, tracksBars: [] });
-      const dataObject = { renderDataObjects: [] };
+      this.playing = true;
+      const renderDataObjects = [];
 
       tracks.forEach(track => {
         const analyser = track.trackGainAnalyser;
-        const canvasContainer = document.querySelector('.rec-canvas');
+        const canvasContainer = document.querySelector('.rec-canvas-container');
         const canvas = this.$refs[`rec-canvas-${track.id}`][0];
         canvas.width = canvasContainer.offsetWidth;
 
@@ -758,15 +800,15 @@ export default {
           now: performance.now() / this.timeline.timeOffset,
         };
 
-        dataObject.renderDataObjects.push(dataObj);
+        renderDataObjects.push(dataObj);
       });
 
-      this.captureBarsLoop(dataObject, performance.now() / this.timeline.timeOffset);
+      this.captureBarsLoop(renderDataObjects, performance.now() / this.timeline.timeOffset);
     },
 
-    captureBarsLoop(dataObject, now) {
+    captureBarsLoop(renderDataObjects, now) {
       if (performance.now() / this.timeline.timeOffset > now) {
-        dataObject.renderDataObjects.forEach(renderDataObject => {
+        renderDataObjects.forEach(renderDataObject => {
           let { analyser, frequencyArray, clipBars } = renderDataObject;
 
           now = performance.now() / this.timeline.timeOffset;
@@ -791,16 +833,14 @@ export default {
       this.renderCanvas();
       this.moveCursor(1);
 
-      this.recordingAnimationFrameRequest = requestAnimationFrame(
-        this.captureBarsLoop.bind(null, dataObject, now)
-      );
+      this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, renderDataObjects, now));
     },
 
     moveTimielineWithPlayback(now) {
       if (performance.now() / this.timeline.timeOffset > now) {
         now = performance.now() / this.timeline.timeOffset;
         this.moveCursor(1);
-        this.renderCanvas(); // this is overhead cause rendering bars when not needed, is just for detecting which clips should play
+        this.renderCanvas(); // todo: this is overhead cause rendering bars when not needed, is just for detecting which clips should play
 
         // Move Carret
         if (this.cursorX - this.globalX > this.timeline.width) {
@@ -808,14 +848,7 @@ export default {
         }
       }
 
-      this.playbackAnimationFrameRequest = requestAnimationFrame(
-        this.moveTimielineWithPlayback.bind(null, now)
-      );
-    },
-
-    moveCanvas(amount) {
-      if (this.globalX - amount >= 0) this.globalX -= amount;
-      this.renderCanvas();
+      this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null, now));
     },
 
     renderCanvas() {
@@ -835,13 +868,12 @@ export default {
           for (let x = clipXpos; x < bars.length + clipXpos; x++) {
             // render bars
             const bar = bars[x - clipXpos];
-            if (bar) {
-              ctx.fillStyle = this.timeline.bgColor;
-              ctx.fillRect((x - this.globalX) * barWidth, 0, barWidth, timelineHeight);
 
-              ctx.fillStyle = '#000';
-              ctx.fillRect((x - this.globalX) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
-            }
+            ctx.fillStyle = clip.selected ? this.timeline.selectedColor : this.timeline.bgColor;
+            ctx.fillRect((x - this.globalX) * barWidth, 0, barWidth, timelineHeight);
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect((x - this.globalX) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
 
             // // play if corresponds
             if (this.playing) {
@@ -857,6 +889,11 @@ export default {
           }
         });
       }
+    },
+
+    moveCanvas(amount) {
+      if (this.globalX - amount >= 0) this.globalX -= amount;
+      this.renderCanvas();
     },
 
     playClip(clip) {
@@ -879,31 +916,48 @@ export default {
       this.cursorX += amount;
       this.renderCursor();
     },
-    positionCursor(e) {
-      this.cursorX = (e.clientX - e.target.getBoundingClientRect().x + this.globalX) / this.timeline.barWidth;
+    onCanvasClick(e, trackId) {
+      const xPos = (e.clientX - e.target.getBoundingClientRect().x + this.globalX) / this.timeline.barWidth;
+      const clips = this.trackClips[trackId];
+      for (var i = 0; i < clips.length; i++) {
+        const clip = clips[i];
+        if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
+          clip.selected = true;
+        } else {
+          clip.selected = false;
+        }
+        this.renderCanvas();
+      }
+
+      this.positionCursor(xPos);
+    },
+    positionCursor(xPos) {
+      if (this.recording) return;
+      this.cursorX = xPos;
       this.renderCursor();
+      this.onStop();
     },
     renderCursor() {
       this.canvasOverlayCtx.clearRect(0, 0, this.timeline.width, this.canvasOverlay.height);
       this.canvasOverlayCtx.fillRect(
         (this.cursorX - this.globalX) * this.timeline.barWidth,
         0,
-        3,
+        2,
         this.canvasOverlay.height
       );
     },
 
     onTrackContainerWheel(event) {
-      let amount = 10;
-      let delta = 1;
+      let amount = this.timeline.carretMovementAmount;
+      let delta = 0.5;
       if (event.wheelDelta < 0) {
-        delta = -1;
+        delta = -0.5;
       }
       if (event.shiftKey) {
         amount = 0;
         this.timeline.barWidth += 1 * delta;
-        if (this.timeline.barWidth < 1) {
-          this.timeline.barWidth = 1;
+        if (this.timeline.barWidth < 0.5) {
+          this.timeline.barWidth = 0.5;
         } else if (this.timeline.barWidth > 3) {
           this.timeline.barWidth = 3;
         }
@@ -1172,8 +1226,10 @@ export default {
   padding-right: 2rem;
 }
 
-.rec-canvas {
-  background: white;
+.rec-canvas-container {
+  position: relative;
+  background: transparent;
+  z-index: 1;
   flex: 1;
   height: 64px;
 }
@@ -1185,8 +1241,9 @@ canvas {
 
 .canvas-overlay {
   position: absolute;
+  z-index: 0;
   top: 0;
-  background: transparent;
+  background: white;
 }
 
 .master {

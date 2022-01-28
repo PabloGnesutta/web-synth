@@ -1,3 +1,16 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  color: #ddd;
+  background: rgb(2, 29, 29);
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  cursor: default;
+}
+
 select {
   background: #272727;
   color: #f3f3f3;
