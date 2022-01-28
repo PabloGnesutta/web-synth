@@ -126,7 +126,7 @@ export default {
       this.$emit('stopRec');
     },
     playExport() {
-      this.$emit('playExport');
+      this.$emit('onPlay');
     },
     stopPlayingExport() {
       this.$emit('stopPlayingExport');

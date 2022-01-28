@@ -1,5 +1,5 @@
 <template>
-  <div class="gain-body" :class="{ selected }">
+  <div class="gain-body" :class="{ selected }" :style="{ width: width + 'px' }">
     <!-- Mute/Rec enabled -->
     <div class="node-controls">
       <div class="rec-enabled-disabled" @click="toggleRecEnabled">
@@ -37,7 +37,7 @@ import AnalyserRender from '../AnalyserRender';
 export default {
   name: 'GainBody',
   components: { Knob, AnalyserRender },
-  props: ['Node', 'analyser', 'recEnabled', 'selected'],
+  props: ['Node', 'analyser', 'recEnabled', 'selected', 'width'],
 
   data() {
     return {
