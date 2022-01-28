@@ -7,7 +7,7 @@
           :ref="'header'"
           @onRec="onRec"
           @onPlay="onPlay"
-          @onStop="onStop"
+          @onStop="onStopBtn"
           @loadSave="loadSave"
           @downloadExport="downloadExport"
           @toggleMapping="toggleMapping"
@@ -79,7 +79,7 @@
                   :recEnabled="track.recEnabled"
                   :selected="currentTrackIndex === t"
                   :width="trackProps.gainBodyWidth"
-                  @toggleRecEnabled="toggleRecEnabled(t)"
+                  @toggleRecEnabled="toggleRecEnabled(track)"
                   @knobClicked="knobClicked"
                 />
               </div>
@@ -222,6 +222,8 @@ export default {
       mediaRecorders: [],
       exportDestination: null,
       exports: [],
+      recordingTracks: [],
+      tracksProcessed: 0,
 
       // define tracClips
       trackClips: {
@@ -308,8 +310,13 @@ export default {
   methods: {
     ...mapMutations(['setAppIsMapping', 'setContext']),
 
-    toggleRecEnabled(t) {
-      this.tracks[t].recEnabled = !this.tracks[t].recEnabled;
+    toggleRecEnabled(track) {
+      track.recEnabled = !track.recEnabled;
+      if (this.recording && track.recEnabled) {
+        this.recordingTracks.push(track);
+        this.startRecSingleTrack(track);
+        this.renderDataObjects.push(this.generateRenderDataObject(track));
+      }
     },
 
     init() {
@@ -353,6 +360,356 @@ export default {
 
     reflow() {
       this.computeTimelineWidth();
+    },
+
+    // RECORDING
+
+    onRec() {
+      if (this.recording) {
+        this.stopRec();
+      } else {
+        this.startRec();
+      }
+    },
+    startRec() {
+      this.recordingIdCount++;
+      this.recording = true;
+      this.playing = true;
+      this.startRecAllTracks();
+    },
+    startRecAllTracks() {
+      this.tracksProcessed = 0;
+      this.tracks
+        .filter(track => track.recEnabled)
+        .forEach(track => {
+          this.startRecSingleTrack(track);
+        });
+
+      // this.recordingTracks.forEach(track => {
+      // });
+
+      this.setupCaptureBars(this.recordingTracks);
+    },
+
+    startRecSingleTrack(track) {
+      this.recordingTracks.push(track);
+      let chunks = [];
+      let mediaStreamDestination = this.context.createMediaStreamDestination();
+      const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
+
+      this.mediaRecorders.push(mediaRecorder);
+      track.trackGain.connectNativeNode(mediaStreamDestination);
+
+      //init trackClip
+      this.trackClips[track.id].push({
+        id: this.trackClips[track.id].length,
+        xPos: this.cursorX,
+        playing: true,
+      });
+
+      const clip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
+
+      mediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
+      // When recording's finished, process data chunk
+      // into a Blob, and save it for future use
+      mediaRecorder.onstop = () => {
+        const blobFileReader = new FileReader();
+        const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
+
+        blobFileReader.onloadend = () => {
+          const arrayBuffer = blobFileReader.result;
+          this.context.decodeAudioData(arrayBuffer, audioBuffer => {
+            clip.blob = blob;
+            clip.buffer = audioBuffer;
+
+            this.tracksProcessed++;
+            if (this.tracksProcessed >= this.recordingTracks.length) {
+              this.onRecFinish();
+            }
+          });
+        };
+
+        blobFileReader.readAsArrayBuffer(blob);
+        mediaStreamDestination = null;
+        chunks = null;
+      };
+
+      mediaRecorder.start();
+    },
+
+    // Stop Rec
+    stopRec() {
+      this.stopRecAllTracks();
+      this.recording = false;
+      this.playing = false;
+    },
+    stopRecAllTracks() {
+      this.mediaRecorders.forEach(mediaRecorder => {
+        mediaRecorder.stop();
+      });
+      this.mediaRecorders = [];
+
+      window.cancelAnimationFrame(this.recordingRaf);
+      this.recordingRaf = null;
+    },
+
+    onRecFinish() {
+      this.recordingTracks.forEach(track => {
+        const clips = this.trackClips[track.id];
+        const currentClip = clips[clips.length - 1];
+
+        currentClip.duration = currentClip.buffer.duration;
+        currentClip.barCount = currentClip.bars.length;
+        currentClip.barDuration = currentClip.buffer.duration / currentClip.barCount;
+        currentClip.playing = false;
+      });
+
+      this.recordingTracks = [];
+      this.moveCursor(-1);
+    },
+
+    // PLAYBACK
+
+    onPlay() {
+      console.log('onplay');
+      if (this.recording) return;
+      if (this.playing) {
+        this.onStopBtn();
+        this.cursorX = this.whenPlayCursorX;
+      }
+      this.whenPlayCursorX = this.cursorX;
+      this.playing = true;
+      this.playAllTracks();
+    },
+
+    playAllTracks() {
+      this.moveTimielineWithPlayback(performance.now() / this.timeline.timeOffset);
+    },
+
+    onStopBtn() {
+      console.log('on stop');
+      if (this.playing) {
+        window.cancelAnimationFrame(this.playbackRaf);
+        this.playing = false;
+        this.stopAllTracks();
+      } else {
+        this.cursorX = 0;
+        this.renderCursor();
+      }
+      if (this.recording) {
+        this.stopRec();
+      }
+    },
+
+    stopAllTracks() {
+      for (const trackId in this.trackClips) {
+        this.trackClips[trackId].forEach(clip => {
+          if (clip.source) {
+            clip.source.stop(0);
+          }
+        });
+      }
+    },
+
+    // RENDERING
+
+    setupCaptureBars(tracks) {
+      this.renderDataObjects = [];
+
+      tracks.forEach(track => {
+        this.renderDataObjects.push(this.generateRenderDataObject(track));
+      });
+
+      this.captureBarsLoop(performance.now() / this.timeline.timeOffset);
+    },
+
+    generateRenderDataObject(track) {
+      const analyser = track.trackGainAnalyser;
+      const canvasContainer = document.querySelector('.rec-canvas-container');
+      const canvas = this.$refs[`rec-canvas-${track.id}`][0];
+      canvas.width = canvasContainer.offsetWidth;
+
+      this.timeline.width = canvas.width; // todo: ver otra manera de obtener este dato
+
+      this.trackClips[track.id][this.trackClips[track.id].length - 1].bars = [];
+
+      const dataObj = {
+        canvas,
+        analyser,
+        frequencyArray: new Float32Array(analyser.fftSize),
+        bars: this.trackClips[track.id][this.trackClips[track.id].length - 1].bars,
+        now: performance.now() / this.timeline.timeOffset,
+      };
+
+      return dataObj;
+    },
+
+    captureBarsLoop(now) {
+      if (performance.now() / this.timeline.timeOffset > now) {
+        this.renderDataObjects.forEach(renderDataObject => {
+          let { analyser, frequencyArray, bars } = renderDataObject;
+
+          now = performance.now() / this.timeline.timeOffset;
+          analyser.getFloatTimeDomainData(frequencyArray);
+
+          let sumOfSquares = 0;
+          for (let i = 0; i < frequencyArray.length; i++) {
+            sumOfSquares += frequencyArray[i] ** 2;
+          }
+          const avgPower = sumOfSquares / frequencyArray.length;
+          const barHeight = avgPower.map(0, 1, 2, this.timeline.height);
+
+          bars.push(barHeight);
+        });
+
+        if (this.followCursor) this.moveCarret();
+      }
+
+      this.renderCanvas();
+      this.moveCursor(1);
+
+      this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, now));
+    },
+
+    moveTimielineWithPlayback(now) {
+      if (performance.now() / this.timeline.timeOffset > now) {
+        now = performance.now() / this.timeline.timeOffset;
+        this.moveCursor(1);
+        this.renderCanvas(); // todo: this is overhead cause rendering bars when not needed, is just for detecting which clips should play
+
+        if (this.followCursor) this.moveCarret();
+      }
+
+      this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null, now));
+    },
+
+    moveCarret() {
+      if (this.cursorX - this.globalX > this.timeline.width) {
+        this.moveCanvas(this.timeline.carretSkip);
+      }
+    },
+
+    renderCanvas() {
+      for (const trackId in this.trackClips) {
+        const clips = this.trackClips[trackId];
+        const canvas = this.$refs[`rec-canvas-${trackId}`][0];
+        const ctx = canvas.getContext('2d');
+        const barWidth = this.timeline.barWidth;
+        const timelineHeight = this.timeline.height;
+
+        ctx.clearRect(0, 0, canvas.width, timelineHeight);
+
+        clips.forEach(clip => {
+          const bars = clip.bars;
+          const clipXpos = clip.xPos;
+
+          for (let x = clipXpos; x < bars.length + clipXpos; x++) {
+            // render bars
+            const bar = bars[x - clipXpos];
+
+            ctx.fillStyle = clip.selected ? this.timeline.selectedColor : this.timeline.bgColor;
+            ctx.fillRect((x - this.globalX) * barWidth, 0, barWidth, timelineHeight);
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect((x - this.globalX) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
+
+            // // play if corresponds
+            if (this.playing) {
+              if (!clip.playing) {
+                if (
+                  this.cursorX >= clipXpos &&
+                  this.cursorX < clipXpos + clip.barCount - this.timeline.timeOffset
+                ) {
+                  this.playClip(trackId, clip);
+                }
+              }
+            }
+          }
+        });
+      }
+    },
+
+    moveCanvas(amount) {
+      if (this.globalX - amount >= 0) this.globalX -= amount;
+      this.renderCanvas();
+    },
+
+    playClip(trackId, clip) {
+      const offset = (this.cursorX - clip.xPos) * clip.barDuration;
+      clip.source = this.context.createBufferSource();
+      clip.source.buffer = clip.buffer;
+
+      const track = this.tracks.find(track => track.id == trackId);
+      clip.source.connect(track.trackGain.inputNode);
+
+      clip.source.start(0, offset, clip.duration);
+      clip.playing = true;
+
+      clip.source.onended = () => {
+        clip.playing = false;
+        clip.source.disconnect;
+        clip.source = null;
+        delete clip.source;
+      };
+    },
+
+    moveCursor(amount) {
+      this.cursorX += amount;
+      this.renderCursor();
+    },
+    onCanvasClick(e, trackId) {
+      const xPos = (e.clientX - e.target.getBoundingClientRect().x + this.globalX) / this.timeline.barWidth;
+      this.positionCursor(xPos);
+      // select tracks
+      // const clips = this.trackClips[trackId];
+      // for (var i = 0; i < clips.length; i++) {
+      //   const clip = clips[i];
+      //   if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
+      //     clip.selected = true;
+      //   } else {
+      //     clip.selected = false;
+      //   }
+      //   this.renderCanvas();
+      // }
+    },
+    positionCursor(xPos) {
+      if (this.recording) return;
+      this.cursorX = xPos;
+      this.renderCursor();
+      if (this.playing) {
+        this.onStopBtn();
+      }
+    },
+    renderCursor() {
+      this.canvasOverlayCtx.clearRect(0, 0, this.timeline.width, this.canvasOverlay.height);
+      this.canvasOverlayCtx.fillRect(
+        (this.cursorX - this.globalX) * this.timeline.barWidth,
+        0,
+        2,
+        this.canvasOverlay.height
+      );
+    },
+
+    onTrackContainerWheel(event) {
+      let amount = this.timeline.carretMovementAmount;
+      let delta = 0.5;
+      if (event.wheelDelta < 0) {
+        delta = -0.5;
+      }
+      if (event.shiftKey) {
+        amount = 0;
+        this.timeline.barWidth += 1 * delta;
+        if (this.timeline.barWidth < 0.5) {
+          this.timeline.barWidth = 0.5;
+        } else if (this.timeline.barWidth > 3) {
+          this.timeline.barWidth = 3;
+        }
+      }
+
+      if (this.globalX - amount * delta >= 0) {
+        this.moveCanvas(amount * delta);
+        this.renderCursor();
+      }
     },
 
     // Tracks, Instruments & Effects
@@ -620,7 +977,7 @@ export default {
             break;
           case 32: //space bar - play/pause
             if (this.playing) {
-              this.onStop();
+              this.onStopBtn();
             } else {
               this.onPlay();
             }
@@ -655,350 +1012,6 @@ export default {
             console.log(e.keyCode);
             break;
         }
-      }
-    },
-
-    // RECORDING
-
-    // Start Rec
-    onRec() {
-      console.log('on rec');
-      if (this.recording) {
-        this.stopRec();
-      } else {
-        this.startRec();
-      }
-    },
-    startRec() {
-      this.recordingIdCount++;
-      this.recording = true;
-      this.playing = true;
-      this.startRecAllTracks();
-    },
-    startRecAllTracks() {
-      const recordingTracks = this.tracks.filter(track => track.recEnabled);
-      const tracksTotal = recordingTracks.length;
-      let tracksProcessed = 0;
-
-      recordingTracks.forEach(track => {
-        let chunks = [];
-        let mediaStreamDestination = this.context.createMediaStreamDestination();
-        track.trackGain.connectNativeNode(mediaStreamDestination);
-        const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
-        this.mediaRecorders.push(mediaRecorder);
-
-        mediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
-
-        // const previousClip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
-        // const newClipXPos = previousClip ? previousClip.xPos + previousClip.barCount + 10 : 0;
-
-        //init trackClip
-        this.trackClips[track.id].push({
-          id: this.trackClips[track.id].length,
-          xPos: this.cursorX,
-          playing: true,
-        });
-
-        const clip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
-
-        // this.cursorX = newClipXPos;
-        this.renderCursor();
-
-        // When recording's finished, process data chunk
-        // into a Blob, and save it for future use
-        mediaRecorder.onstop = () => {
-          const blobFileReader = new FileReader();
-          const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
-
-          blobFileReader.onloadend = () => {
-            const arrayBuffer = blobFileReader.result;
-            this.context.decodeAudioData(arrayBuffer, audioBuffer => {
-              clip.blob = blob;
-              clip.buffer = audioBuffer;
-
-              tracksProcessed++;
-              if (tracksProcessed >= tracksTotal) {
-                this.onRecFinish(recordingTracks);
-              }
-            });
-          };
-
-          blobFileReader.readAsArrayBuffer(blob);
-          mediaStreamDestination = null;
-          chunks = null;
-        };
-
-        mediaRecorder.start();
-      });
-
-      this.setupCaptureBars(recordingTracks);
-    },
-
-    // Stop Rec
-    stopRec() {
-      this.stopRecAllTracks();
-      this.recording = false;
-      this.playing = false;
-    },
-    stopRecAllTracks() {
-      this.mediaRecorders.forEach(mediaRecorder => {
-        mediaRecorder.stop();
-      });
-      this.mediaRecorders = [];
-
-      window.cancelAnimationFrame(this.recordingRaf);
-      this.recordingRaf = null;
-    },
-
-    onRecFinish(recordingTracks) {
-      recordingTracks.forEach(track => {
-        const clips = this.trackClips[track.id];
-        const currentClip = clips[clips.length - 1];
-
-        currentClip.duration = currentClip.buffer.duration;
-        currentClip.barCount = currentClip.bars.length;
-        currentClip.barDuration = currentClip.buffer.duration / currentClip.barCount;
-        currentClip.playing = false;
-      });
-      this.moveCursor(-1);
-      console.log(this.trackClips);
-    },
-
-    // PLAYBACK
-
-    onPlay() {
-      console.log('onplay');
-      if (this.recording) return;
-      if (this.playing) {
-        this.onStop();
-        this.cursorX = this.whenPlayCursorX;
-      }
-      this.whenPlayCursorX = this.cursorX;
-      this.playing = true;
-      this.playAllTracks();
-    },
-
-    playAllTracks() {
-      this.moveTimielineWithPlayback(performance.now() / this.timeline.timeOffset);
-    },
-
-    onStop() {
-      console.log('on stop');
-      if (this.playing) {
-        window.cancelAnimationFrame(this.playbackRaf);
-        this.playing = false;
-        this.stopAllTracks();
-      } else {
-        this.cursorX = 0;
-        this.renderCursor();
-      }
-      if (this.recording) {
-        this.stopRec();
-      }
-    },
-
-    stopAllTracks() {
-      for (const trackId in this.trackClips) {
-        this.trackClips[trackId].forEach(clip => {
-          if (clip.source) {
-            clip.source.stop(0);
-          }
-        });
-      }
-    },
-
-    // RENDERING
-
-    setupCaptureBars(tracks) {
-      this.playing = true;
-      const renderDataObjects = [];
-
-      tracks.forEach(track => {
-        const analyser = track.trackGainAnalyser;
-        const canvasContainer = document.querySelector('.rec-canvas-container');
-        const canvas = this.$refs[`rec-canvas-${track.id}`][0];
-        canvas.width = canvasContainer.offsetWidth;
-
-        this.timeline.width = canvas.width; // todo: ver otra manera de obtener este dato
-
-        this.trackClips[track.id][this.trackClips[track.id].length - 1].bars = [];
-
-        const dataObj = {
-          canvas,
-          analyser,
-          frequencyArray: new Float32Array(analyser.fftSize),
-          clipBars: this.trackClips[track.id][this.trackClips[track.id].length - 1].bars,
-          now: performance.now() / this.timeline.timeOffset,
-        };
-
-        renderDataObjects.push(dataObj);
-      });
-
-      this.captureBarsLoop(renderDataObjects, performance.now() / this.timeline.timeOffset);
-    },
-
-    captureBarsLoop(renderDataObjects, now) {
-      if (performance.now() / this.timeline.timeOffset > now) {
-        renderDataObjects.forEach(renderDataObject => {
-          let { analyser, frequencyArray, clipBars } = renderDataObject;
-
-          now = performance.now() / this.timeline.timeOffset;
-          analyser.getFloatTimeDomainData(frequencyArray);
-
-          let sumOfSquares = 0;
-          for (let i = 0; i < frequencyArray.length; i++) {
-            sumOfSquares += frequencyArray[i] ** 2;
-          }
-          const avgPower = sumOfSquares / frequencyArray.length;
-          const barHeight = avgPower.map(0, 1, 2, this.timeline.height);
-
-          clipBars.push(barHeight);
-        });
-
-        if (this.followCursor) this.moveCarret();
-      }
-
-      this.renderCanvas();
-      this.moveCursor(1);
-
-      this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, renderDataObjects, now));
-    },
-
-    moveTimielineWithPlayback(now) {
-      if (performance.now() / this.timeline.timeOffset > now) {
-        now = performance.now() / this.timeline.timeOffset;
-        this.moveCursor(1);
-        this.renderCanvas(); // todo: this is overhead cause rendering bars when not needed, is just for detecting which clips should play
-
-        if (this.followCursor) this.moveCarret();
-      }
-
-      this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null, now));
-    },
-
-    moveCarret() {
-      if (this.cursorX - this.globalX > this.timeline.width) {
-        this.moveCanvas(this.timeline.carretSkip);
-      }
-    },
-
-    renderCanvas() {
-      for (const trackId in this.trackClips) {
-        const clips = this.trackClips[trackId];
-        const canvas = this.$refs[`rec-canvas-${trackId}`][0];
-        const ctx = canvas.getContext('2d');
-        const barWidth = this.timeline.barWidth;
-        const timelineHeight = this.timeline.height;
-
-        ctx.clearRect(0, 0, canvas.width, timelineHeight);
-
-        clips.forEach(clip => {
-          const bars = clip.bars;
-          const clipXpos = clip.xPos;
-
-          for (let x = clipXpos; x < bars.length + clipXpos; x++) {
-            // render bars
-            const bar = bars[x - clipXpos];
-
-            ctx.fillStyle = clip.selected ? this.timeline.selectedColor : this.timeline.bgColor;
-            ctx.fillRect((x - this.globalX) * barWidth, 0, barWidth, timelineHeight);
-
-            ctx.fillStyle = '#000';
-            ctx.fillRect((x - this.globalX) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
-
-            // // play if corresponds
-            if (this.playing) {
-              if (!clip.playing) {
-                if (
-                  this.cursorX >= clipXpos &&
-                  this.cursorX < clipXpos + clip.barCount - this.timeline.timeOffset
-                ) {
-                  this.playClip(clip);
-                }
-              }
-            }
-          }
-        });
-      }
-    },
-
-    moveCanvas(amount) {
-      if (this.globalX - amount >= 0) this.globalX -= amount;
-      this.renderCanvas();
-    },
-
-    playClip(clip) {
-      const offset = (this.cursorX - clip.xPos) * clip.barDuration;
-      clip.source = this.context.createBufferSource();
-      clip.source.buffer = clip.buffer;
-      clip.source.connect(this.masterGain);
-
-      clip.source.start(0, offset);
-      clip.playing = true;
-
-      clip.source.onended = () => {
-        clip.playing = false;
-        clip.source = null;
-        delete clip.source;
-      };
-    },
-
-    moveCursor(amount) {
-      this.cursorX += amount;
-      this.renderCursor();
-    },
-    onCanvasClick(e, trackId) {
-      const xPos = (e.clientX - e.target.getBoundingClientRect().x + this.globalX) / this.timeline.barWidth;
-      this.positionCursor(xPos);
-      // select tracks
-      // const clips = this.trackClips[trackId];
-      // for (var i = 0; i < clips.length; i++) {
-      //   const clip = clips[i];
-      //   if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
-      //     clip.selected = true;
-      //   } else {
-      //     clip.selected = false;
-      //   }
-      //   this.renderCanvas();
-      // }
-    },
-    positionCursor(xPos) {
-      if (this.recording) return;
-      this.cursorX = xPos;
-      this.renderCursor();
-      if (this.playing) {
-        this.onStop();
-      }
-    },
-    renderCursor() {
-      this.canvasOverlayCtx.clearRect(0, 0, this.timeline.width, this.canvasOverlay.height);
-      this.canvasOverlayCtx.fillRect(
-        (this.cursorX - this.globalX) * this.timeline.barWidth,
-        0,
-        2,
-        this.canvasOverlay.height
-      );
-    },
-
-    onTrackContainerWheel(event) {
-      let amount = this.timeline.carretMovementAmount;
-      let delta = 0.5;
-      if (event.wheelDelta < 0) {
-        delta = -0.5;
-      }
-      if (event.shiftKey) {
-        amount = 0;
-        this.timeline.barWidth += 1 * delta;
-        if (this.timeline.barWidth < 0.5) {
-          this.timeline.barWidth = 0.5;
-        } else if (this.timeline.barWidth > 3) {
-          this.timeline.barWidth = 3;
-        }
-      }
-
-      if (this.globalX - amount * delta >= 0) {
-        this.moveCanvas(amount * delta);
-        this.renderCursor();
       }
     },
 
