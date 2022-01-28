@@ -5,19 +5,19 @@
       <div class="top-section">
         <Header
           :ref="'header'"
-          @startRec="startRec"
-          @stopRec="stopRec"
+          @onRec="onRec"
           @onPlay="onPlay"
-          @stopPlayingExport="onStop"
+          @onStop="onStop"
           @loadSave="loadSave"
           @downloadExport="downloadExport"
           @toggleMapping="toggleMapping"
+          @toggleFollowing="toggleFollowing"
           :octave="octave"
           :transpose="transpose"
           :tracks="tracks"
           :playing="playing"
           :recording="recording"
-          :recordingsAvailable="true"
+          :following="followCursor"
         />
       </div>
 
@@ -250,7 +250,7 @@ export default {
       },
 
       //Rendering
-
+      followCursor: false,
       timeline: {
         barWidth: 1,
         timeOffset: 10,
@@ -268,6 +268,7 @@ export default {
       },
       globalX: 0,
       cursorX: 0,
+      whenPlayCursorX: 0,
       recordingRaf: null,
       playbackRaf: null,
 
@@ -615,13 +616,14 @@ export default {
       } else {
         switch (e.keyCode) {
           case 13: //enter - rec/stop
-            if (this.recording) this.stopRec();
-            else this.startRec();
+            this.onRec();
             break;
           case 32: //space bar - play/pause
-            if (this.recording) return this.stopRec();
-            if (this.playing) this.onStop();
-            else this.onPlay();
+            if (this.playing) {
+              this.onStop();
+            } else {
+              this.onPlay();
+            }
             break;
           case 37: //arrow left - move cursor
             if (!this.recording && !this.playing) this.moveCursor(-20);
@@ -659,9 +661,18 @@ export default {
     // RECORDING
 
     // Start Rec
+    onRec() {
+      console.log('on rec');
+      if (this.recording) {
+        this.stopRec();
+      } else {
+        this.startRec();
+      }
+    },
     startRec() {
       this.recordingIdCount++;
       this.recording = true;
+      this.playing = true;
       this.startRecAllTracks();
     },
     startRecAllTracks() {
@@ -678,8 +689,8 @@ export default {
 
         mediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
 
-        const previousClip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
-        const newClipXPos = previousClip ? previousClip.xPos + previousClip.barCount + 10 : 0;
+        // const previousClip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
+        // const newClipXPos = previousClip ? previousClip.xPos + previousClip.barCount + 10 : 0;
 
         //init trackClip
         this.trackClips[track.id].push({
@@ -749,13 +760,20 @@ export default {
         currentClip.barDuration = currentClip.buffer.duration / currentClip.barCount;
         currentClip.playing = false;
       });
-
+      this.moveCursor(-1);
       console.log(this.trackClips);
     },
 
     // PLAYBACK
 
     onPlay() {
+      console.log('onplay');
+      if (this.recording) return;
+      if (this.playing) {
+        this.onStop();
+        this.cursorX = this.whenPlayCursorX;
+      }
+      this.whenPlayCursorX = this.cursorX;
       this.playing = true;
       this.playAllTracks();
     },
@@ -765,11 +783,24 @@ export default {
     },
 
     onStop() {
-      window.cancelAnimationFrame(this.playbackRaf);
-      this.playing = false;
+      console.log('on stop');
+      if (this.playing) {
+        window.cancelAnimationFrame(this.playbackRaf);
+        this.playing = false;
+        this.stopAllTracks();
+      } else {
+        this.cursorX = 0;
+        this.renderCursor();
+      }
+      if (this.recording) {
+        this.stopRec();
+      }
+    },
+
+    stopAllTracks() {
       for (const trackId in this.trackClips) {
         this.trackClips[trackId].forEach(clip => {
-          if (clip.playing) {
+          if (clip.source) {
             clip.source.stop(0);
           }
         });
@@ -824,10 +855,7 @@ export default {
           clipBars.push(barHeight);
         });
 
-        // Move Carret
-        if (this.cursorX - this.globalX > this.timeline.width) {
-          this.moveCanvas(this.timeline.carretSkip);
-        }
+        if (this.followCursor) this.moveCarret();
       }
 
       this.renderCanvas();
@@ -842,13 +870,16 @@ export default {
         this.moveCursor(1);
         this.renderCanvas(); // todo: this is overhead cause rendering bars when not needed, is just for detecting which clips should play
 
-        // Move Carret
-        if (this.cursorX - this.globalX > this.timeline.width) {
-          this.moveCanvas(this.timeline.carretSkip);
-        }
+        if (this.followCursor) this.moveCarret();
       }
 
       this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null, now));
+    },
+
+    moveCarret() {
+      if (this.cursorX - this.globalX > this.timeline.width) {
+        this.moveCanvas(this.timeline.carretSkip);
+      }
     },
 
     renderCanvas() {
@@ -918,24 +949,26 @@ export default {
     },
     onCanvasClick(e, trackId) {
       const xPos = (e.clientX - e.target.getBoundingClientRect().x + this.globalX) / this.timeline.barWidth;
-      const clips = this.trackClips[trackId];
-      for (var i = 0; i < clips.length; i++) {
-        const clip = clips[i];
-        if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
-          clip.selected = true;
-        } else {
-          clip.selected = false;
-        }
-        this.renderCanvas();
-      }
-
       this.positionCursor(xPos);
+      // select tracks
+      // const clips = this.trackClips[trackId];
+      // for (var i = 0; i < clips.length; i++) {
+      //   const clip = clips[i];
+      //   if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
+      //     clip.selected = true;
+      //   } else {
+      //     clip.selected = false;
+      //   }
+      //   this.renderCanvas();
+      // }
     },
     positionCursor(xPos) {
       if (this.recording) return;
       this.cursorX = xPos;
       this.renderCursor();
-      this.onStop();
+      if (this.playing) {
+        this.onStop();
+      }
     },
     renderCursor() {
       this.canvasOverlayCtx.clearRect(0, 0, this.timeline.width, this.canvasOverlay.height);
@@ -1062,6 +1095,10 @@ export default {
       this.keypressListeners.forEach(scaleInterface => {
         scaleInterface.instrument.stopNote(note);
       });
+    },
+
+    toggleFollowing() {
+      this.followCursor = !this.followCursor;
     },
 
     toggleMapping() {

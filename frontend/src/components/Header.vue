@@ -5,22 +5,9 @@
 
       <div v-if="currentSave" class="current-save-name">{{ currentSave.name }}</div>
 
-      <div class="buttons">
-        <!-- REC -->
-        <div v-if="!recording" class="btn btn-2 rec" @click="startRec">REC</div>
-        <div class="btn btn-2 stop-rec" v-if="recording" @click="stopRec">STOP REC</div>
-
-        <!-- PLAY/STOP -->
-        <div class="play-stop" v-if="recordingsAvailable">
-          <div v-if="!playing && !recording" class="btn start-playing" @click="playExport">Play</div>
-          <div v-if="playing && !recording" class="btn stop-playing" @click="stopPlayingExport">Stop</div>
-        </div>
-        <div v-if="recordingsAvailable && !recording" class="btn btn-export-download" @click="downloadExport">
-          Download
-        </div>
-
+      <div class="main-container">
         <!-- SAVES -->
-        <div class="saves-buttons" v-if="!recording">
+        <div class="left">
           <div v-if="currentSave" class="btn" @click="save">Save</div>
           <div class="btn" @click="saveAs">
             <span v-if="currentSave">Save as</span>
@@ -41,46 +28,25 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Config -->
-        <div v-if="false" class="menu config">
-          <div class="btn label" @click="toggleInfoMenu">INFO</div>
-          <div class="dropdown" :class="{ hidden: !menuConfigVisible }">
-            <div class="dropdown-item">
-              Para agregar un nuevo track, seleccioná un
-              <span> instrumento</span>
-            </div>
-            <div class="dropdown-item">
-              Al agregar seleccionar un <span> efecto</span>, éste se agregará al track seleccionado
-            </div>
-            <!-- <div class="dropdown-item">
-              0 (zero): <span>Trigger all Loopers</span>
-            </div> -->
-            <div class="dropdown-item">
-              Tocar notas con teclas <span> AWSEDFTGYHUJKOLP</span> o con un
-              <span> dispositivo MIDI</span>
-            </div>
-            <div class="dropdown-item">Tocar Drumkit con: <span>teclas 1 a 9 del Numpad</span></div>
-
-            <div class="dropdown-item">z: <span>Subir octava</span></div>
-            <div class="dropdown-item">x: <span>Bajar octava</span></div>
-            <div class="dropdown-item">c: <span>Transponer 1 semitono arriba</span></div>
-            <div class="dropdown-item">v: <span>Transponer 1 semitono abajo</span></div>
-
-            <div class="dropdown-item">Ctrl + m: <span>Silenciar tracl actual</span></div>
-            <div class="dropdown-item">m + (1..9): <span>Silenciar track 1 a 9</span></div>
-            <div class="dropdown-item">ctrl + q: <span>Borrar track actual</span></div>
-
-            <div class="dropdown-item">
-              Se pueden guardar las sesiones y reanudarlas. Por el momento esta funcionalidad es limitada, y
-              sólo se guardan los instrumentos y los efectos y sus estados. No así los archivos de audio como
-              loops o grabaciones.
-            </div>
+          <div class="btn btn-export-download" @click="downloadExport">Export</div>
+          <div class="btn follow" @click="$emit('toggleFollowing')" :class="{ active: following }">
+            Follow
           </div>
         </div>
-        <div class="map" @click="toggleMapping">Map MIDI</div>
-        <div>octave: {{ octave }} | transpose: {{ transpose }}</div>
+
+        <div class="mid">
+          <!-- PLAY -->
+          <div class="btn play" :class="{ active: playing }" @click="onPlay">Play</div>
+          <!-- REC -->
+          <div class="btn rec" :class="{ active: recording }" @click="onRec">REC</div>
+          <!-- STOP -->
+          <div class="btn stop" @click="onStop">Stop</div>
+        </div>
+
+        <div class="right">
+          <div class="map" @click="toggleMapping">Map MIDI</div>
+          <div>octave: {{ octave }} | transpose: {{ transpose }}</div>
+        </div>
       </div>
     </div>
   </div>
@@ -91,7 +57,7 @@ import { mapGetters, mapMutations } from 'vuex';
 
 export default {
   name: 'Header',
-  props: ['tracks', 'recording', 'playing', 'recordingsAvailable', 'octave', 'transpose'],
+  props: ['tracks', 'recording', 'playing', 'following', 'recordingsAvailable', 'octave', 'transpose'],
   data() {
     return {
       saves: [],
@@ -118,19 +84,16 @@ export default {
       this.$emit('toggleMapping');
     },
 
-    startRec() {
-      if (this.recording) return;
-      this.$emit('startRec');
-    },
-    stopRec() {
-      this.$emit('stopRec');
-    },
-    playExport() {
+    onPlay() {
       this.$emit('onPlay');
     },
-    stopPlayingExport() {
-      this.$emit('stopPlayingExport');
+    onRec() {
+      this.$emit('onRec');
     },
+    onStop() {
+      this.$emit('onStop');
+    },
+
     downloadExport() {
       this.$emit('downloadExport');
     },
@@ -263,17 +226,34 @@ export default {
   gap: 0.5em;
   border: 3px solid transparent;
 }
-.header.recording {
-  border-color: crimson;
-}
 .header.playing {
   border-color: green;
 }
-.buttons {
+.header.recording {
+  border-color: crimson;
+}
+.main-container {
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 1em;
+}
+.left {
+  width: 240px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.mid {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+.right {
+  display: flex;
+  width: 240px;
 }
 
 .btn {
@@ -282,32 +262,31 @@ export default {
   cursor: pointer;
 }
 
-.btn.rec {
+.btn.play {
+  background: #004b80;
+}
+.btn.play.active {
+  background: rgb(13, 247, 13);
+}
+
+.btn.follow {
+  background: rgb(92, 92, 255);
+}
+.btn.follow.active {
+  background: rgb(22, 22, 199);
+}
+
+.btn.rec.active {
   background: red;
 }
-.btn.stop-rec {
-  background: red;
-  color: black;
+
+.btn.stop {
+  background: #004b80;
 }
 
 //MIDI Map
 .map {
   cursor: pointer;
-}
-
-//Play/Stop recording
-.play-stop {
-  .btn {
-    background: #004b80;
-  }
-}
-
-//saves
-.saves-buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1em;
 }
 
 .btn.load-work {
