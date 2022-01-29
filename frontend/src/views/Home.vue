@@ -258,7 +258,8 @@ export default {
       followCursor: true,
       timeline: {
         barWidth: 1,
-        timeOffset: 10,
+        minBarWidth: 0.25,
+        timeOffset: 16,
         bgColor: '#e5979750',
         selectedColor: '#1a7cc150',
         carretMovementAmount: 50,
@@ -392,7 +393,7 @@ export default {
       if (this.playing) cursorStep = 0;
 
       this.playing = true;
-      this.setupCaptureBars(this.recordingTracks, cursorStep);
+      this.captureBarsLoop(performance.now() / this.timeline.timeOffset, cursorStep);
     },
 
     startRecSingleTrack(track) {
@@ -492,7 +493,6 @@ export default {
     // PLAYBACK
 
     onPlay() {
-      console.log('onplay');
       if (this.recording) return;
       if (this.playing) {
         this.onStopBtn();
@@ -508,14 +508,15 @@ export default {
     },
 
     onStopBtn() {
-      console.log('on stop');
       if (this.playing) {
         window.cancelAnimationFrame(this.playbackRaf);
         this.playing = false;
         this.stopAllTracks();
       } else {
         this.cursorX = 0;
+        this.globalX = 0;
         this.renderCursor();
+        this.renderCanvas();
       }
       if (this.recording) {
         this.stopRec();
@@ -534,18 +535,7 @@ export default {
 
     // RENDERING
 
-    setupCaptureBars(tracks, cursorStep) {
-      // this.renderDataObjects = [];
-
-      // tracks.forEach(track => {
-      //   this.renderDataObjects.push(this.generateRenderDataObject(track));
-      // });
-
-      this.captureBarsLoop(performance.now() / this.timeline.timeOffset, cursorStep);
-    },
-
     generateRenderDataObject(track) {
-      console.log(track);
       const analyser = track.trackGainAnalyser;
       const canvasContainer = document.querySelector('.rec-canvas-container');
       const canvas = this.$refs[`rec-canvas-${track.id}`][0];
@@ -607,7 +597,7 @@ export default {
     },
 
     moveCarret() {
-      if (this.cursorX - this.globalX > this.timeline.width) {
+      if ((this.cursorX - this.globalX) * this.timeline.barWidth > this.timeline.width) {
         this.moveCanvas(this.timeline.carretSkip);
       }
     },
@@ -716,15 +706,15 @@ export default {
 
     onTrackContainerWheel(event) {
       let amount = this.timeline.carretMovementAmount;
-      let delta = 0.5;
+      let delta = this.timeline.minBarWidth;
       if (event.wheelDelta < 0) {
-        delta = -0.5;
+        delta = -this.timeline.minBarWidth;
       }
       if (event.shiftKey) {
         amount = 0;
         this.timeline.barWidth += 1 * delta;
-        if (this.timeline.barWidth < 0.5) {
-          this.timeline.barWidth = 0.5;
+        if (this.timeline.barWidth < this.timeline.minBarWidth) {
+          this.timeline.barWidth = this.timeline.minBarWidth;
         } else if (this.timeline.barWidth > 3) {
           this.timeline.barWidth = 3;
         }
@@ -746,6 +736,7 @@ export default {
     createTrack(instrument) {
       const trackGain = new Gain('Track Gain');
       const trackGainAnalyser = this.context.createAnalyser();
+      trackGainAnalyser.fftSize = 4096;
 
       instrument.connect(trackGain);
       trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
@@ -798,6 +789,8 @@ export default {
     },
 
     deleteTrack(trackIndex) {
+      /* TODO: stop recording if necesary. Delete trackClips */
+
       if (typeof trackIndex !== 'number') {
         return;
       }
@@ -1041,7 +1034,7 @@ export default {
             this.transpose++;
             break;
           default:
-            console.log(e.keyCode);
+            // console.log(e.keyCode);
             break;
         }
       }
