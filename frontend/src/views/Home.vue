@@ -11,7 +11,7 @@
           @loadSave="loadSave"
           @downloadExport="downloadExport"
           @toggleMapping="toggleMapping"
-          @toggleFollowing="toggleFollowing"
+          @onFollow="onFollow"
           :octave="octave"
           :transpose="transpose"
           :tracks="tracks"
@@ -219,12 +219,14 @@ export default {
       recordings: [],
       recordingIdCount: 0,
       currentRecIndex: 0,
-      mediaRecorders: [],
+      mediaRecorders: {},
       exportDestination: null,
       exports: [],
       recordingTracks: [],
+      totalProcessingTracks: 0,
       tracksProcessed: 0,
 
+      clipIdCount: 0,
       // define tracClips
       trackClips: {
         /*
@@ -252,7 +254,7 @@ export default {
       },
 
       //Rendering
-      followCursor: false,
+      followCursor: true,
       timeline: {
         barWidth: 1,
         timeOffset: 10,
@@ -310,15 +312,6 @@ export default {
   methods: {
     ...mapMutations(['setAppIsMapping', 'setContext']),
 
-    toggleRecEnabled(track) {
-      track.recEnabled = !track.recEnabled;
-      if (this.recording && track.recEnabled) {
-        this.recordingTracks.push(track);
-        this.startRecSingleTrack(track);
-        this.renderDataObjects.push(this.generateRenderDataObject(track));
-      }
-    },
-
     init() {
       document.querySelector('.home-wrapper').removeEventListener('click', this.init);
       this.setContext(new (window.AudioContext || window.webkitAudioContext)());
@@ -363,6 +356,19 @@ export default {
     },
 
     // RECORDING
+    toggleRecEnabled(track) {
+      // if (this.recording) return;
+
+      track.recEnabled = !track.recEnabled;
+      if (this.recording) {
+        if (track.recEnabled) {
+          this.startRecSingleTrack(track);
+          this.renderDataObjects.push(this.generateRenderDataObject(track));
+        } else {
+          this.stopRecSingleTrack(track);
+        }
+      }
+    },
 
     onRec() {
       if (this.recording) {
@@ -372,37 +378,34 @@ export default {
       }
     },
     startRec() {
-      this.recordingIdCount++;
+      this.totalProcessingTracks = 0;
       this.recording = true;
-      this.playing = true;
-      this.startRecAllTracks();
-    },
-    startRecAllTracks() {
+
       this.tracksProcessed = 0;
       this.tracks
         .filter(track => track.recEnabled)
         .forEach(track => {
           this.startRecSingleTrack(track);
         });
-
-      // this.recordingTracks.forEach(track => {
-      // });
-
-      this.setupCaptureBars(this.recordingTracks);
+      let cursorStep = 1;
+      if (this.playing) cursorStep = 0;
+      this.playing = true;
+      this.setupCaptureBars(this.recordingTracks, cursorStep);
     },
 
     startRecSingleTrack(track) {
       this.recordingTracks.push(track);
+      this.totalProcessingTracks++;
       let chunks = [];
       let mediaStreamDestination = this.context.createMediaStreamDestination();
       const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
 
-      this.mediaRecorders.push(mediaRecorder);
+      this.mediaRecorders[track.id] = mediaRecorder;
       track.trackGain.connectNativeNode(mediaStreamDestination);
 
       //init trackClip
       this.trackClips[track.id].push({
-        id: this.trackClips[track.id].length,
+        id: ++this.clipIdCount,
         xPos: this.cursorX,
         playing: true,
       });
@@ -422,8 +425,8 @@ export default {
             clip.blob = blob;
             clip.buffer = audioBuffer;
 
-            this.tracksProcessed++;
-            if (this.tracksProcessed >= this.recordingTracks.length) {
+            this.totalProcessingTracks--;
+            if (this.totalProcessingTracks <= 0) {
               this.onRecFinish();
             }
           });
@@ -439,29 +442,42 @@ export default {
 
     // Stop Rec
     stopRec() {
-      this.stopRecAllTracks();
       this.recording = false;
       this.playing = false;
-    },
-    stopRecAllTracks() {
-      this.mediaRecorders.forEach(mediaRecorder => {
-        mediaRecorder.stop();
-      });
-      this.mediaRecorders = [];
+
+      for (const trackId in this.mediaRecorders) {
+        this.mediaRecorders[trackId].stop();
+        delete this.mediaRecorders[trackId];
+      }
+
+      this.mediaRecorders = {};
 
       window.cancelAnimationFrame(this.recordingRaf);
+      window.cancelAnimationFrame(this.playbackRaf);
       this.recordingRaf = null;
+      this.playbackRaf = null;
+    },
+
+    stopRecSingleTrack(track) {
+      this.mediaRecorders[track.id].stop();
+      delete this.mediaRecorders[track.id];
+
+      let index = this.renderDataObjects.findIndex(o => o.trackId == track.id);
+      this.renderDataObjects.splice(index, 1);
+      // index = this.recordingTracks.findIndex(r => r.trackId == track.id);
+      // this.recordingTracks.splice(index, 1);
     },
 
     onRecFinish() {
       this.recordingTracks.forEach(track => {
         const clips = this.trackClips[track.id];
-        const currentClip = clips[clips.length - 1];
 
-        currentClip.duration = currentClip.buffer.duration;
-        currentClip.barCount = currentClip.bars.length;
-        currentClip.barDuration = currentClip.buffer.duration / currentClip.barCount;
-        currentClip.playing = false;
+        clips.forEach(clip => {
+          clip.duration = clip.buffer.duration;
+          clip.barCount = clip.bars.length;
+          clip.barDuration = clip.buffer.duration / clip.barCount;
+          clip.playing = false;
+        });
       });
 
       this.recordingTracks = [];
@@ -513,14 +529,14 @@ export default {
 
     // RENDERING
 
-    setupCaptureBars(tracks) {
+    setupCaptureBars(tracks, cursorStep) {
       this.renderDataObjects = [];
 
       tracks.forEach(track => {
         this.renderDataObjects.push(this.generateRenderDataObject(track));
       });
 
-      this.captureBarsLoop(performance.now() / this.timeline.timeOffset);
+      this.captureBarsLoop(performance.now() / this.timeline.timeOffset, cursorStep);
     },
 
     generateRenderDataObject(track) {
@@ -534,6 +550,7 @@ export default {
       this.trackClips[track.id][this.trackClips[track.id].length - 1].bars = [];
 
       const dataObj = {
+        trackId: track.id,
         canvas,
         analyser,
         frequencyArray: new Float32Array(analyser.fftSize),
@@ -544,7 +561,7 @@ export default {
       return dataObj;
     },
 
-    captureBarsLoop(now) {
+    captureBarsLoop(now, cursorStep) {
       if (performance.now() / this.timeline.timeOffset > now) {
         this.renderDataObjects.forEach(renderDataObject => {
           let { analyser, frequencyArray, bars } = renderDataObject;
@@ -566,9 +583,9 @@ export default {
       }
 
       this.renderCanvas();
-      this.moveCursor(1);
+      this.moveCursor(cursorStep);
 
-      this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, now));
+      this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, now, cursorStep));
     },
 
     moveTimielineWithPlayback(now) {
@@ -640,9 +657,10 @@ export default {
       clip.source.buffer = clip.buffer;
 
       const track = this.tracks.find(track => track.id == trackId);
+      // clip.source.connect(track.effects[0] ? track.effects[0].inputNode : track.trackGain.inputNode);
       clip.source.connect(track.trackGain.inputNode);
 
-      clip.source.start(0, offset, clip.duration);
+      clip.source.start(0, offset, clip.durationf);
       clip.playing = true;
 
       clip.source.onended = () => {
@@ -1070,7 +1088,7 @@ export default {
     //   this.exportMediaRecorder.stop();
     //   this.exportMediaRecorder = null;
     // },
-    // startRecExport() {
+    // RecExport() {
     //   let exportChunks = [];
     //   this.exportDestination = this.context.createMediaStreamDestination();
     //   this.masterGain.connect(this.exportDestination);
@@ -1110,7 +1128,7 @@ export default {
       });
     },
 
-    toggleFollowing() {
+    onFollow() {
       this.followCursor = !this.followCursor;
     },
 

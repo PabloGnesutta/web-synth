@@ -29,9 +29,7 @@
             </div>
           </div>
           <div class="btn btn-export-download" @click="downloadExport">Export</div>
-          <div class="btn follow" @click="$emit('toggleFollowing')" :class="{ active: following }">
-            Follow
-          </div>
+          <div class="btn follow" @click="onFollow" :class="{ active: following }">Follow</div>
         </div>
 
         <div class="mid">
@@ -93,7 +91,10 @@ export default {
     onStop() {
       this.$emit('onStop');
     },
-
+    onFollow() {
+      console.log('on folow');
+      this.$emit('onFollow');
+    },
     downloadExport() {
       this.$emit('downloadExport');
     },
@@ -240,7 +241,8 @@ export default {
   gap: 1em;
 }
 .left {
-  width: 240px;
+  width: 340px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 1rem;
