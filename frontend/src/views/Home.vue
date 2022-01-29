@@ -254,6 +254,7 @@ export default {
       },
 
       //Rendering
+      renderDataObjects: [],
       followCursor: true,
       timeline: {
         barWidth: 1,
@@ -363,7 +364,6 @@ export default {
       if (this.recording) {
         if (track.recEnabled) {
           this.startRecSingleTrack(track);
-          this.renderDataObjects.push(this.generateRenderDataObject(track));
         } else {
           this.stopRecSingleTrack(track);
         }
@@ -380,15 +380,17 @@ export default {
     startRec() {
       this.totalProcessingTracks = 0;
       this.recording = true;
-
+      this.renderDataObjects = [];
       this.tracksProcessed = 0;
       this.tracks
         .filter(track => track.recEnabled)
         .forEach(track => {
           this.startRecSingleTrack(track);
         });
+
       let cursorStep = 1;
       if (this.playing) cursorStep = 0;
+
       this.playing = true;
       this.setupCaptureBars(this.recordingTracks, cursorStep);
     },
@@ -396,6 +398,7 @@ export default {
     startRecSingleTrack(track) {
       this.recordingTracks.push(track);
       this.totalProcessingTracks++;
+
       let chunks = [];
       let mediaStreamDestination = this.context.createMediaStreamDestination();
       const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
@@ -438,6 +441,8 @@ export default {
       };
 
       mediaRecorder.start();
+
+      this.renderDataObjects.push(this.generateRenderDataObject(track));
     },
 
     // Stop Rec
@@ -530,16 +535,17 @@ export default {
     // RENDERING
 
     setupCaptureBars(tracks, cursorStep) {
-      this.renderDataObjects = [];
+      // this.renderDataObjects = [];
 
-      tracks.forEach(track => {
-        this.renderDataObjects.push(this.generateRenderDataObject(track));
-      });
+      // tracks.forEach(track => {
+      //   this.renderDataObjects.push(this.generateRenderDataObject(track));
+      // });
 
       this.captureBarsLoop(performance.now() / this.timeline.timeOffset, cursorStep);
     },
 
     generateRenderDataObject(track) {
+      console.log(track);
       const analyser = track.trackGainAnalyser;
       const canvasContainer = document.querySelector('.rec-canvas-container');
       const canvas = this.$refs[`rec-canvas-${track.id}`][0];
@@ -779,6 +785,14 @@ export default {
           instrument,
           trackName: this.currentTrack.name,
         });
+      }
+
+      if (this.recording) {
+        if (this.currentTrack.recEnabled) {
+          this.$nextTick(() => {
+            this.startRecSingleTrack(this.currentTrack);
+          });
+        }
       }
       // scroll
     },
