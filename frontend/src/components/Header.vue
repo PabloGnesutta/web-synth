@@ -28,18 +28,20 @@
               </div>
             </div>
           </div>
-          <div class="btn btn-export-download" @click="downloadExport">Export</div>
+          <!-- <div class="btn btn-export-download" @click="onExport">Export</div> -->
           <div class="btn follow" @click="onFollow" :class="{ active: following }">Follow</div>
           <div class="gx">gX: {{ globalX }}</div>
         </div>
 
         <div class="mid">
           <!-- PLAY -->
-          <div class="btn play" :class="{ active: playing }" @click="onPlay">Play</div>
+          <div class="playback-btn play" :class="{ active: playing }" @click="onPlay"><PlayIcon /></div>
           <!-- REC -->
-          <div class="btn rec" :class="{ active: recording }" @click="onRec">REC</div>
+          <div class="playback-btn rec" :class="{ active: recording }" @click="onRec">
+            <RecIcon :active="recording" />
+          </div>
           <!-- STOP -->
-          <div class="btn stop" @click="onStop">Stop</div>
+          <div class="playback-btn stop" @click="onStop"><StopIcon /></div>
         </div>
 
         <div class="right">
@@ -53,9 +55,12 @@
 
 <script>
 import { mapGetters, mapMutations } from 'vuex';
-
+import PlayIcon from '@/components/icons/PlayIcon';
+import RecIcon from '@/components/icons/RecIcon';
+import StopIcon from '@/components/icons/StopIcon';
 export default {
   name: 'Header',
+  components: { PlayIcon, RecIcon, StopIcon },
   props: [
     'tracks',
     'recording',
@@ -105,8 +110,8 @@ export default {
       console.log('on folow');
       this.$emit('onFollow');
     },
-    downloadExport() {
-      this.$emit('downloadExport');
+    onExport() {
+      this.$emit('onExport');
     },
 
     save() {
@@ -263,7 +268,7 @@ export default {
   flex: 1;
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 2rem;
 }
 .right {
   display: flex;
@@ -276,13 +281,6 @@ export default {
   cursor: pointer;
 }
 
-.btn.play {
-  background: #004b80;
-}
-.btn.play.active {
-  background: rgb(13, 247, 13);
-}
-
 .btn.follow {
   background: rgb(92, 92, 255);
 }
@@ -290,12 +288,15 @@ export default {
   background: rgb(22, 22, 199);
 }
 
-.btn.rec.active {
-  background: red;
+.playback-btn {
+  color: #aaa;
+  cursor: pointer;
 }
-
-.btn.stop {
-  background: #004b80;
+.play.active {
+  color: rgb(13, 247, 13);
+}
+.rec.active {
+  color: red;
 }
 
 //MIDI Map

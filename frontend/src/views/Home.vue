@@ -9,9 +9,9 @@
           @onPlay="onPlay"
           @onStop="onStopBtn"
           @loadSave="loadSave"
-          @downloadExport="downloadExport"
-          @toggleMapping="toggleMapping"
+          @onExport="onExport"
           @onFollow="onFollow"
+          @toggleMapping="toggleMapping"
           :octave="octave"
           :transpose="transpose"
           :tracks="tracks"
@@ -618,7 +618,6 @@ export default {
 
           // Only render clips that are in the viewport
           if (clipEnd >= this.globalX && clipStart <= this.globalEnd) {
-            console.log('render canvas clip', clip.id);
             // todo: only render visible part of the clip
             for (let x = clipStart; x < bars.length + clipStart; x++) {
               const bar = bars[x - clipStart];
@@ -634,7 +633,6 @@ export default {
       if (this.globalX - amount >= 0) {
         this.globalX -= amount;
         this.globalEnd = this.globalX + this.timeline.width;
-        // console.log(this.globalX, this.globalEnd);
       }
       this.renderCanvas();
     },
@@ -1096,7 +1094,7 @@ export default {
 
     // EXPORT
 
-    downloadExport() {
+    onExport() {
       const length = this.recordings.length;
       let index = prompt('Which recording do you want to download? Choose number: 1 to ' + length, 1);
       index = parseInt(index);
@@ -1294,7 +1292,6 @@ export default {
   );
   overflow-y: scroll;
   border: 2px solid transparent;
-  padding-top: 0.25rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
