@@ -30,6 +30,7 @@
           </div>
           <div class="btn btn-export-download" @click="downloadExport">Export</div>
           <div class="btn follow" @click="onFollow" :class="{ active: following }">Follow</div>
+          <div class="gx">gX: {{ globalX }}</div>
         </div>
 
         <div class="mid">
@@ -55,7 +56,16 @@ import { mapGetters, mapMutations } from 'vuex';
 
 export default {
   name: 'Header',
-  props: ['tracks', 'recording', 'playing', 'following', 'recordingsAvailable', 'octave', 'transpose'],
+  props: [
+    'tracks',
+    'recording',
+    'playing',
+    'following',
+    'recordingsAvailable',
+    'octave',
+    'transpose',
+    'globalX',
+  ],
   data() {
     return {
       saves: [],
@@ -241,11 +251,13 @@ export default {
   gap: 1em;
 }
 .left {
-  width: 340px;
   overflow: hidden;
   display: flex;
   align-items: center;
   gap: 1rem;
+  .gx {
+    width: 80px;
+  }
 }
 .mid {
   flex: 1;
