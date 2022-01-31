@@ -348,7 +348,7 @@ export default {
         trackList.offsetWidth -
         (this.trackProps.innerLefttWidth + this.trackProps.innerLefttMargin + this.trackProps.gainBodyWidth);
 
-      this.timeline.carretSkip = ~~(this.timeline.width / 3) * -1;
+      this.timeline.carretSkip = ~~(this.timeline.width / 2) * -1;
       this.canvasOverlay.width = this.timeline.width;
       this.canvasOverlay.height = trackList.offsetHeight;
     },
@@ -616,10 +616,18 @@ export default {
           const clipStart = clip.xPos;
           const clipEnd = clipStart + clip.barCount;
 
-          // Only render clips that are in the viewport
+          // only render clips that are in the viewport
           if (clipEnd >= this.globalX && clipStart <= this.globalEnd) {
-            // todo: only render visible part of the clip
-            for (let x = clipStart; x < bars.length + clipStart; x++) {
+            // only render visible part of the clip
+            const first = clipStart <= this.globalX ? this.globalX : clipStart;
+            const last = clipEnd >= this.globalEnd ? this.globalEnd : clipEnd;
+
+            for (var x = first; x < last; x++) {
+              if (clip.selected) {
+                ctx.fillStyle = '#00f70';
+                ctx.fillRect((x - this.globalX) * barWidth, timelineHeight - 8, barWidth, timelineHeight);
+              }
+
               const bar = bars[x - clipStart];
               ctx.fillStyle = '#000';
               ctx.fillRect((x - this.globalX) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
