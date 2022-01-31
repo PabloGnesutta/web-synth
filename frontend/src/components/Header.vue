@@ -28,9 +28,10 @@
               </div>
             </div>
           </div>
-          <!-- <div class="btn btn-export-download" @click="onExport">Export</div> -->
+          <div class="btn btn-export-download" @click="onExport">Export</div>
           <div class="btn follow" @click="onFollow" :class="{ active: following }">Follow</div>
           <div class="gx">gX: {{ globalX }}</div>
+          <div class="gx">tX: {{ totalWidth }}</div>
         </div>
 
         <div class="mid">
@@ -65,11 +66,13 @@ export default {
     'tracks',
     'recording',
     'playing',
+    'exporting',
     'following',
     'recordingsAvailable',
     'octave',
     'transpose',
     'globalX',
+    'totalWidth',
   ],
   data() {
     return {
@@ -111,6 +114,8 @@ export default {
       this.$emit('onFollow');
     },
     onExport() {
+      if (this.exporting || this.recording || !this.totalWidth) return;
+
       this.$emit('onExport');
     },
 
