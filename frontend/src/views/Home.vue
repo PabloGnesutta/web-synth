@@ -328,7 +328,8 @@ export default {
         this.canvasOverlayCtx = this.canvasOverlay.getContext('2d');
         this.computeTimelineWidth();
 
-        this.createTrack(createInstrument('Drumkit'));
+        this.createTrack(createInstrument('Femod'));
+        this.createAndInsertEffect('BiquadFilter');
       });
 
       window.addEventListener('keyup', this.onKeyup);
