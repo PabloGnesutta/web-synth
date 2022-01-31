@@ -329,12 +329,6 @@ export default {
         this.computeTimelineWidth();
 
         this.createTrack(createInstrument('Drumkit'));
-        // this.createTrack(createInstrument('Drumkit'));
-        // this.createTrack(createInstrument('Drumkit'));
-        // this.createTrack(createInstrument('Drumkit'));
-        // this.createTrack(createInstrument('Drumkit'));
-        // this.createTrack(createInstrument('Drumkit'));
-        // this.createTrack(createInstrument('Drumkit'));
       });
 
       window.addEventListener('keyup', this.onKeyup);
@@ -347,10 +341,11 @@ export default {
       this.timeline.width =
         trackList.offsetWidth -
         (this.trackProps.innerLefttWidth + this.trackProps.innerLefttMargin + this.trackProps.gainBodyWidth);
-
       this.timeline.carretSkip = ~~(this.timeline.width / 2) * -1;
       this.canvasOverlay.width = this.timeline.width;
       this.canvasOverlay.height = trackList.offsetHeight;
+
+      this.globalEnd = this.globalX + this.timeline.width;
     },
 
     reflow() {
@@ -374,11 +369,7 @@ export default {
     },
 
     onRec() {
-      if (this.recording) {
-        this.stopRec();
-      } else {
-        this.startRec();
-      }
+      this.recording ? this.stopRec() : this.startRec();
     },
     startRec() {
       this.totalProcessingTracks = 0;
@@ -436,9 +427,7 @@ export default {
             clip.playing = false;
 
             this.totalProcessingTracks--;
-            if (this.totalProcessingTracks <= 0) {
-              this.onRecFinish();
-            }
+            // if (this.totalProcessingTracks <= 0) this.onRecFinish();
           });
         };
 
@@ -478,9 +467,7 @@ export default {
       this.renderDataObjects.splice(index, 1);
     },
 
-    onRecFinish() {
-      console.log('on rec finish');
-    },
+    // onRecFinish() {},
 
     // PLAYBACK
 
@@ -505,10 +492,10 @@ export default {
         this.playing = false;
         this.stopAllTracks();
       } else {
-        this.cursorX = 0;
         this.globalX = 0;
-        this.renderCursor();
+        this.cursorX = 0;
         this.renderCanvas();
+        this.renderCursor();
       }
       if (this.recording) {
         this.stopRec();
@@ -621,7 +608,7 @@ export default {
             // only render visible part of the clip
             const first = clipStart <= this.globalX ? this.globalX : clipStart;
             const last = clipEnd >= this.globalEnd ? this.globalEnd : clipEnd;
-
+            console.log('render clip', clip.id);
             for (var x = first; x < last; x++) {
               if (clip.selected) {
                 ctx.fillStyle = '#00f70';
@@ -671,7 +658,6 @@ export default {
 
       // // play clip if corresponds
       if (this.recording || !this.playing) return;
-
       for (const trackId in this.trackClips) {
         const clips = this.trackClips[trackId];
         for (let c = 0; c < clips.length; c++) {
