@@ -1,37 +1,41 @@
 <template>
   <div class="Header">
     <div class="header" :class="{ recording, playing }">
-      <!-- <div v-if="false" class="backdrop" @click.self="hideMenues"></div> -->
-
-      <div v-if="currentSave" class="current-save-name">{{ currentSave.name }}</div>
-
       <div class="main-container">
         <!-- SAVES -->
         <div class="left">
-          <div v-if="currentSave" class="btn" @click="save">Save</div>
-          <div class="btn" @click="saveAs">
-            <span v-if="currentSave">Save as</span>
-            <span v-else>Save</span>
-          </div>
-          <div
-            v-if="this.saves && this.saves.length > 0"
-            class="btn load-work"
-            @click="showSavedWorks = !showSavedWorks"
-          >
-            <div>Load</div>
-            <div class="saved-works" :class="{ hidden: !showSavedWorks }">
-              <div v-for="(savedWork, s) in saveNames" :key="s" class="saved-work">
-                <div class="saved-work-name" @click="loadSave(s)">
-                  {{ savedWork.name }}
+          <div class="file-menu" :class="{ active: fileMenuOpen }" @mouseleave="onFileMenuLeave">
+            <div class="menu-btn" @click="fileMenuOpen = true" @mouseenter="fileMenuOpen = true">File</div>
+            <div v-if="fileMenuOpen" class="menu">
+              <div class="menu-item" @click="onSave">Save</div>
+              <div class="menu-item" @click="onSaveAs">Save as</div>
+              <div class="has-submenu" @mouseenter="loadMenuOpen = true" @mouseleave="loadMenuOpen = false">
+                <div
+                  class="menu-item"
+                  :class="{ active: loadMenuOpen }"
+                  @click="loadMenuOpen = !loadMenuOpen"
+                >
+                  Open
                 </div>
-                <div class="saved-work-delete" @click="deleteSave(s)">X</div>
+                <div v-if="loadMenuOpen" class="sub-menu">
+                  <div
+                    v-for="(project, key) in projects"
+                    :key="key"
+                    class="menu-item"
+                    @click="onLoad(key, project.name)"
+                  >
+                    {{ project.name }}
+                  </div>
+                </div>
               </div>
+              <div v-if="lastSample" class="menu-item" @click="onExport">Export</div>
             </div>
           </div>
-          <div class="btn btn-export-download" @click="onExport">Export</div>
-          <div class="btn follow" @click="onFollow" :class="{ active: following }">Follow</div>
-          <div class="gx">gX: {{ globalX }}</div>
-          <div class="gx">tX: {{ totalWidth }}</div>
+          <div v-if="projectName" class="current-save-name">
+            {{ projectName }}
+            <span v-if="unsaved">[*]</span>
+          </div>
+          <div v-if="fileMenuOpen" class="backdrop" @click="fileMenuOpen = false"></div>
         </div>
 
         <div class="mid">
@@ -43,11 +47,13 @@
           </div>
           <!-- STOP -->
           <div class="playback-btn stop" @click="onStop"><StopIcon /></div>
+          <!-- Follow -->
         </div>
 
         <div class="right">
-          <div class="map" @click="toggleMapping">Map MIDI</div>
-          <div>octave: {{ octave }} | transpose: {{ transpose }}</div>
+          <div class="btn follow" :class="{ active: following }" @click="onFollow">Follow</div>
+          <div class="btn midi" :class="{ active: mapping }" @click="onMidiMap">Map MIDI</div>
+          <div class="select-none">octave: {{ octave }} | transpose: {{ transpose }}</div>
         </div>
       </div>
     </div>
@@ -63,16 +69,17 @@ export default {
   name: 'Header',
   components: { PlayIcon, RecIcon, StopIcon },
   props: [
-    'tracks',
     'recording',
     'playing',
     'exporting',
     'following',
-    'recordingsAvailable',
+    'mapping',
     'octave',
     'transpose',
-    'globalX',
-    'totalWidth',
+    'lastSample',
+    'projects',
+    'projectName',
+    'unsaved',
   ],
   data() {
     return {
@@ -80,12 +87,9 @@ export default {
       saveNames: [],
       showSavedWorks: false,
       currentSave: undefined,
+      fileMenuOpen: false,
+      loadMenuOpen: false,
     };
-  },
-
-  computed: {
-    // for saving purposes
-    ...mapGetters(['tempo', 'totalBeats']),
   },
 
   mounted() {
@@ -96,8 +100,11 @@ export default {
   methods: {
     ...mapMutations(['setTempo', 'setTotalBeats']),
 
-    toggleMapping() {
-      this.$emit('toggleMapping');
+    onFileMenuLeave() {
+      this.closeMenu();
+    },
+    closeMenu() {
+      this.fileMenuOpen = false;
     },
 
     onPlay() {
@@ -109,123 +116,38 @@ export default {
     onStop() {
       this.$emit('onStop');
     },
-    onFollow() {
-      console.log('on folow');
-      this.$emit('onFollow');
-    },
+
     onExport() {
-      if (this.exporting || this.recording || !this.totalWidth) return;
+      if (this.exporting || this.recording || !this.lastSample) return;
 
       this.$emit('onExport');
     },
 
-    save() {
-      this.overWrite(this.currentSaveIndex);
+    onSave() {
+      this.$emit('onSave');
     },
 
-    saveAs() {
-      //qué pasa en caso de primera interacción? count anda?
-      let count = localStorage.getItem('websynth-count');
-
-      if (!count) localStorage.setItem('websynth-count', 0);
-      localStorage.setItem('websynth-count', ++count);
-
-      const name = prompt('Nombre del trabajo', 'Sin título ' + count);
-      if (!name) return;
-
-      //ver, saves no tiene que estar en memoria, sólo names
-      if (!this.saves) {
-        this.saves = [];
-        this.saveNames = [];
-
-        localStorage.setItem('websynth-saves', '[]');
-        localStorage.setItem('websynth-savenames', '[]');
-      }
-
-      const existingSaveIndex = this.nameExists(name);
-      if (existingSaveIndex !== -1) {
-        if (confirm('Ese nombre ya existe, querés sobreescribir?')) this.overWrite(existingSaveIndex);
+    onSaveAs() {
+      const newProjectName = prompt('Project name', this.projectName);
+      if (newProjectName === this.projectName) {
+        this.onSave();
       } else {
-        this.saveNew(count, name);
+        // todo: verify if exists and prompt overwrite
+        this.$emit('onSave', newProjectName);
       }
     },
 
-    saveNew(count, name) {
-      this.saveNames.push({
-        id: count,
-        name,
-      });
-
-      const saves = this.getSaves();
-
-      this.tracks.forEach(track => {
-        console.log('track', track.instrument.saveString());
-        track.effects.forEach(effect => {
-          console.log('effect', effect);
-        });
-      });
-
-      //la papota
-      saves.push({
-        id: count,
-        name,
-        tempo: this.tempo,
-        totalBeats: this.totalBeats,
-        tracks: JSON.stringify(this.tracks),
-      });
-
-      this.updateSaves(saves);
-
-      localStorage.setItem('websynth-savenames', JSON.stringify(this.saveNames));
-
-      this.currentSaveIndex = this.saveNames.length - 1;
-      this.currentSave = this.saveNames[this.currentSaveIndex];
-      alert('New work saved');
+    onLoad(projectId, projectName) {
+      this.$emit('onLoad', { projectId, projectName });
     },
 
-    overWrite(existingSaveIndex) {
-      const saves = this.getSaves();
-      //la papota
-      saves[existingSaveIndex].tempo = this.tempo;
-      saves[existingSaveIndex].totalBeats = this.totalBeats;
-      saves[existingSaveIndex].tracks = JSON.stringify(this.tracks);
+    deleteSave() {},
 
-      this.updateSaves(saves);
-
-      alert('Trabajo guardado');
-      // if (this.currentSaveIndex === existingSaveIndex) alert("Trabajo guardado");
-      // else alert("Trabajo sobreescrito");
-
-      this.currentSaveIndex = existingSaveIndex;
-      this.currentSave = saves[existingSaveIndex];
+    onFollow() {
+      this.$emit('onFollow');
     },
-
-    getSaves() {
-      return JSON.parse(localStorage.getItem('websynth-saves'));
-    },
-
-    updateSaves(saves) {
-      this.saves = saves;
-      localStorage.setItem('websynth-saves', JSON.stringify(saves));
-    },
-
-    loadSave(s) {
-      // if (!confirm('Load ' + this.saveNames[s].name + '? Unsaved changes will be lost.')) return
-
-      const tracks = JSON.parse(this.saves[s].tracks);
-      this.$emit('loadSave', tracks);
-      this.setTempo(this.saves[s].tempo);
-      this.setTotalBeats(this.saves[s].totalBeats);
-      this.currentSaveIndex = s;
-      this.currentSave = this.saveNames[s];
-    },
-
-    deleteSave(s) {
-      if (!confirm('Segur@ que querés borrar ' + this.saves[s].name + '?')) return;
-      this.saves.splice(s, 1);
-      this.saveNames.splice(s, 1);
-      localStorage.setItem('websynth-saves', JSON.stringify(this.saves));
-      localStorage.setItem('websynth-savenames', JSON.stringify(this.saveNames));
+    onMidiMap() {
+      this.$emit('onMidiMap');
     },
 
     nameExists(name) {
@@ -245,7 +167,10 @@ export default {
   padding: 0.4em;
   width: 100%;
   gap: 0.5em;
-  border: 3px solid transparent;
+  border-top: 3px solid #111;
+  border-bottom: 3px solid #111;
+  // border-left: 1px solid #111;
+  // border-right: 1px solid #111;
 }
 .header.playing {
   border-color: green;
@@ -260,41 +185,72 @@ export default {
   align-items: center;
   gap: 1em;
 }
+
+.btn {
+  padding: 0.4em 1em;
+  cursor: pointer;
+  user-select: none;
+}
+
+// Left Section
 .left {
   overflow: hidden;
   display: flex;
   align-items: center;
   gap: 1rem;
-  .gx {
-    width: 80px;
+}
+// File Menu
+.file-menu {
+  position: relative;
+  z-index: 1;
+}
+.file-menu.active {
+  color: teal;
+}
+.menu {
+  position: fixed;
+  top: 42px;
+  min-width: 40px;
+  background: white;
+}
+.menu-btn {
+  padding: 0.5rem 4rem 0.5rem 1rem;
+  user-select: none;
+}
+.menu-item {
+  padding: 0.5rem 2rem 0.5rem 1rem;
+  color: #222;
+}
+.menu-item:hover {
+  position: relative;
+  background: #333;
+  color: white;
+}
+// Submenu
+.has-submenu {
+  position: relative;
+  .menu-item.active {
+    background: #333;
+    color: white;
   }
 }
+.sub-menu {
+  background: #ddd;
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translateX(100%);
+  white-space: nowrap;
+}
+
+// Mid section
 .mid {
   flex: 1;
   display: flex;
   justify-content: center;
   gap: 2rem;
 }
-.right {
-  display: flex;
-  width: 240px;
-}
-
-.btn {
-  padding: 0.4em 1em;
-  background: gray;
-  cursor: pointer;
-}
-
-.btn.follow {
-  background: rgb(92, 92, 255);
-}
-.btn.follow.active {
-  background: rgb(22, 22, 199);
-}
-
 .playback-btn {
-  color: #aaa;
   cursor: pointer;
 }
 .play.active {
@@ -304,69 +260,29 @@ export default {
   color: red;
 }
 
-//MIDI Map
-.map {
-  cursor: pointer;
-}
-
-.btn.load-work {
-  position: relative;
-  cursor: default;
-}
-
-.saved-works {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  min-width: 170px;
-  background: #555;
-  transform: translateY(calc(100% + 5px));
-}
-
-.saved-works.hidden {
-  display: none;
-}
-
-.saved-work {
+// Right
+.right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5em;
-  padding: 0 0.4em;
-
-  margin-bottom: 0.5em;
+  gap: 0.5rem;
 }
-.saved-work:last-child {
-  margin-bottom: 0;
+.follow {
+  background: #111;
 }
-.saved-work:hover {
-  background: #222;
+.follow.active {
+  background: rgb(92, 92, 255);
 }
-
-.saved-work-name {
-  cursor: pointer;
-  padding: 0.5em;
-  flex: 1;
-}
-
-.saved-work-name:hover {
-  background: var(--color-2);
-}
-
-.saved-work-delete {
-  padding: 0.5em;
-  cursor: pointer;
-}
-.saved-work-delete:hover {
+.midi.active {
   background: var(--color-1);
 }
 
-// .backdrop {
-//   position: fixed;
-//   top: var(--top-section-height);
-//   left: 0;
-//   width: 100%;
-//   height: calc(100vh - var(--top-section-height));
-//   background: transparent;
-// }
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 0;
+  background: rgba(0, 0, 0, 0);
+}
 </style>

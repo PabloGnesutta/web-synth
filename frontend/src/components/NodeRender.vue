@@ -285,7 +285,7 @@ export default {
   cursor: pointer;
   background: #444;
   padding: 0 0.2em;
-  z-index: 1;
+  // z-index: 1;
 }
 
 // PARAMS

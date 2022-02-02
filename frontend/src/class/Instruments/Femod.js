@@ -205,7 +205,6 @@ class Femod extends Node {
   saveString() {
     const jsonString = {
       name: this.name,
-      type: this.type,
       customParams: this.customParams.map(param => {
         return { name: param.name, value: param.value };
       }),
@@ -228,7 +227,7 @@ class Femod extends Node {
     this.available = null;
     this.noteIndexInUse = null;
     this.modulationParams = null;
-    this.customParams = null
+    this.customParams = null;
 
     for (let i = 0; i < polyphony; i++)
       if (this.ADSRGains[i]) {

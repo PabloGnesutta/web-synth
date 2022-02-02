@@ -4,6 +4,7 @@
     :class="{ mapping: thisIsMapping, appIsMapping }"
     @mousedown="onMouseDown"
     @touchstart="onTouchStart"
+    @dblclick="resetToDefault"
   >
     <div class="knob-inner" :style="`transform: rotate(${deg}deg); border-color: ${trackColor}`">
       <div class="knob-handle"></div>
@@ -11,7 +12,7 @@
     <div class="mapped-cmd" v-if="appIsMapping">
       {{ mappedCmd }}
     </div>
-    <div class="value set-default-value pointer" @click="onDefaultValueClick">
+    <div class="value set-default-value pointer" @click="resetToDefault">
       <div>{{ displayValue }}</div>
     </div>
   </div>
@@ -75,9 +76,9 @@ export default {
       let amount = translation * this.movementMultiplier; // before, amount = 2
 
       if (e.ctrlKey && e.altKey) {
-        amount *= this.microStepMultiplier
+        amount *= this.microStepMultiplier;
       } else if (e.ctrlKey && e.altKey) {
-        amount *= this.fineStepMultiplier
+        amount *= this.fineStepMultiplier;
       }
 
       let knobValue = this.knobValue + amount;
@@ -88,7 +89,7 @@ export default {
       this.emitWithKnobValue(knobValue);
     },
 
-    onDefaultValueClick() {
+    resetToDefault() {
       this.setKnobValueAndPosition(parseFloat(this.defaultKnobValue));
       // this.emitWithKnobValue(this.defaultKnobValue);
       this.emitKnobTurned(this.default_v.toFixed(2));

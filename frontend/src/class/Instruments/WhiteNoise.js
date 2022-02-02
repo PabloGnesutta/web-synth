@@ -112,6 +112,16 @@ class WhiteNoise extends Node {
     }
   }
 
+  saveString() {
+    const jsonString = { name: this.name };
+
+    this.saveParams.forEach(param => {
+      jsonString[param.name] = param.value;
+    });
+
+    return JSON.stringify(jsonString);
+  }
+
   destroy() {
     super.destroy();
 

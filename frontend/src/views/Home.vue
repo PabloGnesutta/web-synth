@@ -8,19 +8,22 @@
           @onRec="onRec"
           @onPlay="onPlay"
           @onStop="onStopBtn"
-          @loadSave="loadSave"
+          @onSave="onSave"
+          @onLoad="onLoad"
           @onExport="onExport"
           @onFollow="onFollow"
-          @toggleMapping="toggleMapping"
-          :octave="octave"
-          :transpose="transpose"
-          :tracks="tracks"
+          @onMidiMap="onMidiMap"
           :playing="playing"
           :recording="recording"
           :exporting="exporting"
           :following="followCursor"
-          :global-x="globalX"
-          :totalWidth="timeline.totalWidth"
+          :mapping="mapping"
+          :octave="octave"
+          :transpose="transpose"
+          :projects="projects"
+          :projectName="projectName"
+          :lastSample="timeline.lastSample"
+          :unsaved="unsaved"
         />
       </div>
 
@@ -35,12 +38,24 @@
         />
 
         <div class="right-col">
-          <!-- Click -->
-          <div class="click-wrapper"><Click ref="click" /></div>
+          <div class="top-controls">
+            <!-- Click -->
+            <Click ref="click" />
+            <!-- Info -->
+            <div class="info-wrapper">
+              <div class="info-container" :style="{ width: timeline.viewportWidth + 'px' }" @click="logInfo">
+                <div class="info-item">{{ globalStart }}</div>
+                <!-- <div class="info-item">vpW: {{ timeline.viewportWidth }}</div> -->
+                <div class="info-item">curr: {{ cursorX }}</div>
+                <div class="info-item">last: {{ timeline.lastSample }}</div>
+                <div class="info-item last">{{ globalEnd }}</div>
+              </div>
+            </div>
+          </div>
 
           <!-- Tracks -->
-          <div class="tracks-container custom-scrollbar" :class="{ mapping: mapping }">
-            <div class="track-list">
+          <div class="tracklist-wrapper custom-scrollbar" :class="{ mapping: mapping }">
+            <div class="tracklist">
               <div
                 v-for="(track, t) in tracks"
                 :key="track.id"
@@ -48,41 +63,37 @@
                 :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
                 @click.self="selectTrack(t)"
               >
-                <div
-                  class="track-inner-left no-scrollbar"
-                  :style="{
-                    width: trackProps.innerLefttWidth + 'px',
-                    marginRight: trackProps.innerLefttMargin + 'px',
-                  }"
-                  @click="selectTrack(t)"
-                >
-                  <div @click.stop="deleteTrack(t)" class="pointer">[X]</div>
-                  <div class="select-none">{{ track.name }}</div>
-                  <div class="select-none">
-                    {{ track.instrument.name }}
+                <div class="left-controls no-scrollbar" @click="selectTrack(t)">
+                  <div class="left-ctrls-inner">
+                    <div @click.stop="deleteTrack(t)" class="pointer">[X]</div>
+                    <div class="select-none">{{ track.name }}</div>
+                    <div class="select-none">
+                      {{ track.instrument.name }}
+                    </div>
                   </div>
                 </div>
 
                 <!-- Rec Canvas -->
                 <div
-                  class="rec-canvas-container"
-                  :ref="`rec-canvas-container-${track.id}`"
+                  class="timeline"
+                  :ref="`timeline-${track.id}`"
                   @click="onCanvasClick($event, track.id)"
                   @mousewheel="onCanvasContainerWheel"
                 >
-                  <canvas :ref="`rec-canvas-${track.id}`" :height="timeline.trackHeight"></canvas>
+                  <canvas :ref="`track-canvas-${track.id}`" :height="timeline.trackHeight"></canvas>
                 </div>
 
                 <!-- Track Gain and Controls -->
-                <GainBody
-                  :Node="track.trackGain"
-                  :analyser="track.trackGainAnalyser"
-                  :recEnabled="track.recEnabled"
-                  :selected="currentTrackIndex === t"
-                  :width="trackProps.gainBodyWidth"
-                  @toggleRecEnabled="toggleRecEnabled(track)"
-                  @knobClicked="knobClicked"
-                />
+                <div class="right-controls">
+                  <GainBody
+                    :Node="track.trackGain"
+                    :analyser="track.trackGainAnalyser"
+                    :recEnabled="track.recEnabled"
+                    :selected="currentTrackIndex === t"
+                    @toggleRecEnabled="toggleRecEnabled(track)"
+                    @knobClicked="knobClicked"
+                  />
+                </div>
               </div>
 
               <div class="canvas-overlay">
@@ -92,7 +103,7 @@
 
             <!-- Master -->
             <div class="track master">
-              <div class="track-inner-left">Master</div>
+              <div class="left-controls">Master</div>
               <div class="master-knob-wrapper" @click="knobClicked('MasterGain')">
                 <Knob
                   :ref="'MasterGain'"
@@ -169,6 +180,8 @@ const noteKeys = require('../data/noteKeys');
 const Node = require('../class/Node');
 const Gain = require('../class/Effects/Gain');
 
+import db from '@/db/index.js';
+
 import { mapMutations, mapGetters } from 'vuex';
 import NodeRender from '../components/NodeRender';
 import GainBody from '../components/specific-nodes/GainBody';
@@ -193,6 +206,9 @@ export default {
   data() {
     return {
       inited: false,
+      projectId: undefined,
+      projectName: 'untitled',
+      projects: null,
 
       tracks: [],
       trackIdCount: 0,
@@ -217,10 +233,7 @@ export default {
 
       //REC
       recording: false,
-      recordings: [],
-      recordingIdCount: 0,
       mediaRecorders: {},
-      exportDestination: null,
       exports: [],
       totalProcessingTracks: 0,
 
@@ -263,17 +276,17 @@ export default {
         carretMovementAmount: 50,
         trackHeight: 64,
         viewportWidth: undefined,
-        totalWidth: 0,
+        lastSample: 0,
       },
       trackProps: {
-        gainBodyWidth: 247,
-        innerLefttWidth: 180,
-        innerLefttMargin: 8,
+        // todo: get from css
+        rightCtrlsWidth: 247,
+        leftCtrlsWidth: 180,
       },
-      globalX: 0,
+      globalStart: 0,
       globalEnd: 0,
       cursorX: 0,
-      whenPlayCursorX: 0,
+      lastPlayCursorPos: 0,
       recordingRaf: null,
       playbackRaf: null,
 
@@ -286,6 +299,7 @@ export default {
       exportTimeOffset: 500,
       clipDestination: null,
 
+      unsaved: true,
       octave: 3,
       transpose: 0,
       m_pressed: false,
@@ -320,16 +334,18 @@ export default {
 
     init() {
       document.querySelector('.home-wrapper').removeEventListener('click', this.init);
-      this.setContext(new (window.AudioContext || window.webkitAudioContext)());
-      Node.context = this.context;
-      this.createMasterGain();
+      Node.context = new (window.AudioContext || window.webkitAudioContext)();
+      this.setContext(Node.context);
+      db.init(projects => {
+        this.projects = projects;
+      });
 
       this.inited = true;
+      this.createMasterGain();
 
       this.$nextTick(() => {
         const canvasOverlayContainer = document.querySelector('.canvas-overlay');
-        canvasOverlayContainer.style.left =
-          this.trackProps.innerLefttWidth + this.trackProps.innerLefttMargin + 'px';
+        canvasOverlayContainer.style.left = this.trackProps.leftCtrlsWidth + 'px';
 
         this.canvasOverlay = this.$refs['canvas-overlay'];
         this.canvasOverlayCtx = this.canvasOverlay.getContext('2d');
@@ -343,18 +359,38 @@ export default {
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
       window.addEventListener('resize', this.reflow);
+
+      setTimeout(() => {
+        this.test();
+      }, 100);
+    },
+
+    test() {
+      // this.onRec();
+      // setTimeout(() => {
+      //   this.onRec();
+      // }, 2000);
+      // const startInterval = 1000;
+      // let duration = 10000;
+      // let c = 0;
+      // setInterval(() => {
+      //   this.onRec();
+      //   setTimeout(() => {
+      //     this.onRec();
+      //   }, duration);
+      // }, startInterval + duration);
     },
 
     computeTimelineWidth() {
-      const trackList = document.querySelector('.track-list');
+      const trackList = document.querySelector('.tracklist');
       this.timeline.viewportWidth =
-        trackList.offsetWidth -
-        (this.trackProps.innerLefttWidth + this.trackProps.innerLefttMargin + this.trackProps.gainBodyWidth);
+        trackList.offsetWidth - this.trackProps.leftCtrlsWidth - this.trackProps.rightCtrlsWidth;
+
       this.timeline.carretSkip = ~~(this.timeline.viewportWidth / 2) * -1;
       this.canvasOverlay.width = this.timeline.viewportWidth;
       this.canvasOverlay.height = trackList.offsetHeight;
 
-      this.globalEnd = this.globalX + this.timeline.viewportWidth;
+      this.globalEnd = this.globalStart + this.timeline.viewportWidth;
     },
 
     reflow() {
@@ -414,6 +450,7 @@ export default {
         xPos: this.cursorX,
         playing: true,
         barCount: 0,
+        sampleRate: 0,
       });
 
       const clip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
@@ -422,11 +459,13 @@ export default {
       // When recording's finished, process data chunk
       // into a Blob, and save it for future use
       mediaRecorder.onstop = () => {
-        const blobFileReader = new FileReader();
+        const blobReader = new FileReader();
         const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
 
-        blobFileReader.onloadend = () => {
-          const arrayBuffer = blobFileReader.result;
+        blobReader.onloadend = () => {
+          // console.log(clip.barCount);
+
+          const arrayBuffer = blobReader.result;
           this.context.decodeAudioData(arrayBuffer, audioBuffer => {
             clip.blob = blob;
             clip.buffer = audioBuffer;
@@ -434,13 +473,13 @@ export default {
             clip.barCount = clip.bars.length;
             clip.barDuration = clip.buffer.duration / clip.barCount;
             clip.playing = false;
-
+            clip.sampleRate = Math.round(clip.buffer.length / clip.barCount);
             this.totalProcessingTracks--;
-            // if (this.totalProcessingTracks <= 0) this.onRecFinish();
+            if (this.totalProcessingTracks <= 0) this.onRecFinish();
           });
         };
 
-        blobFileReader.readAsArrayBuffer(blob);
+        blobReader.readAsArrayBuffer(blob);
         mediaStreamDestination = null;
         chunks = null;
       };
@@ -476,7 +515,9 @@ export default {
       this.renderDataObjects.splice(index, 1);
     },
 
-    // onRecFinish() {},
+    onRecFinish() {
+      this.logInfo();
+    },
 
     // PLAYBACK
 
@@ -484,14 +525,13 @@ export default {
       if (this.recording) return;
       if (this.playing) {
         this.onStopBtn();
-        this.cursorX = this.whenPlayCursorX;
+        this.cursorX = this.lastPlayCursorPos;
       }
-      this.whenPlayCursorX = this.cursorX;
+      this.lastPlayCursorPos = this.cursorX;
       this.playAllTracks();
     },
 
     playAllTracks() {
-      console.log('+++ playalltracks');
       this.playing = true;
       this.moveTimielineWithPlayback(
         performance.now() / this.timeline.timeOffset,
@@ -506,7 +546,7 @@ export default {
         cancelAnimationFrame(this.playbackRaf);
         this.playbackRaf = null;
       } else {
-        this.globalX = 0;
+        this.globalStart = 0;
         this.cursorX = 0;
         this.renderCanvas();
         this.renderCursor();
@@ -542,12 +582,10 @@ export default {
     },
 
     captureBarsLoop(now, cursorStep) {
-      // if (performance.now() / this.timeline.timeOffset > now) {
       for (var r = 0; r < this.renderDataObjects.length; r++) {
         const renderDataObject = this.renderDataObjects[r];
         let { analyser, frequencyArray, clip, ctx } = renderDataObject;
 
-        // now = performance.now() / this.timeline.timeOffset;
         analyser.getFloatTimeDomainData(frequencyArray);
 
         let sumOfSquares = 0;
@@ -561,16 +599,14 @@ export default {
         clip.barCount++;
         this.renderClipBar(clip, ctx);
 
-        // determine total timeleine widht
-        if (r === 0) {
-          if (clip.xPos + clip.barCount > this.timeline.totalWidth)
-            this.timeline.totalWidth = clip.xPos + clip.barCount;
-        }
+        // determine total timeleine width
+        if (r === 0)
+          if (clip.xPos + clip.barCount > this.timeline.lastSample)
+            this.timeline.lastSample = clip.xPos + clip.barCount;
       }
 
       this.moveCursor(cursorStep);
       if (this.followCursor) this.moveCarret();
-      // }
       this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, now, cursorStep));
     },
 
@@ -578,7 +614,7 @@ export default {
       const x = clip.barCount - 1;
       const bar = clip.bars[x];
       ctx.fillRect(
-        (this.cursorX - this.globalX) * this.timeline.barWidth,
+        (this.cursorX - this.globalStart) * this.timeline.barWidth,
         this.timeline.trackHeight / 2 - bar / 2,
         this.timeline.barWidth,
         bar
@@ -587,7 +623,7 @@ export default {
 
     moveTimielineWithPlayback(now, exportNow) {
       this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null, now, exportNow));
-      const performanceNow = performance.now();
+      // const performanceNow = performance.now();
       // if (performanceNow / this.timeline.timeOffset > now) {
       // now = performance.now() / this.timeline.timeOffset;
       this.moveCursor(1);
@@ -595,14 +631,14 @@ export default {
       if (this.exporting) {
         // if (performanceNow / this.exportTimeOffset > exportNow) {
         // exportNow = performance.now() / this.exportTimeOffset;
-        this.exportProgress = ~~((this.cursorX * 100) / this.timeline.totalWidth);
+        this.exportProgress = ~~((this.cursorX * 100) / this.timeline.lastSample);
         // }
       }
       if (this.followCursor) this.moveCarret();
     },
 
     moveCarret() {
-      if ((this.cursorX - this.globalX) * this.timeline.barWidth > this.timeline.viewportWidth) {
+      if ((this.cursorX - this.globalStart) * this.timeline.barWidth > this.timeline.viewportWidth) {
         this.moveCanvas(this.timeline.carretSkip);
       }
     },
@@ -610,7 +646,7 @@ export default {
     renderCanvas() {
       for (const trackId in this.trackClips) {
         const clips = this.trackClips[trackId];
-        const canvas = this.$refs[`rec-canvas-${trackId}`][0];
+        const canvas = this.$refs[`track-canvas-${trackId}`][0];
         const ctx = canvas.getContext('2d');
         const barWidth = this.timeline.barWidth;
         const timelineHeight = this.timeline.trackHeight;
@@ -624,19 +660,19 @@ export default {
           const clipEnd = clipStart + clip.barCount;
 
           // only render clips that are in the viewport
-          if (clipEnd >= this.globalX && clipStart <= this.globalEnd) {
+          if (clipEnd >= this.globalStart && clipStart <= this.globalEnd) {
             // only render visible part of the clip
-            const first = clipStart <= this.globalX ? this.globalX : clipStart;
+            const first = clipStart <= this.globalStart ? this.globalStart : clipStart;
             const last = clipEnd >= this.globalEnd ? this.globalEnd : clipEnd;
             for (var x = first; x < last; x++) {
               if (clip.selected) {
                 ctx.fillStyle = '#00f70';
-                ctx.fillRect((x - this.globalX) * barWidth, timelineHeight - 8, barWidth, timelineHeight);
+                ctx.fillRect((x - this.globalStart) * barWidth, timelineHeight - 8, barWidth, timelineHeight);
               }
 
               const bar = bars[x - clipStart];
               ctx.fillStyle = '#000';
-              ctx.fillRect((x - this.globalX) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
+              ctx.fillRect((x - this.globalStart) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
             }
           }
         }
@@ -644,19 +680,20 @@ export default {
     },
 
     moveCanvas(amount) {
-      if (this.globalX - amount >= 0) {
-        this.globalX -= amount;
-        this.globalEnd = this.globalX + this.timeline.viewportWidth;
+      if (this.globalStart - amount >= 0) {
+        this.globalStart -= amount;
+        this.globalEnd = this.globalStart + this.timeline.viewportWidth;
       }
       this.renderCanvas();
     },
 
     playClip(trackId, clip) {
+      console.log('playclip', clip.id);
       const offset = (this.cursorX - clip.xPos) * clip.barDuration;
       clip.source = this.context.createBufferSource();
       clip.source.buffer = clip.buffer;
 
-      const track = this.tracks.find(track => track.id == trackId);
+      const track = this.tracks.find(track => track.id == trackId); // esto es una verga
 
       clip.source.connect(this.clipDestination || track.trackGain.inputNode);
 
@@ -676,13 +713,9 @@ export default {
       this.renderCursor();
 
       if (this.recording || !this.playing) return;
-      if (this.cursorX > this.timeline.totalWidth) {
-        if (this.exporting) {
-          this.finishRecExport();
-        }
-        return;
+      if (this.cursorX > this.timeline.lastSample) {
+        return this.exporting && this.finishRecExport();
       }
-
       // play clip if corresponds
       for (const trackId in this.trackClips) {
         const clips = this.trackClips[trackId];
@@ -697,7 +730,8 @@ export default {
       }
     },
     onCanvasClick(e, trackId) {
-      const xPos = (e.clientX - e.target.getBoundingClientRect().x + this.globalX) / this.timeline.barWidth;
+      const xPos =
+        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.barWidth;
       this.positionCursor(xPos);
       // select tracks
       // const clips = this.trackClips[trackId];
@@ -722,7 +756,7 @@ export default {
     renderCursor() {
       this.canvasOverlayCtx.clearRect(0, 0, this.timeline.viewportWidth, this.canvasOverlay.height);
       this.canvasOverlayCtx.fillRect(
-        (this.cursorX - this.globalX) * this.timeline.barWidth,
+        (this.cursorX - this.globalStart) * this.timeline.barWidth,
         0,
         2,
         this.canvasOverlay.height
@@ -746,7 +780,7 @@ export default {
         }
       }
 
-      if (this.globalX - amount * delta >= 0) {
+      if (this.globalStart - amount * delta >= 0) {
         this.moveCanvas(amount * delta);
         this.renderCursor();
       }
@@ -759,7 +793,7 @@ export default {
       this.createTrack(Node);
     },
 
-    createTrack(instrument) {
+    createTrack(instrument, trackId) {
       const trackGain = new Gain('Track Gain');
       const trackGainAnalyser = this.context.createAnalyser();
       trackGainAnalyser.fftSize = 32;
@@ -768,8 +802,9 @@ export default {
       trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
       trackGain.connectNativeNode(this.masterInput, 'Mixer Gain');
 
+      this.trackIdCount++;
       const track = {
-        id: ++this.trackIdCount,
+        id: trackId || this.trackIdCount,
         name: 'Track ' + this.trackIdCount,
         displayName: 'Track ' + this.trackIdCount,
         instrument,
@@ -787,8 +822,8 @@ export default {
       this.renderCursor();
 
       this.$nextTick(() => {
-        const canvasContainer = document.querySelector('.rec-canvas-container');
-        const canvas = this.$refs[`rec-canvas-${track.id}`][0];
+        const canvasContainer = document.querySelector('.timeline');
+        const canvas = this.$refs[`track-canvas-${track.id}`][0];
         canvas.width = canvasContainer.offsetWidth;
         track.canvas = canvas;
         track.ctx = canvas.getContext('2d');
@@ -1084,14 +1119,125 @@ export default {
 
     // LOAD/SAVE
 
-    loadSave(tracks) {
-      tracks.forEach(track => {
-        this.loadInstrument(t.instrument);
+    hardReset() {
+      this.trackClips = {};
+      this.trackIdCount = 0;
+      this.currentTrack = null;
+      this.currentTrackIndex = 0;
+      this.clipIdCount = 0;
+      for (var i = 0; i < this.tracks.length; i++) this.deleteTrack(i);
+      this.tracks = [];
+    },
 
-        track.effects.forEach(effectSaveString => {
-          this.loadEffect(effectSaveString);
+    onSave(newProjectName) {
+      if (!db.projects[this.projectId] || newProjectName) {
+        // new project
+        this.projectName = newProjectName || prompt('Project name', 'WebDaw Project');
+        if (!this.projectName) return;
+
+        this.projectId = ++db.projectIdCount;
+        db.projects[this.projectId] = { name: this.projectName };
+        db.updateProjectsList({ projects: db.projects, idCount: this.projectId }, () => {});
+      }
+
+      const tracks = [];
+      this.tracks.forEach(track => {
+        tracks.push({
+          id: track.id,
+          instrument: JSON.parse(track.instrument.saveString()),
+          effects: track.effects.map(effect => JSON.parse(effect.saveString())),
         });
       });
+      db.save(this.projectId, 'tracks', tracks, () => {
+        console.log('tracks saved');
+      });
+
+      const trackClips = {};
+      for (const trackId in this.trackClips) {
+        const clips = this.trackClips[trackId];
+        trackClips[trackId] = clips.map(clip => {
+          return { id: clip.id, blob: clip.blob, bars: clip.bars, xPos: clip.xPos };
+        });
+      }
+      db.save(this.projectId, 'track_clips', trackClips, () => {
+        console.log('track_clips saved');
+        this.unsaved = false;
+      });
+    },
+
+    onLoad({ projectId, projectName }) {
+      this.hardReset();
+      this.projectId = parseInt(projectId);
+      this.projectName = projectName;
+
+      db.get(this.projectId, 'tracks', data => {
+        this.loadTracks(data);
+      });
+      db.get(this.projectId, 'track_clips', data => {
+        this.loadTrackClips(data);
+        this.unsaved = false;
+      });
+      // todo: load click values
+    },
+
+    loadTracks(tracks) {
+      tracks.forEach(track => {
+        this.loadInstrument(track.instrument, track.id);
+        track.effects.forEach(effect => {
+          this.loadEffect(effect);
+        });
+      });
+    },
+
+    loadTrackClips(trackClips) {
+      let clipsProcessed = 0;
+      let numClips = 0;
+      for (const trackId in trackClips) {
+        const clips = trackClips[trackId];
+        numClips += clips.length;
+        clips.forEach(clip => {
+          const blobReader = new FileReader();
+          blobReader.onloadend = () => {
+            const arrayBuffer = blobReader.result;
+            this.context.decodeAudioData(arrayBuffer, audioBuffer => {
+              clip.buffer = audioBuffer;
+              clip.duration = clip.buffer.duration;
+              clip.barCount = clip.bars.length;
+              clip.barDuration = clip.buffer.duration / clip.barCount;
+              clip.playing = false;
+              clip.sampleRate = Math.round(clip.buffer.length / clip.barCount);
+
+              // determine total timeleine width
+              const endPos = clip.xPos + clip.barCount;
+              if (endPos > this.timeline.lastSample) this.timeline.lastSample = endPos;
+
+              // might fail because of race condition?
+              if (++clipsProcessed >= numClips) this.onLoadFinish(trackClips);
+            });
+          };
+          blobReader.readAsArrayBuffer(clip.blob);
+        });
+      }
+    },
+
+    onLoadFinish(trackClips) {
+      this.trackClips = trackClips;
+      this.globalStart = 0;
+      this.cursorX = 0;
+      this.$nextTick(() => {
+        this.computeTimelineWidth();
+        this.moveCanvas(0);
+        this.renderCursor();
+      });
+    },
+
+    loadInstrument(instSaveString, trackId) {
+      const instrument = createInstrument(instSaveString.nodeType, instSaveString);
+      this.createTrack(instrument, trackId);
+    },
+    loadEffect(effectSaveString) {
+      const effect = createEffect(effectSaveString.nodeType, effectSaveString);
+      this.insertEffect(effect);
     },
     loadPreset(saveString) {
       if (saveString.nodeRol === 'Instrument') {
@@ -1100,23 +1246,16 @@ export default {
         this.loadEffect(saveString);
       }
     },
-    loadInstrument(instSaveString) {
-      const instrument = createInstrument(instSaveString.nodeType, instSaveString);
-      this.createTrack(instrument);
-    },
-    loadEffect(effectSaveString) {
-      const effect = createEffect(effectSaveString.nodeType, effectSaveString);
-      this.insertEffect(effect);
-    },
 
     // EXPORT
 
     onExport() {
+      this.export.name = prompt('File name?', 'web-synth-export');
+      if (!this.export.name) return;
       this.onStopBtn();
       this.onStopBtn();
       this.export = {};
       this.exporting = true;
-      this.export.name = prompt('File name?', 'web-synth-export');
       this.recordExport();
       this.clipDestination = this.masterInput;
       this.playAllTracks();
@@ -1125,6 +1264,7 @@ export default {
     finishRecExport() {
       this.exportMediaRecorder.stop();
       this.exporting = false;
+      this.export.name = null;
       this.onStopBtn();
     },
 
@@ -1151,11 +1291,11 @@ export default {
       // When recording's finished, process data chunk
       // into a Blob, and save it for future use
       this.exportMediaRecorder.onstop = () => {
-        const blobFileReader = new FileReader();
+        const blobReader = new FileReader();
         const blob = new Blob(chunks, { type: 'audio/ogg' });
 
-        blobFileReader.onloadend = () => {
-          const arrayBuffer = blobFileReader.result;
+        blobReader.onloadend = () => {
+          const arrayBuffer = blobReader.result;
           this.context.decodeAudioData(arrayBuffer, audioBuffer => {
             this.export.blob = blob;
             this.export.buffer = audioBuffer;
@@ -1163,7 +1303,7 @@ export default {
           });
         };
 
-        blobFileReader.readAsArrayBuffer(blob);
+        blobReader.readAsArrayBuffer(blob);
         mediaStreamDestination = null;
         chunks = null;
       };
@@ -1194,7 +1334,7 @@ export default {
         scaleInterface.instrument.stopNote(note);
       });
     },
-    toggleMapping() {
+    onMidiMap() {
       if (this.refBeignMapped) {
         this.refBeignMapped.stopMapping();
         this.refBeignMapped = null;
@@ -1274,11 +1414,36 @@ export default {
         }
       };
     },
+
+    logInfo() {
+      let c = 0;
+      let sum = 0;
+      let min = 0;
+      let max = 0;
+      for (const trackId in this.trackClips) {
+        const clips = this.trackClips[trackId];
+        clips.forEach(clip => {
+          // console.log('clip', clip.id, 'sample rate', clip.sampleRate);
+          if (clip.sampleRate < min || c === 0) min = clip.sampleRate;
+          if (clip.sampleRate > max) max = clip.sampleRate;
+          sum += clip.sampleRate;
+          c++;
+        });
+      }
+      // console.log('sample min:', min);
+      // console.log('sample max:', max);
+      console.log('sample avg:', sum / c);
+    },
   },
 };
 </script>
 
 <style lang="scss">
+canvas {
+  height: 100%;
+  width: 100%;
+}
+
 .home-wrapper {
   height: 100vh;
   background: transparent;
@@ -1298,33 +1463,54 @@ export default {
 .mid-section {
   height: var(--mid-section-height);
   display: flex;
-  gap: 0.25rem;
-  .right-col {
-    background: black;
-    flex: 1;
+}
+.right-col {
+  background: black;
+  flex: 1;
+}
+
+.top-controls {
+}
+
+// Info
+.info-wrapper {
+  background: #222;
+}
+.info-container {
+  margin-left: var(--left-controls-width);
+  width: calc(100% - var(--left-controls-width) - var(--right-controls-width));
+  display: flex;
+  // gap: 1.5rem;
+  align-items: center;
+  background: teal;
+  &:first-child {
+    padding-left: 0.25rem;
+  }
+  &:last-child {
+    padding-right: 0.25rem;
   }
 }
-
-.click-wrapper {
-  margin: 0.25rem;
+.info-item {
+  padding: 0.25rem 0 0.25rem 0;
+  min-width: 95px;
 }
-
-.tracks-container {
-  height: calc(
-    100vh - var(--top-section-height) - var(--click-wrapper-height) - var(--bottom-section-height)
-  );
+.info-item.last {
+  flex: 1;
+  text-align: right;
+}
+.tracklist-wrapper {
+  height: calc(100vh - var(--top-section-height) - var(--top-controls-height) - var(--bottom-section-height));
   overflow-y: scroll;
-  border: 2px solid transparent;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
-.tracks-container.mapping {
+.tracklist-wrapper.mapping {
   border-color: var(--color-1);
 }
 
-.track-list {
+.tracklist {
   position: relative;
 }
 
@@ -1338,27 +1524,28 @@ export default {
 .track.selected {
   background: #333;
 }
-.track-inner-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.left-controls {
+  width: var(--left-controls-width);
   padding: 1.4rem 0.5rem;
   overflow: auto;
   white-space: nowrap;
   padding-right: 2rem;
 }
-
-.rec-canvas-container {
+.left-ctrls-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 100px;
+}
+.timeline {
   position: relative;
   background: transparent;
   z-index: 1;
   flex: 1;
   height: 64px;
 }
-
-canvas {
-  height: 100%;
-  width: 100%;
+.right-controls {
+  width: var(--right-controls-width);
 }
 
 .canvas-overlay {
