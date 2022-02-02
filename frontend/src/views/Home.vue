@@ -78,6 +78,9 @@
                   class="timeline"
                   :ref="`timeline-${track.id}`"
                   @click="onCanvasClick($event, track.id)"
+                  @mousedown="onCanvasMouseDown($event, track.id)"
+                  @mousemove="onCanvasMouseMove($event, track.id)"
+                  @mouseup="onCanvasMouseUp($event, track.id)"
                   @mousewheel="onCanvasContainerWheel"
                 >
                   <canvas :ref="`track-canvas-${track.id}`" :height="timeline.trackHeight"></canvas>
@@ -665,10 +668,13 @@ export default {
             const first = clipStart <= this.globalStart ? this.globalStart : clipStart;
             const last = clipEnd >= this.globalEnd ? this.globalEnd : clipEnd;
             for (var x = first; x < last; x++) {
-              if (clip.selected) {
-                ctx.fillStyle = '#00f70';
-                ctx.fillRect((x - this.globalStart) * barWidth, timelineHeight - 8, barWidth, timelineHeight);
-              }
+              ctx.fillStyle = clip.selected ? '#10ff7070' : '#10ff7020';
+              ctx.fillRect(
+                (x - this.globalStart) * barWidth,
+                timelineHeight / 4,
+                barWidth,
+                timelineHeight / -4
+              );
 
               const bar = bars[x - clipStart];
               ctx.fillStyle = '#000';
@@ -730,10 +736,10 @@ export default {
       }
     },
     onCanvasClick(e, trackId) {
-      const xPos =
-        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.barWidth;
-      this.positionCursor(xPos);
-      // select tracks
+      // const xPos =
+      //   (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.barWidth;
+      // this.positionCursor(xPos);
+      // // select clips
       // const clips = this.trackClips[trackId];
       // for (var i = 0; i < clips.length; i++) {
       //   const clip = clips[i];
@@ -744,6 +750,52 @@ export default {
       //   }
       //   this.renderCanvas();
       // }
+    },
+    onCanvasMouseDown(e, trackId) {
+      const xPos =
+        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.barWidth;
+      this.positionCursor(xPos);
+
+      const clips = this.trackClips[trackId];
+      for (var i = 0; i < clips.length; i++) {
+        const clip = clips[i];
+        // if (clip.selected) {
+        if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
+          clip.selected = true;
+          clip.moving = true;
+          // todo: dender only proper track
+          this.renderCanvas();
+        }
+      }
+    },
+    onCanvasMouseMove(e, trackId) {
+      const clips = this.trackClips[trackId];
+      for (var i = 0; i < clips.length; i++) {
+        const clip = clips[i];
+        if (clip.moving) {
+          clip.xPos += e.movementX;
+          // todo: dender only proper track
+          this.renderCanvas();
+        }
+      }
+    },
+    onCanvasMouseUp(e, trackId) {
+      const xPos =
+        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.barWidth;
+      this.positionCursor(xPos);
+
+      const clips = this.trackClips[trackId];
+      for (var i = 0; i < clips.length; i++) {
+        const clip = clips[i];
+        if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
+          if (!clip.moving) clip.selected = false;
+          clip.moving = false;
+        } else {
+          if (!e.ctrlKey) clip.selected = false;
+        }
+        // todo: dender only proper track
+        this.renderCanvas();
+      }
     },
     positionCursor(xPos) {
       if (this.recording) return;

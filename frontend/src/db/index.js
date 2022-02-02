@@ -1,4 +1,5 @@
 const request = indexedDB.open("web_synth", 1); //version
+let hasUpgraded = false;
 let db;
 
 request.onupgradeneeded = function () {
@@ -7,16 +8,17 @@ request.onupgradeneeded = function () {
   db.createObjectStore("projects");
   db.createObjectStore("track_clips");
   db.createObjectStore("tracks");
-
-
+  hasUpgraded = true;
 };
 
 request.onsuccess = function () {
   db = request.result;
-  // const tx = db.transaction('projects', "readwrite");
-  // const store = tx.objectStore('projects');
-  // store.put({}, 'projects');
-  // store.put(0, 'projectIdCount');
+  if (hasUpgraded) {
+    const tx = db.transaction('projects', "readwrite");
+    const store = tx.objectStore('projects');
+    store.put({}, 'projects');
+    store.put(0, 'projectIdCount');
+  }
 };
 
 
