@@ -616,6 +616,16 @@ export default {
     renderClipBar(clip, ctx) {
       const x = clip.barCount - 1;
       const bar = clip.bars[x];
+
+      ctx.fillStyle = '#10ff7020';
+      ctx.fillRect(
+        (this.cursorX - this.globalStart) * this.timeline.barWidth,
+        this.timeline.trackHeight / 4,
+        this.timeline.barWidth,
+        this.timeline.trackHeight / -4
+      );
+
+      ctx.fillStyle = '#000';
       ctx.fillRect(
         (this.cursorX - this.globalStart) * this.timeline.barWidth,
         this.timeline.trackHeight / 2 - bar / 2,
@@ -759,7 +769,6 @@ export default {
       const clips = this.trackClips[trackId];
       for (var i = 0; i < clips.length; i++) {
         const clip = clips[i];
-        // if (clip.selected) {
         if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
           clip.selected = true;
           clip.moving = true;
