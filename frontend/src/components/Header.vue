@@ -7,16 +7,11 @@
           <div class="file-menu" :class="{ active: fileMenuOpen }" @mouseleave="onFileMenuLeave">
             <div class="menu-btn" @click="fileMenuOpen = true" @mouseenter="fileMenuOpen = true">File</div>
             <div v-if="fileMenuOpen" class="menu">
+              <div class="menu-item" @click="onNew">New</div>
               <div class="menu-item" @click="onSave">Save</div>
               <div class="menu-item" @click="onSaveAs">Save as</div>
               <div class="has-submenu" @mouseenter="loadMenuOpen = true" @mouseleave="loadMenuOpen = false">
-                <div
-                  class="menu-item"
-                  :class="{ active: loadMenuOpen }"
-                  @click="loadMenuOpen = !loadMenuOpen"
-                >
-                  Open
-                </div>
+                <div class="menu-item" :class="{ active: loadMenuOpen }">Open</div>
                 <div v-if="loadMenuOpen" class="sub-menu">
                   <div
                     v-for="(project, key) in projects"
@@ -122,7 +117,9 @@ export default {
 
       this.$emit('onExport');
     },
-
+    onNew() {
+      this.$emit('onNew');
+    },
     onSave() {
       this.$emit('onSave');
     },
@@ -220,6 +217,7 @@ export default {
 .menu-item {
   padding: 0.5rem 2rem 0.5rem 1rem;
   color: #222;
+  user-select: none;
 }
 .menu-item:hover {
   position: relative;
