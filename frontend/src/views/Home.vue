@@ -540,15 +540,11 @@ export default {
       this.clips.forEach(clip => {
         clip.source && clip.source.stop();
       });
-      // for (const trackId in this.trackClips) {
-      //   this.trackClips[trackId].forEach(clip => {
-      //     if (clip.source) clip.source.stop(0);
-      //   });
-      // }
     },
 
     // RENDERING
 
+    // todo: review if we can get rid of using trackClips
     generateRenderDataObject(track) {
       const analyser = track.trackGainAnalyser;
       const clip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
@@ -633,7 +629,9 @@ export default {
         this.renderCanvas();
       }
     },
+    //render canvas
     renderCanvas() {
+      console.log('render canvas');
       for (const trackId in this.trackClips) this.renderTrack(trackId);
     },
     renderTrack(trackId) {
@@ -716,11 +714,15 @@ export default {
       }
     },
     unselectClips() {
+      let anyClipSelected = false;
       this.clips.forEach(clip => {
-        clip.selected = false;
-        clip.moving = false;
+        if (clip.selected) {
+          clip.selected = false;
+          clip.moving = false;
+          anyClipSelected = true;
+        }
       });
-      this.renderCanvas();
+      if (anyClipSelected) this.renderCanvas();
     },
     onCanvasMouseDown(e, trackId) {
       window.addEventListener('mousemove', this.onMouseMove);
@@ -730,7 +732,7 @@ export default {
         (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
       const yPos = e.clientY - e.target.getBoundingClientRect().y;
 
-      let noClipsClicked = true;
+      let anyClipClicked = false;
 
       if (yPos <= clipHandle.height) {
         const clips = this.trackClips[trackId];
@@ -739,13 +741,14 @@ export default {
           if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
             clip.selected = true;
             clip.moving = true;
-            noClipsClicked = false;
-            this.renderTrack(trackId);
+            anyClipClicked = true;
           }
         }
       }
 
-      if (noClipsClicked) {
+      if (anyClipClicked) {
+        this.renderTrack(trackId);
+      } else {
         this.unselectClips();
         this.positionCursor(xPos);
       }
@@ -777,42 +780,6 @@ export default {
 
           this.renderCanvas();
         }
-      }
-    },
-
-    // todo: listen to overlay canvas, not individual ones:
-    onCanvasMouseMove(e, trackId) {
-      // move clips
-      const clips = this.trackClips[trackId];
-      // todo: move all selected clips from all tracks (new data structure)
-      for (var i = 0; i < clips.length; i++) {
-        const clip = clips[i];
-        if (clip.moving) {
-          clip.xPos += e.movementX;
-          if (clip.xPos + clip.barCount > this.timeline.lastSample)
-            this.timeline.lastSample = clip.xPos + clip.barCount;
-
-          this.renderTrack(trackId);
-        }
-      }
-    },
-
-    onCanvasMouseUp(e, trackId) {
-      const xPos =
-        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
-
-      const clips = this.clips;
-      for (var i = 0; i < clips.length; i++) {
-        const clip = clips[i];
-        if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
-          if (!clip.moving) clip.selected = false;
-          clip.moving = false;
-        } else {
-          if (!e.ctrlKey) clip.selected = false;
-        }
-
-        this.renderCanvas();
-        window.removeEventListener('mousemove', this.onMouseMove);
       }
     },
 
@@ -1508,23 +1475,15 @@ export default {
       let min = 0;
       let max = 0;
 
-      for (const trackId in this.trackClips) {
-        const clips = this.trackClips[trackId];
-        clips.forEach(clip => {
-          if (!clip.info) clip.info = 0;
-          clip.info++;
-          // console.log('clip', clip.id, 'sample rate', clip.sampleRate);
-          if (clip.sampleRate < min || c === 0) min = clip.sampleRate;
-          if (clip.sampleRate > max) max = clip.sampleRate;
-          sum += clip.sampleRate;
-          c++;
-        });
-      }
+      this.clips.forEach(clip => {
+        if (clip.sampleRate < min || c === 0) min = clip.sampleRate;
+        if (clip.sampleRate > max) max = clip.sampleRate;
+        sum += clip.sampleRate;
+        c++;
+      });
       // console.log('sample min:', min);
       // console.log('sample max:', max);
       console.log('sample avg:', sum / c);
-      console.log(this.clips[0].info);
-      console.log(this.trackClips[1][0].info);
     },
   },
 };
