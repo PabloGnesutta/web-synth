@@ -332,8 +332,14 @@ export default {
 }
 
 // Specific Node Styles:
+.BiquadFilter {
+  width: 154px;
+}
 .Compressor {
   width: 200px;
+}
+.Delay {
+  width: 154px;
 }
 
 .node-footer {

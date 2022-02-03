@@ -1,12 +1,12 @@
 <template>
-  <div class="gain-body" :class="{ selected }">
+  <div class="gain-body select-none" :class="{ selected }">
     <!-- Mute/Rec enabled -->
     <div class="node-controls">
       <div class="rec-enabled-disabled" @click="toggleRecEnabled">
         <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
         <div v-else class="rec-btn rec-disabled">Rec disabled</div>
       </div>
-      <div class="mute-unmute" @click="toggleMute">
+      <div class="mute-unmute select-none" @click="toggleMute">
         <div v-if="Node.muted" class="unmute">M</div>
         <div v-else class="mute">M</div>
       </div>

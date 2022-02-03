@@ -49,6 +49,7 @@
                 <!-- <div class="info-item">vpW: {{ timeline.viewportWidth }}</div> -->
                 <div class="info-item">curr: {{ cursorX }}</div>
                 <div class="info-item">last: {{ timeline.lastSample }}</div>
+                <div class="info-item">zoom: {{ timeline.sampleWidth }}</div>
                 <div class="info-item last">{{ globalEnd }}</div>
               </div>
             </div>
@@ -176,16 +177,23 @@
 </template>
 
 <script>
-import { createInstrument, createEffect } from '../factory/NodeFactory';
-const noteFrequencies = require('../data/noteFrequencies');
-const totalAmountOfNotes = noteFrequencies.length;
-const noteKeys = require('../data/noteKeys');
-
 const Node = require('../class/Node');
 const Gain = require('../class/Effects/Gain');
+const noteFrequencies = require('../data/noteFrequencies');
+const noteKeys = require('../data/noteKeys');
+const numNotes = noteFrequencies.length;
+
+const minSampleWidth = 1;
+const carretMovementAmount = 50;
+const clipHandle = {
+  height: 20,
+  color: '#10ff7050',
+  selectedColor: '#10ff7090',
+};
+const sampleErrorMargin = 10;
 
 import db from '@/db/index.js';
-
+import { createInstrument, createEffect } from '../factory/NodeFactory';
 import { mapMutations, mapGetters } from 'vuex';
 import NodeRender from '../components/NodeRender';
 import GainBody from '../components/specific-nodes/GainBody';
@@ -243,43 +251,15 @@ export default {
 
       // define tracClips
       clipIdCount: 0,
-      trackClips: {
-        /*
-        trackId0: [
-          {
-            clipId: int,
-            blob,
-            buffer,
-            bars,
-            duration,
-            barCount,
-            barDuration,
-            xPos,
-            playing: bool,
-            source: audioBufferSource (temporary)
-          },
-          {
-            clipId: int,
-            (...)
-          }
-        ],
-        trackId1: [...]
-        
-      */
-      },
+      trackClips: {},
 
       //Rendering
       renderDataObjects: [],
       followCursor: true,
       timeline: {
-        barWidth: 1,
-        minBarWidth: 1,
-        timeOffset: 16,
-        bgColor: '#e5979750',
-        selectedColor: '#1a7cc150',
-        carretMovementAmount: 50,
         trackHeight: 64,
         viewportWidth: undefined,
+        sampleWidth: 1,
         lastSample: 0,
       },
       trackProps: {
@@ -300,7 +280,6 @@ export default {
       export: {},
       exporting: false,
       exportProgress: 0,
-      exportTimeOffset: 500,
       clipDestination: null,
 
       unsaved: true,
@@ -435,7 +414,7 @@ export default {
 
       this.playing = true;
       this.renderCanvas();
-      this.captureBarsLoop(performance.now() / this.timeline.timeOffset, cursorStep);
+      this.captureBarsLoop(cursorStep);
     },
 
     startRecSingleTrack(track) {
@@ -537,10 +516,7 @@ export default {
 
     playAllTracks() {
       this.playing = true;
-      this.moveTimielineWithPlayback(
-        performance.now() / this.timeline.timeOffset,
-        performance.now() / this.exportTimeOffset
-      );
+      this.moveTimielineWithPlayback();
     },
 
     onStopBtn() {
@@ -585,7 +561,7 @@ export default {
       };
     },
 
-    captureBarsLoop(now, cursorStep) {
+    captureBarsLoop(cursorStep) {
       for (var r = 0; r < this.renderDataObjects.length; r++) {
         const renderDataObject = this.renderDataObjects[r];
         let { analyser, frequencyArray, clip, ctx } = renderDataObject;
@@ -611,101 +587,84 @@ export default {
 
       this.moveCursor(cursorStep);
       if (this.followCursor) this.moveCarret();
-      this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, now, cursorStep));
+      this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, cursorStep));
     },
 
     renderClipBar(clip, ctx) {
       const x = clip.barCount - 1;
       const bar = clip.bars[x];
 
-      ctx.fillStyle = '#10ff7020';
+      ctx.fillStyle = clipHandle.color;
       ctx.fillRect(
-        (this.cursorX - this.globalStart) * this.timeline.barWidth,
-        this.timeline.trackHeight / 4,
-        this.timeline.barWidth,
-        this.timeline.trackHeight / -4
+        (this.cursorX - this.globalStart) * this.timeline.sampleWidth,
+        clipHandle.height,
+        this.timeline.sampleWidth,
+        -clipHandle.height
       );
 
       ctx.fillStyle = '#000';
       ctx.fillRect(
-        (this.cursorX - this.globalStart) * this.timeline.barWidth,
+        (this.cursorX - this.globalStart) * this.timeline.sampleWidth,
         this.timeline.trackHeight / 2 - bar / 2,
-        this.timeline.barWidth,
+        this.timeline.sampleWidth,
         bar
       );
     },
 
-    moveTimielineWithPlayback(now, exportNow) {
-      this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null, now, exportNow));
-      // const performanceNow = performance.now();
-      // if (performanceNow / this.timeline.timeOffset > now) {
-      // now = performance.now() / this.timeline.timeOffset;
+    moveTimielineWithPlayback() {
+      this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null));
       this.moveCursor(1);
-      // }
-      if (this.exporting) {
-        // if (performanceNow / this.exportTimeOffset > exportNow) {
-        // exportNow = performance.now() / this.exportTimeOffset;
-        this.exportProgress = ~~((this.cursorX * 100) / this.timeline.lastSample);
-        // }
-      }
       if (this.followCursor) this.moveCarret();
+      if (this.exporting) this.exportProgress = ~~((this.cursorX * 100) / this.timeline.lastSample);
     },
 
     moveCarret() {
-      if ((this.cursorX - this.globalStart) * this.timeline.barWidth > this.timeline.viewportWidth) {
+      if ((this.cursorX - this.globalStart) * this.timeline.sampleWidth > this.timeline.viewportWidth)
         this.moveCanvas(this.timeline.carretSkip);
+    },
+    moveCanvas(amount) {
+      if (this.globalStart - amount >= 0) {
+        this.globalStart -= amount;
+        this.globalEnd = this.globalStart + this.timeline.viewportWidth;
+        this.renderCanvas();
       }
     },
-
     renderCanvas() {
-      for (const trackId in this.trackClips) {
-        const clips = this.trackClips[trackId];
-        const canvas = this.$refs[`track-canvas-${trackId}`][0];
-        const ctx = canvas.getContext('2d');
-        const barWidth = this.timeline.barWidth;
-        const timelineHeight = this.timeline.trackHeight;
+      for (const trackId in this.trackClips) this.renderTrack(trackId);
+    },
+    renderTrack(trackId) {
+      const clips = this.trackClips[trackId];
+      const canvas = this.$refs[`track-canvas-${trackId}`][0];
+      const ctx = canvas.getContext('2d');
+      const barWidth = this.timeline.sampleWidth;
+      const timelineHeight = this.timeline.trackHeight;
 
-        ctx.clearRect(0, 0, canvas.width, timelineHeight);
+      ctx.clearRect(0, 0, canvas.width, timelineHeight);
 
-        for (var c = 0; c < clips.length; c++) {
-          const clip = clips[c];
-          const bars = clip.bars;
-          const clipStart = clip.xPos;
-          const clipEnd = clipStart + clip.barCount;
+      for (var c = 0; c < clips.length; c++) {
+        const clip = clips[c];
+        const bars = clip.bars;
+        const clipStart = clip.xPos;
+        const clipEnd = clipStart + clip.barCount;
 
-          // only render clips that are in the viewport
-          if (clipEnd >= this.globalStart && clipStart <= this.globalEnd) {
-            // only render visible part of the clip
-            const first = clipStart <= this.globalStart ? this.globalStart : clipStart;
-            const last = clipEnd >= this.globalEnd ? this.globalEnd : clipEnd;
-            for (var x = first; x < last; x++) {
-              ctx.fillStyle = clip.selected ? '#10ff7070' : '#10ff7020';
-              ctx.fillRect(
-                (x - this.globalStart) * barWidth,
-                timelineHeight / 4,
-                barWidth,
-                timelineHeight / -4
-              );
+        // only render clips that are in the viewport
+        if (clipEnd >= this.globalStart && clipStart <= this.globalEnd) {
+          // only render visible part of the clip
+          const first = clipStart <= this.globalStart ? this.globalStart : clipStart;
+          const last = clipEnd >= this.globalEnd ? this.globalEnd : clipEnd;
+          for (var x = first; x < last; x++) {
+            ctx.fillStyle = clip.selected ? clipHandle.selectedColor : clipHandle.color;
+            ctx.fillRect((x - this.globalStart) * barWidth, clipHandle.height, barWidth, -clipHandle.height);
 
-              const bar = bars[x - clipStart];
-              ctx.fillStyle = '#000';
-              ctx.fillRect((x - this.globalStart) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
-            }
+            const bar = bars[x - clipStart];
+            ctx.fillStyle = '#000';
+            ctx.fillRect((x - this.globalStart) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
           }
         }
       }
     },
 
-    moveCanvas(amount) {
-      if (this.globalStart - amount >= 0) {
-        this.globalStart -= amount;
-        this.globalEnd = this.globalStart + this.timeline.viewportWidth;
-      }
-      this.renderCanvas();
-    },
-
     playClip(trackId, clip) {
-      console.log('playclip', clip.id);
       const offset = (this.cursorX - clip.xPos) * clip.barDuration;
       clip.source = this.context.createBufferSource();
       clip.source.buffer = clip.buffer;
@@ -725,76 +684,76 @@ export default {
       };
     },
 
+    // Timeline Interactions
+
     moveCursor(amount) {
       this.cursorX += amount;
       this.renderCursor();
 
       if (this.recording || !this.playing) return;
-      if (this.cursorX > this.timeline.lastSample) {
-        return this.exporting && this.finishRecExport();
-      }
+      if (this.cursorX > this.timeline.lastSample) return this.exporting && this.finishRecExport();
+
       // play clip if corresponds
       for (const trackId in this.trackClips) {
         const clips = this.trackClips[trackId];
         for (let c = 0; c < clips.length; c++) {
           const clip = clips[c];
-          if (!clip.playing) {
-            if (this.cursorX >= clip.xPos && this.cursorX < clip.xPos + clip.barCount) {
+          if (!clip.playing)
+            if (this.cursorX >= clip.xPos && this.cursorX < clip.xPos + clip.barCount - sampleErrorMargin) {
+              // console.log('cursorX', this.cursorX);
+              // console.log('playclip', clip.id, clip.xPos, clip.xPos + clip.barCount);
+              console.log('playclip', clip.id);
               this.playClip(trackId, clip);
             }
+        }
+      }
+    },
+    onCanvasClick(e, trackId) {},
+    onCanvasMouseDown(e, trackId) {
+      const xPos =
+        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
+      const yPos = e.clientY - e.target.getBoundingClientRect().y;
+      let noClipsClicked = true;
+
+      if (yPos <= clipHandle.height) {
+        const clips = this.trackClips[trackId];
+        for (var i = 0; i < clips.length; i++) {
+          const clip = clips[i];
+          if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
+            clip.selected = true;
+            clip.moving = true;
+            this.renderTrack(trackId);
+            noClipsClicked = false;
           }
         }
       }
-    },
-    onCanvasClick(e, trackId) {
-      // const xPos =
-      //   (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.barWidth;
-      // this.positionCursor(xPos);
-      // // select clips
-      // const clips = this.trackClips[trackId];
-      // for (var i = 0; i < clips.length; i++) {
-      //   const clip = clips[i];
-      //   if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
-      //     clip.selected = true;
-      //   } else {
-      //     clip.selected = false;
-      //   }
-      //   this.renderCanvas();
-      // }
-    },
-    onCanvasMouseDown(e, trackId) {
-      const xPos =
-        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.barWidth;
-      this.positionCursor(xPos);
 
-      const clips = this.trackClips[trackId];
-      for (var i = 0; i < clips.length; i++) {
-        const clip = clips[i];
-        if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
-          clip.selected = true;
-          clip.moving = true;
-          // todo: dender only proper track
-          this.renderCanvas();
-        }
+      if (noClipsClicked) {
+        // todo: unselect all clips from all tracks
+        this.positionCursor(xPos);
       }
     },
     onCanvasMouseMove(e, trackId) {
+      // move clips
       const clips = this.trackClips[trackId];
+      // todo: move all selected clips from all tracks (new data structure)
       for (var i = 0; i < clips.length; i++) {
         const clip = clips[i];
         if (clip.moving) {
           clip.xPos += e.movementX;
-          // todo: dender only proper track
-          this.renderCanvas();
+          if (clip.xPos + clip.barCount > this.timeline.lastSample)
+            this.timeline.lastSample = clip.xPos + clip.barCount;
+
+          this.renderTrack(trackId);
         }
       }
     },
+
     onCanvasMouseUp(e, trackId) {
       const xPos =
-        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.barWidth;
-      this.positionCursor(xPos);
-
+        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
       const clips = this.trackClips[trackId];
+      // todo: stop move all selected clips from all tracks
       for (var i = 0; i < clips.length; i++) {
         const clip = clips[i];
         if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
@@ -803,10 +762,11 @@ export default {
         } else {
           if (!e.ctrlKey) clip.selected = false;
         }
-        // todo: dender only proper track
-        this.renderCanvas();
+
+        this.renderTrack(trackId);
       }
     },
+
     positionCursor(xPos) {
       if (this.recording) return;
       this.cursorX = xPos;
@@ -818,7 +778,7 @@ export default {
     renderCursor() {
       this.canvasOverlayCtx.clearRect(0, 0, this.timeline.viewportWidth, this.canvasOverlay.height);
       this.canvasOverlayCtx.fillRect(
-        (this.cursorX - this.globalStart) * this.timeline.barWidth,
+        (this.cursorX - this.globalStart) * this.timeline.sampleWidth,
         0,
         2,
         this.canvasOverlay.height
@@ -827,18 +787,18 @@ export default {
 
     onCanvasContainerWheel(event) {
       event.preventDefault();
-      let amount = this.timeline.carretMovementAmount;
-      let delta = this.timeline.minBarWidth;
+      let amount = carretMovementAmount;
+      let delta = minSampleWidth;
       if (event.wheelDelta < 0) {
-        delta = -this.timeline.minBarWidth;
+        delta = -minSampleWidth;
       }
       if (event.shiftKey) {
         amount = 0;
-        this.timeline.barWidth += 1 * delta;
-        if (this.timeline.barWidth < this.timeline.minBarWidth) {
-          this.timeline.barWidth = this.timeline.minBarWidth;
-        } else if (this.timeline.barWidth > 3) {
-          this.timeline.barWidth = 3;
+        this.timeline.sampleWidth += 1 * delta;
+        if (this.timeline.sampleWidth < minSampleWidth) {
+          this.timeline.sampleWidth = minSampleWidth;
+        } else if (this.timeline.sampleWidth > 3) {
+          this.timeline.sampleWidth = 3;
         }
       }
 
@@ -1083,7 +1043,7 @@ export default {
       if (noteKeyIndex !== -1) {
         let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
         if (noteIndex < 0) noteIndex = 0;
-        if (noteIndex > totalAmountOfNotes - 1) noteIndex = totalAmountOfNotes - 1;
+        if (noteIndex > numNotes - 1) noteIndex = numNotes - 1;
 
         this.keypressListeners.forEach(scaleInterface => {
           scaleInterface.instrument.playNote(noteIndex);
@@ -1187,6 +1147,11 @@ export default {
       this.currentTrack = null;
       this.currentTrackIndex = 0;
       this.clipIdCount = 0;
+      this.timeline.lastSample = 0;
+      this.computeTimelineWidth();
+      this.globalStart = 0;
+      this.cursorX = 0;
+
       for (var i = 0; i < this.tracks.length; i++) this.deleteTrack(i);
       this.tracks = [];
       // todo: reset Nodes' Ids
@@ -1196,6 +1161,9 @@ export default {
         this.createTrack(createInstrument('Femod'));
         this.createAndInsertEffect('BiquadFilter');
       }
+
+      this.renderCanvas();
+      this.renderCursor();
     },
 
     onSave(newProjectName) {

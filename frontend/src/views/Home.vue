@@ -43,7 +43,7 @@
             <!-- Click -->
             <Click ref="click" />
             <!-- Info -->
-            <div class="info-wrapper">
+            <div class="info-wrapper select-none">
               <div class="info-container" :style="{ width: timeline.viewportWidth + 'px' }" @click="logInfo">
                 <div class="info-item">{{ globalStart }}</div>
                 <!-- <div class="info-item">vpW: {{ timeline.viewportWidth }}</div> -->
@@ -68,27 +68,22 @@
                 <div class="left-controls no-scrollbar" @click="selectTrack(t)">
                   <div class="left-ctrls-inner">
                     <div @click.stop="deleteTrack(t)" class="pointer">[X]</div>
-                    <div class="select-none">{{ track.name }}</div>
-                    <div class="select-none">
-                      {{ track.instrument.name }}
-                    </div>
+                    <div>{{ track.name }}</div>
+                    <div>{{ track.instrument.name }}</div>
                   </div>
                 </div>
 
-                <!-- Rec Canvas -->
+                <!-- Track Timeline -->
                 <div
                   class="timeline"
                   :ref="`timeline-${track.id}`"
-                  @click="onCanvasClick($event, track.id)"
                   @mousedown="onCanvasMouseDown($event, track.id)"
-                  @mousemove="onCanvasMouseMove($event, track.id)"
-                  @mouseup="onCanvasMouseUp($event, track.id)"
                   @mousewheel="onCanvasContainerWheel"
                 >
                   <canvas :ref="`track-canvas-${track.id}`" :height="timeline.trackHeight"></canvas>
                 </div>
 
-                <!-- Track Gain and Controls -->
+                <!-- Right Controls -->
                 <div class="right-controls">
                   <GainBody
                     :Node="track.trackGain"
@@ -252,7 +247,7 @@ export default {
       // define tracClips
       clipIdCount: 0,
       trackClips: {},
-
+      clips: [],
       //Rendering
       renderDataObjects: [],
       followCursor: true,
@@ -297,7 +292,9 @@ export default {
     this.setContext(null);
     window.removeEventListener('keyup', this.onKeyup);
     window.removeEventListener('keydown', this.onKeydown);
-    window.removeEventListener('resize', this.reflow);
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('mouseup', this.onMouseUp);
+    window.removeEventListener('mousemove', this.onMouseMove);
   },
 
   created() {
@@ -335,13 +332,13 @@ export default {
         this.computeTimelineWidth();
 
         this.createTrack(createInstrument('Drumkit'));
-        this.createTrack(createInstrument('Femod'));
-        this.createAndInsertEffect('BiquadFilter');
+        // this.createTrack(createInstrument('Femod'));
+        // this.createAndInsertEffect('BiquadFilter');
       });
 
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
-      window.addEventListener('resize', this.reflow);
+      window.addEventListener('resize', this.onResize);
 
       setTimeout(() => {
         this.test();
@@ -376,7 +373,7 @@ export default {
       this.globalEnd = this.globalStart + this.timeline.viewportWidth;
     },
 
-    reflow() {
+    onResize() {
       this.computeTimelineWidth();
       this.tracks.forEach(track => {
         track.canvas.width = this.timeline.viewportWidth;
@@ -395,7 +392,6 @@ export default {
         }
       }
     },
-
     onRec() {
       this.recording ? this.stopRec() : this.startRec();
     },
@@ -428,15 +424,17 @@ export default {
       track.trackGain.connectNativeNode(mediaStreamDestination);
 
       //init trackClip
-      this.trackClips[track.id].push({
+
+      const clip = {
+        trackId: track.id,
         id: ++this.clipIdCount,
         xPos: this.cursorX,
         playing: true,
         barCount: 0,
         sampleRate: 0,
-      });
-
-      const clip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
+      };
+      this.trackClips[track.id].push(clip);
+      this.clips.push(clip);
 
       mediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
       // When recording's finished, process data chunk
@@ -446,8 +444,6 @@ export default {
         const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
 
         blobReader.onloadend = () => {
-          // console.log(clip.barCount);
-
           const arrayBuffer = blobReader.result;
           this.context.decodeAudioData(arrayBuffer, audioBuffer => {
             clip.blob = blob;
@@ -537,13 +533,14 @@ export default {
     },
 
     stopAllClips() {
-      for (const trackId in this.trackClips) {
-        this.trackClips[trackId].forEach(clip => {
-          if (clip.source) {
-            clip.source.stop(0);
-          }
-        });
-      }
+      this.clips.forEach(clip => {
+        clip.source && clip.source.stop();
+      });
+      // for (const trackId in this.trackClips) {
+      //   this.trackClips[trackId].forEach(clip => {
+      //     if (clip.source) clip.source.stop(0);
+      //   });
+      // }
     },
 
     // RENDERING
@@ -636,43 +633,53 @@ export default {
       const clips = this.trackClips[trackId];
       const canvas = this.$refs[`track-canvas-${trackId}`][0];
       const ctx = canvas.getContext('2d');
-      const barWidth = this.timeline.sampleWidth;
-      const timelineHeight = this.timeline.trackHeight;
-
-      ctx.clearRect(0, 0, canvas.width, timelineHeight);
-
+      // clear track canvas
+      ctx.clearRect(0, 0, canvas.width, this.timeline.trackHeight);
+      // render track clips
       for (var c = 0; c < clips.length; c++) {
         const clip = clips[c];
-        const bars = clip.bars;
-        const clipStart = clip.xPos;
-        const clipEnd = clipStart + clip.barCount;
+        this.renderClip(clip, ctx);
+      }
+    },
+    //experimental
+    renderClip(clip, ctx) {
+      const clipStart = clip.xPos;
+      const clipEnd = clipStart + clip.barCount;
+      // only if in viewport
+      if (clipEnd >= this.globalStart && clipStart <= this.globalEnd) {
+        const first = clipStart <= this.globalStart ? this.globalStart : clipStart;
+        const last = clipEnd >= this.globalEnd ? this.globalEnd : clipEnd;
+        // only visible part
+        for (var x = first; x < last; x++) {
+          ctx.fillStyle = clip.selected ? clipHandle.selectedColor : clipHandle.color;
+          ctx.fillRect(
+            (x - this.globalStart) * this.timeline.sampleWidth,
+            clipHandle.height,
+            this.timeline.sampleWidth,
+            -clipHandle.height
+          );
 
-        // only render clips that are in the viewport
-        if (clipEnd >= this.globalStart && clipStart <= this.globalEnd) {
-          // only render visible part of the clip
-          const first = clipStart <= this.globalStart ? this.globalStart : clipStart;
-          const last = clipEnd >= this.globalEnd ? this.globalEnd : clipEnd;
-          for (var x = first; x < last; x++) {
-            ctx.fillStyle = clip.selected ? clipHandle.selectedColor : clipHandle.color;
-            ctx.fillRect((x - this.globalStart) * barWidth, clipHandle.height, barWidth, -clipHandle.height);
-
-            const bar = bars[x - clipStart];
-            ctx.fillStyle = '#000';
-            ctx.fillRect((x - this.globalStart) * barWidth, timelineHeight / 2 - bar / 2, barWidth, bar);
-          }
+          const bar = clip.bars[x - clipStart];
+          ctx.fillStyle = '#000';
+          ctx.fillRect(
+            (x - this.globalStart) * this.timeline.sampleWidth,
+            this.timeline.trackHeight / 2 - bar / 2,
+            this.timeline.sampleWidth,
+            bar
+          );
         }
       }
     },
 
-    playClip(trackId, clip) {
+    playClip(clip, trackId) {
+      console.log('play clip', clip.id);
       const offset = (this.cursorX - clip.xPos) * clip.barDuration;
       clip.source = this.context.createBufferSource();
       clip.source.buffer = clip.buffer;
 
-      const track = this.tracks.find(track => track.id == trackId); // esto es una verga
+      const track = this.tracks.find(track => track.id == clip.trackId); // esto es una verga
 
       clip.source.connect(this.clipDestination || track.trackGain.inputNode);
-
       clip.source.start(0, offset, clip.durationf);
       clip.playing = true;
 
@@ -694,25 +701,29 @@ export default {
       if (this.cursorX > this.timeline.lastSample) return this.exporting && this.finishRecExport();
 
       // play clip if corresponds
-      for (const trackId in this.trackClips) {
-        const clips = this.trackClips[trackId];
-        for (let c = 0; c < clips.length; c++) {
-          const clip = clips[c];
-          if (!clip.playing)
-            if (this.cursorX >= clip.xPos && this.cursorX < clip.xPos + clip.barCount - sampleErrorMargin) {
-              // console.log('cursorX', this.cursorX);
-              // console.log('playclip', clip.id, clip.xPos, clip.xPos + clip.barCount);
-              console.log('playclip', clip.id);
-              this.playClip(trackId, clip);
-            }
-        }
+      for (let c = 0; c < this.clips.length; c++) {
+        const clip = this.clips[c];
+        if (!clip.playing)
+          if (this.cursorX >= clip.xPos && this.cursorX < clip.xPos + clip.barCount - sampleErrorMargin) {
+            this.playClip(clip);
+          }
       }
     },
-    onCanvasClick(e, trackId) {},
+    unselectClips() {
+      this.clips.forEach(clip => {
+        clip.selected = false;
+        clip.moving = false;
+      });
+      this.renderCanvas();
+    },
     onCanvasMouseDown(e, trackId) {
+      window.addEventListener('mousemove', this.onMouseMove);
+      window.addEventListener('mouseup', this.onMouseUp);
+
       const xPos =
         (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
       const yPos = e.clientY - e.target.getBoundingClientRect().y;
+
       let noClipsClicked = true;
 
       if (yPos <= clipHandle.height) {
@@ -722,17 +733,48 @@ export default {
           if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
             clip.selected = true;
             clip.moving = true;
-            this.renderTrack(trackId);
             noClipsClicked = false;
+            this.renderTrack(trackId);
           }
         }
       }
 
       if (noClipsClicked) {
-        // todo: unselect all clips from all tracks
+        this.unselectClips();
         this.positionCursor(xPos);
       }
     },
+
+    onMouseMove(e) {
+      for (var i = 0; i < this.clips.length; i++) {
+        const clip = this.clips[i];
+        if (clip.selected && clip.moving) {
+          clip.xPos += e.movementX;
+          if (clip.xPos + clip.barCount > this.timeline.lastSample)
+            this.timeline.lastSample = clip.xPos + clip.barCount;
+
+          this.renderTrack(clip.trackId);
+        }
+      }
+    },
+
+    onMouseUp(e) {
+      window.removeEventListener('mousemove', this.onMouseMove);
+      window.removeEventListener('mouseup', this.onMouseUp);
+
+      for (var i = 0; i < this.clips.length; i++) {
+        const clip = this.clips[i];
+        if (clip.moving) {
+          clip.xPos += e.movementX;
+          if (clip.xPos + clip.barCount > this.timeline.lastSample)
+            this.timeline.lastSample = clip.xPos + clip.barCount;
+
+          this.renderCanvas();
+        }
+      }
+    },
+
+    // todo: listen to overlay canvas, not individual ones:
     onCanvasMouseMove(e, trackId) {
       // move clips
       const clips = this.trackClips[trackId];
@@ -752,8 +794,8 @@ export default {
     onCanvasMouseUp(e, trackId) {
       const xPos =
         (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
-      const clips = this.trackClips[trackId];
-      // todo: stop move all selected clips from all tracks
+
+      const clips = this.clips;
       for (var i = 0; i < clips.length; i++) {
         const clip = clips[i];
         if (xPos >= clip.xPos && xPos <= clip.xPos + clip.barCount) {
@@ -763,7 +805,8 @@ export default {
           if (!e.ctrlKey) clip.selected = false;
         }
 
-        this.renderTrack(trackId);
+        this.renderCanvas();
+        window.removeEventListener('mousemove', this.onMouseMove);
       }
     },
 
@@ -1142,6 +1185,7 @@ export default {
     // LOAD/SAVE
 
     hardReset(generateSomeNodes) {
+      this.clips = [];
       this.trackClips = {};
       this.trackIdCount = 0;
       this.currentTrack = null;
@@ -1193,7 +1237,7 @@ export default {
       for (const trackId in this.trackClips) {
         const clips = this.trackClips[trackId];
         trackClips[trackId] = clips.map(clip => {
-          return { id: clip.id, blob: clip.blob, bars: clip.bars, xPos: clip.xPos };
+          return { trackId: clip.trackId, id: clip.id, blob: clip.blob, bars: clip.bars, xPos: clip.xPos };
         });
       }
       db.save(this.projectId, 'track_clips', trackClips, () => {
@@ -1243,7 +1287,7 @@ export default {
               clip.barDuration = clip.buffer.duration / clip.barCount;
               clip.playing = false;
               clip.sampleRate = Math.round(clip.buffer.length / clip.barCount);
-
+              this.clips.push(clip);
               // determine total timeleine width
               const endPos = clip.xPos + clip.barCount;
               if (endPos > this.timeline.lastSample) this.timeline.lastSample = endPos;
@@ -1457,9 +1501,12 @@ export default {
       let sum = 0;
       let min = 0;
       let max = 0;
+
       for (const trackId in this.trackClips) {
         const clips = this.trackClips[trackId];
         clips.forEach(clip => {
+          if (!clip.info) clip.info = 0;
+          clip.info++;
           // console.log('clip', clip.id, 'sample rate', clip.sampleRate);
           if (clip.sampleRate < min || c === 0) min = clip.sampleRate;
           if (clip.sampleRate > max) max = clip.sampleRate;
@@ -1470,6 +1517,8 @@ export default {
       // console.log('sample min:', min);
       // console.log('sample max:', max);
       console.log('sample avg:', sum / c);
+      console.log(this.clips[0].info);
+      console.log(this.trackClips[1][0].info);
     },
   },
 };
@@ -1555,7 +1604,6 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   background: #111;
 }
 .track.selected {
@@ -1567,6 +1615,7 @@ canvas {
   overflow: auto;
   white-space: nowrap;
   padding-right: 2rem;
+  user-select: none;
 }
 .left-ctrls-inner {
   display: flex;
@@ -1593,7 +1642,8 @@ canvas {
 }
 
 .master {
-  padding: 0.75rem 0.5rem;
+  padding: 0 0.75rem;
+  background: rgb(0, 53, 53);
 }
 .master-knob-wrapper {
   margin-right: 1rem;
