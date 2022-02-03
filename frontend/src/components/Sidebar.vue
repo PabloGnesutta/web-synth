@@ -130,7 +130,7 @@ export default {
 
 <style lang="scss" scoped>
 .sidebar {
-  padding: 0.25rem;
+  padding: 0 0.25rem;
   height: var(--mid-section-height);
   overflow-y: auto;
   min-width: 200px;

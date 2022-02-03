@@ -44,12 +44,16 @@
             <Click ref="click" />
             <!-- Info -->
             <div class="info-wrapper select-none">
-              <div class="info-container" :style="{ width: timeline.viewportWidth + 'px' }" @click="logInfo">
+              <div
+                class="info-container no-scrollbar"
+                :style="{ width: timeline.viewportWidth + 'px' }"
+                @click="logInfo"
+              >
                 <div class="info-item">{{ globalStart }}</div>
                 <!-- <div class="info-item">vpW: {{ timeline.viewportWidth }}</div> -->
                 <div class="info-item">curr: {{ cursorX }}</div>
                 <div class="info-item">last: {{ timeline.lastSample }}</div>
-                <div class="info-item">zoom: {{ timeline.sampleWidth }}</div>
+                <!-- <div class="info-item">zoom: {{ timeline.sampleWidth }}</div> -->
                 <div class="info-item last">{{ globalEnd }}</div>
               </div>
             </div>
@@ -342,7 +346,7 @@ export default {
 
       setTimeout(() => {
         this.test();
-      }, 100);
+      }, 500);
     },
 
     test() {
@@ -366,7 +370,7 @@ export default {
       this.timeline.viewportWidth =
         trackList.offsetWidth - this.trackProps.leftCtrlsWidth - this.trackProps.rightCtrlsWidth;
 
-      this.timeline.carretSkip = ~~(this.timeline.viewportWidth / 2) * -1;
+      this.timeline.carretSkip = ~~(this.timeline.viewportWidth / 3) * -1;
       this.canvasOverlay.width = this.timeline.viewportWidth;
       this.canvasOverlay.height = trackList.offsetHeight;
 
@@ -618,6 +622,9 @@ export default {
     moveCarret() {
       if ((this.cursorX - this.globalStart) * this.timeline.sampleWidth > this.timeline.viewportWidth)
         this.moveCanvas(this.timeline.carretSkip);
+      else if (this.cursorX * this.timeline.sampleWidth < this.globalStart) {
+        this.moveCanvas(-this.timeline.carretSkip);
+      }
     },
     moveCanvas(amount) {
       if (this.globalStart - amount >= 0) {
@@ -637,8 +644,7 @@ export default {
       ctx.clearRect(0, 0, canvas.width, this.timeline.trackHeight);
       // render track clips
       for (var c = 0; c < clips.length; c++) {
-        const clip = clips[c];
-        this.renderClip(clip, ctx);
+        this.renderClip(clips[c], ctx);
       }
     },
     //experimental
@@ -1565,8 +1571,8 @@ canvas {
 .info-container {
   margin-left: var(--left-controls-width);
   width: calc(100% - var(--left-controls-width) - var(--right-controls-width));
+  overflow-x: auto;
   display: flex;
-  // gap: 1.5rem;
   align-items: center;
   background: teal;
   &:first-child {
