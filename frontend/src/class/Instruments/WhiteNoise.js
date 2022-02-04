@@ -112,6 +112,7 @@ class WhiteNoise extends Node {
     }
   }
 
+  // todo: handle load effect
   saveString() {
     const jsonString = { name: this.name };
 

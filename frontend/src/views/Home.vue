@@ -425,8 +425,7 @@ export default {
       this.mediaRecorders[track.id] = mediaRecorder;
       track.trackGain.connectNativeNode(mediaStreamDestination);
 
-      //init trackClip
-
+      // init clip
       const clip = {
         trackId: track.id,
         id: ++this.clipIdCount,
@@ -435,8 +434,8 @@ export default {
         barCount: 0,
         sampleRate: 0,
       };
-      this.trackClips[track.id].push(clip);
       this.clips.push(clip);
+      this.trackClips[track.id].push(clip);
 
       mediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
       // When recording's finished, process data chunk
@@ -546,17 +545,16 @@ export default {
 
     // RENDERING
 
-    // todo: review if we can get rid of using trackClips
     generateRenderDataObject(track) {
       const analyser = track.trackGainAnalyser;
       const clip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
       clip.bars = [];
       return {
         trackId: track.id,
+        ctx: track.ctx,
+        clip,
         analyser,
         frequencyArray: new Float32Array(analyser.fftSize),
-        clip,
-        ctx: track.ctx,
       };
     },
 
@@ -575,8 +573,8 @@ export default {
         const barHeight = avgPower.map(0, 1, 1, this.timeline.trackHeight);
 
         clip.bars.push(barHeight);
+        this.renderClipBar(clip, ctx, clip.barCount);
         clip.barCount++;
-        this.renderClipBar(clip, ctx);
 
         // determine total timeleine width
         if (r === 0)
@@ -589,8 +587,7 @@ export default {
       this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, cursorStep));
     },
 
-    renderClipBar(clip, ctx) {
-      const x = clip.barCount - 1;
+    renderClipBar(clip, ctx, x) {
       const bar = clip.bars[x];
 
       ctx.fillStyle = clipHandle.color;
@@ -675,7 +672,7 @@ export default {
       }
     },
 
-    playClip(clip, trackId) {
+    playClip(clip) {
       console.log('play clip', clip.id);
       const offset = (this.cursorX - clip.xPos) * clip.barDuration;
       clip.source = this.context.createBufferSource();
@@ -773,7 +770,7 @@ export default {
                 this.unselectOneCLip(clip);
               }
             } else {
-              if (!clip.selected || this.selectedClips.length > 1) {
+              if (!clip.selected) {
                 this.selectOneClip(clip);
               }
             }
@@ -937,6 +934,7 @@ export default {
         }
       }
       delete this.trackClips[track.id];
+      //todo: eliminate clips from this.clips
 
       // delete from listeners
       let index = this.keypressListeners.findIndex(listener => listener.trackName === track.name);
@@ -1174,7 +1172,7 @@ export default {
             this.transpose++;
             break;
           default:
-            console.log(e.keyCode);
+            // console.log(e.keyCode);
             break;
         }
       }
@@ -1349,6 +1347,8 @@ export default {
 
     onRecordExportFinish() {
       this.exportMediaRecorder = null;
+      this.clipDestination = null;
+
       if (!this.export.canceled) {
         this.downloadBlob(this.export.blob, this.export.name);
       }
