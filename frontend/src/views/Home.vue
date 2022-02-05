@@ -309,7 +309,7 @@ export default {
     window.removeEventListener('keydown', this.onKeydown);
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('mouseup', this.onMouseUp);
-    window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('mousemove', this.onWindowMousemove);
   },
 
   created() {
@@ -762,35 +762,27 @@ export default {
       const trackId = clip.trackId;
       this.renderTrack(trackId);
     },
+
+    // slect clip on handle clicked
     onCanvasMouseDown(e, trackId) {
-      window.addEventListener('mousemove', this.onMouseMove);
-      window.addEventListener('mouseup', this.onMouseUp);
-
-      //todo: invert order, listen to mouse move, and then on click act basig on if it would drag or whatever
-      const timelines = document.querySelectorAll('.timeline');
-      for (var i = 0; i < timelines.length; i++) {
-        timelines[i].removeEventListener('mousemove', this.captureDragging);
-      }
-
       const xPos =
         (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
       const yPos = e.clientY - e.target.getBoundingClientRect().y;
 
       let anyClipSelected = false;
-      let anyClipClicked = false;
-      // todo: instead of traversing trackClips, determine the clip by it's y position in relation to the container
+      let anyHandleClicked = false;
       if (yPos <= clipHandle.height) {
         const clips = this.trackClips[trackId];
         for (var i = 0; i < clips.length; i++) {
           const clip = clips[i];
-          if (xPos >= clip.xPos && xPos <= clip.xPos + clip.numSamples) {
+          if (xPos + clip.startSample >= clip.xPos && xPos + clip.startSample <= clip.xPos + clip.endSample) {
             // has clicked on a clip handle
-            anyClipClicked = true;
+            anyHandleClicked = true;
             if (e.ctrlKey) {
               if (!clip.selected) {
-                anyClipSelected = true;
                 clip.selected = true;
                 this.selectedClips.push(clip);
+                anyClipSelected = true;
               } else {
                 this.unselectOneCLip(clip);
               }
@@ -803,16 +795,57 @@ export default {
         }
       }
 
-      if (anyClipClicked) {
+      if (anyHandleClicked) {
         if (anyClipSelected) this.renderTrack(trackId);
       } else {
         this.unselectClips();
         this.positionCursor(xPos);
       }
+
+      const timelines = document.querySelectorAll('.timeline');
+      for (var i = 0; i < timelines.length; i++)
+        timelines[i].removeEventListener('mousemove', this.onCanvasMouseMove);
+      window.addEventListener('mousemove', this.onWindowMousemove);
+      window.addEventListener('mouseup', this.onMouseUp);
     },
 
-    // resize clip
-    onMouseMove(e) {
+    // set if clip will resize
+    onCanvasMouseMove(e) {
+      const xPos =
+        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
+      const yPos = e.clientY - e.target.getBoundingClientRect().y;
+
+      let anyHandleHovered = false;
+      const trackId = e.target.id;
+      if (yPos <= clipHandle.height) {
+        const clips = this.trackClips[trackId];
+        for (var i = 0; i < clips.length; i++) {
+          const clip = clips[i];
+          if (xPos + clip.startSample >= clip.xPos && xPos + clip.startSample <= clip.xPos + clip.endSample) {
+            // has hovered over a clip handle
+            anyHandleHovered = true;
+            if (xPos > clip.xPos - 10 && xPos < clip.xPos + 10) {
+              e.target.classList.add('e-resize');
+              clip.willResize = 'start';
+            } else if (
+              xPos + clip.startSample > clip.xPos + clip.endSample - 10 &&
+              xPos + clip.startSample < clip.xPos + clip.endSample + 10
+            ) {
+              e.target.classList.add('e-resize');
+              clip.willResize = 'end';
+            } else {
+              e.target.classList.remove('e-resize');
+              clip.willResize = null;
+            }
+          }
+        }
+      }
+
+      if (!anyHandleHovered) e.target.classList.remove('e-resize');
+    },
+
+    // resize or move clips
+    onWindowMousemove(e) {
       for (var i = 0; i < this.clips.length; i++) {
         const clip = this.clips[i];
         if (clip.selected) {
@@ -834,60 +867,24 @@ export default {
           } else {
             clip.xPos += e.movementX;
           }
-
-          if (clip.xPos + clip.endSample > this.timeline.lastSample)
-            this.timeline.lastSample = clip.xPos + clip.endSample;
-
-          this.renderTrack(clip.trackId);
         }
+
+        if (clip.xPos + clip.endSample > this.timeline.lastSample)
+          this.timeline.lastSample = clip.xPos + clip.endSample;
+
+        this.renderTrack(clip.trackId);
       }
     },
 
     onMouseUp(e) {
-      window.removeEventListener('mousemove', this.onMouseMove);
-      window.removeEventListener('mouseup', this.onMouseUp);
-
       const timelines = document.querySelectorAll('.timeline');
       for (var i = 0; i < timelines.length; i++) {
-        timelines[i].addEventListener('mousemove', this.captureDragging);
+        timelines[i].addEventListener('mousemove', this.onCanvasMouseMove);
       }
+      window.removeEventListener('mousemove', this.onWindowMousemove);
+      window.removeEventListener('mouseup', this.onMouseUp);
     },
 
-    //todo: invert order, listen to mouse move, and then on click act basig on if it would drag or whatever
-    captureDragging(e) {
-      const xPos =
-        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
-      const yPos = e.clientY - e.target.getBoundingClientRect().y;
-      const trackId = e.target.id;
-      let anyClipHovered = false;
-
-      // todo: instead of traversing trackClips, determine the clip by it's y position in relation to the container
-      if (yPos <= clipHandle.height) {
-        const clips = this.trackClips[trackId];
-        for (var i = 0; i < clips.length; i++) {
-          const clip = clips[i];
-          if (xPos >= clip.xPos && xPos <= clip.xPos + clip.endSample) {
-            // has hovered over a clip handle
-            anyClipHovered = true;
-            if (xPos > clip.xPos - 10 && xPos < clip.xPos + 10) {
-              e.target.classList.add('e-resize');
-              clip.willResize = 'start';
-            } else if (
-              xPos + clip.startSample > clip.xPos + clip.endSample - 10 &&
-              xPos + clip.startSample < clip.xPos + clip.endSample + 10
-            ) {
-              e.target.classList.add('e-resize');
-              clip.willResize = 'end';
-            } else {
-              e.target.classList.remove('e-resize');
-              clip.willResize = null;
-            }
-          }
-        }
-      }
-
-      if (!anyClipHovered) e.target.classList.remove('e-resize');
-    },
     positionCursor(xPos) {
       if (this.recording) return;
       this.cursorX = xPos;
