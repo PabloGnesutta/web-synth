@@ -253,10 +253,6 @@ export default {
       mediaRecorders: {},
       totalProcessingTracks: 0,
 
-      now: 0,
-      next: 0,
-      nextTime: 8,
-
       //Rendering
       renderDataObjects: [],
       followCursor: true,
@@ -424,9 +420,6 @@ export default {
       if (this.playing) cursorStep = 0;
 
       this.playing = true;
-
-      this.now = performance.now();
-      this.next = this.now + this.nextTime;
       this.captureBarsLoop(cursorStep);
     },
 
@@ -528,8 +521,6 @@ export default {
 
     playAllTracks() {
       this.playing = true;
-      this.now = performance.now();
-      this.next = this.now + this.nextTime;
       this.moveTimielineWithPlayback();
     },
 
@@ -577,37 +568,31 @@ export default {
 
     captureBarsLoop(cursorStep) {
       this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, cursorStep));
-      this.now = performance.now();
+      for (var r = 0; r < this.renderDataObjects.length; r++) {
+        const renderDataObject = this.renderDataObjects[r];
+        let { analyser, dataArray, clip, ctx } = renderDataObject;
 
-      if (this.now > this.next) {
-        this.next = this.now + this.nextTime;
+        analyser.getFloatTimeDomainData(dataArray);
 
-        for (var r = 0; r < this.renderDataObjects.length; r++) {
-          const renderDataObject = this.renderDataObjects[r];
-          let { analyser, dataArray, clip, ctx } = renderDataObject;
-
-          analyser.getFloatTimeDomainData(dataArray);
-
-          let sumOfSquares = 0;
-          for (let i = 0; i < dataArray.length; i++) {
-            sumOfSquares += dataArray[i] ** 2;
-          }
-          const avgPower = sumOfSquares / dataArray.length;
-          const barHeight = avgPower.map(0, 1, 1, this.timeline.trackHeight);
-
-          clip.bars.push(barHeight);
-          this.renderClipBar(clip, ctx, clip.numSamples);
-          clip.numSamples++;
-
-          // determine total timeleine width
-          if (r === 0)
-            if (clip.xPos + clip.numSamples > this.timeline.lastSample)
-              this.timeline.lastSample = clip.xPos + clip.numSamples;
+        let sumOfSquares = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sumOfSquares += dataArray[i] ** 2;
         }
+        const avgPower = sumOfSquares / dataArray.length;
+        const barHeight = avgPower.map(0, 1, 1, this.timeline.trackHeight);
 
-        this.moveCursor(cursorStep);
-        if (this.followCursor) this.moveCarret();
+        clip.bars.push(barHeight);
+        this.renderClipBar(clip, ctx, clip.numSamples);
+        clip.numSamples++;
+
+        // determine total timeleine width
+        if (r === 0)
+          if (clip.xPos + clip.numSamples > this.timeline.lastSample)
+            this.timeline.lastSample = clip.xPos + clip.numSamples;
       }
+
+      this.moveCursor(cursorStep);
+      if (this.followCursor) this.moveCarret();
     },
 
     renderClipBar(clip, ctx, x) {
@@ -632,14 +617,9 @@ export default {
 
     moveTimielineWithPlayback() {
       this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null));
-      this.now = performance.now();
-
-      if (this.now > this.next) {
-        this.next = this.now + this.nextTime;
-        this.moveCursor(1);
-        if (this.followCursor) this.moveCarret();
-        if (this.exporting) this.exportProgress = ~~((this.cursorX * 100) / this.timeline.lastSample);
-      }
+      this.moveCursor(1);
+      if (this.followCursor) this.moveCarret();
+      if (this.exporting) this.exportProgress = ~~((this.cursorX * 100) / this.timeline.lastSample);
     },
 
     moveCarret() {
