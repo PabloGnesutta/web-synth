@@ -442,9 +442,11 @@ export default {
         trackId: track.id,
         id: ++this.clipIdCount,
         xPos: this.cursorX,
-        playing: true,
+        startSample: 0,
+        endSample: 0,
         numSamples: 0,
         sampleRate: 0,
+        playing: true,
       };
       this.clips.push(clip);
       this.trackClips[track.id].push(clip);
@@ -463,6 +465,7 @@ export default {
             clip.buffer = audioBuffer;
             clip.duration = clip.buffer.duration;
             clip.numSamples = clip.bars.length;
+            clip.endSample = clip.bars.length;
             clip.sampleDuration = clip.buffer.duration / clip.numSamples;
             clip.playing = false;
             clip.sampleRate = Math.round(clip.buffer.length / clip.numSamples);
@@ -588,6 +591,7 @@ export default {
         clip.bars.push(barHeight);
         this.renderClipBar(clip, ctx, clip.numSamples);
         clip.numSamples++;
+        clip.endSample = clip.numSamples;
 
         // determine total timeleine width
         if (r === 0)
@@ -656,12 +660,14 @@ export default {
     },
     //render clip
     renderClip(clip, ctx) {
-      const clipStart = clip.xPos;
-      const clipEnd = clipStart + clip.numSamples;
+      const clipXPos = clip.xPos;
+      const clipEnd = clipXPos + clip.endSample;
       // only if in viewport
-      if (clipEnd >= this.globalStart && clipStart <= this.globalEnd) {
-        const first = clipStart <= this.globalStart ? this.globalStart : clipStart;
-        const last = clipEnd >= this.globalEnd ? this.globalEnd : clipEnd;
+      if (clipEnd >= this.globalStart && clipXPos <= this.globalEnd) {
+        const first = clipXPos <= this.globalStart ? this.globalStart : clipXPos;
+        const last =
+          clipEnd - clip.startSample >= this.globalEnd ? this.globalEnd : clipEnd - clip.startSample;
+
         // only visible part
         for (var x = first; x < last; x++) {
           ctx.fillStyle = clip.selected ? clipHandle.selectedColor : clipHandle.color;
@@ -672,7 +678,7 @@ export default {
             -clipHandle.height
           );
 
-          const bar = clip.bars[x - clipStart];
+          const bar = clip.bars[x - clipXPos + clip.startSample];
           ctx.fillStyle = '#000';
           ctx.fillRect(
             (x - this.globalStart) * this.timeline.sampleWidth,
@@ -689,8 +695,8 @@ export default {
       clip.source = this.context.createBufferSource();
       clip.source.buffer = clip.buffer;
 
-      const offsetStart = (this.cursorX - clip.xPos) * clip.sampleDuration;
-      const offsetEnd = (clip.xPos + clip.numSamples - this.cursorX) * clip.sampleDuration;
+      const offsetStart = (this.cursorX - clip.xPos + clip.startSample) * clip.sampleDuration;
+      const offsetEnd = (clip.xPos + clip.endSample - this.cursorX) * clip.sampleDuration;
 
       const track = this.tracks.find(track => track.id == clip.trackId); // esto es una verga
       clip.source.connect(this.clipDestination || track.trackGain.inputNode);
@@ -718,7 +724,7 @@ export default {
       for (let c = 0; c < this.clips.length; c++) {
         const clip = this.clips[c];
         if (!clip.playing)
-          if (this.cursorX >= clip.xPos && this.cursorX < clip.xPos + clip.numSamples - sampleErrorMargin) {
+          if (this.cursorX >= clip.xPos && this.cursorX < clip.xPos + clip.endSample - sampleErrorMargin) {
             this.playClip(clip);
           }
       }
@@ -805,22 +811,32 @@ export default {
       }
     },
 
+    // resize clip
     onMouseMove(e) {
       for (var i = 0; i < this.clips.length; i++) {
         const clip = this.clips[i];
         if (clip.selected) {
           if (clip.willResize) {
             if (clip.willResize === 'start') {
-              clip.xPos += e.movementX;
+              if (clip.startSample + e.movementX >= 0) {
+                clip.startSample += e.movementX;
+                clip.xPos += e.movementX;
+              } else {
+                clip.startSample = 0;
+              }
             } else {
-              clip.numSamples += e.movementX;
+              if (clip.endSample + e.movementX <= clip.numSamples) {
+                clip.endSample += e.movementX;
+              } else {
+                clip.endSample = clip.numSamples;
+              }
             }
           } else {
             clip.xPos += e.movementX;
           }
 
-          if (clip.xPos + clip.numSamples > this.timeline.lastSample)
-            this.timeline.lastSample = clip.xPos + clip.numSamples;
+          if (clip.xPos + clip.endSample > this.timeline.lastSample)
+            this.timeline.lastSample = clip.xPos + clip.endSample;
 
           this.renderTrack(clip.trackId);
         }
@@ -850,13 +866,13 @@ export default {
         const clips = this.trackClips[trackId];
         for (var i = 0; i < clips.length; i++) {
           const clip = clips[i];
-          if (xPos >= clip.xPos && xPos <= clip.xPos + clip.numSamples) {
+          if (xPos >= clip.xPos && xPos <= clip.xPos + clip.endSample) {
             // has hovered over a clip handle
             anyClipHovered = true;
             if (xPos > clip.xPos - 10 && xPos < clip.xPos + 10) {
               e.target.classList.add('e-resize');
               clip.willResize = 'start';
-            } else if (xPos > clip.xPos + clip.numSamples - 10 && xPos < clip.xPos + clip.numSamples + 10) {
+            } else if (xPos > clip.xPos + clip.endSample - 10 && xPos < clip.xPos + clip.endSample + 10) {
               e.target.classList.add('e-resize');
               clip.willResize = 'end';
             } else {
@@ -1294,7 +1310,10 @@ export default {
       for (const trackId in this.trackClips) {
         const clips = this.trackClips[trackId];
         trackClips[trackId] = clips.map(clip => {
-          return { trackId: clip.trackId, id: clip.id, blob: clip.blob, bars: clip.bars, xPos: clip.xPos };
+          const saveClip = { ...clip };
+          delete saveClip.buffer;
+          delete saveClip.selected;
+          return saveClip;
         });
       }
       db.save(this.projectId, 'track_clips', trackClips, () => {
@@ -1346,7 +1365,7 @@ export default {
               clip.playing = false;
               this.clips.push(clip);
               // determine total timeleine width
-              const endPos = clip.xPos + clip.numSamples;
+              const endPos = clip.xPos + clip.numSamples; //endSample
               if (endPos > this.timeline.lastSample) this.timeline.lastSample = endPos;
 
               // might fail because of race condition?
