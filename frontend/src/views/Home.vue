@@ -195,12 +195,11 @@ const minSampleWidth = 1;
 const carretMovementAmount = 50;
 const clipHandle = {
   height: 20,
+  hookWidth: 10,
   color: '#10ff7050',
   selectedColor: '#10ff7090',
 };
 const sampleErrorMargin = 10;
-
-const timeOffset = 16;
 
 import db from '@/db/index.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
@@ -775,7 +774,7 @@ export default {
         const clips = this.trackClips[trackId];
         for (var i = 0; i < clips.length; i++) {
           const clip = clips[i];
-          if (xPos + clip.startSample >= clip.xPos && xPos + clip.startSample <= clip.xPos + clip.endSample) {
+          if (xPos >= clip.xPos && xPos + clip.startSample <= clip.xPos + clip.endSample) {
             // has clicked on a clip handle
             anyHandleClicked = true;
             if (e.ctrlKey) {
@@ -824,12 +823,12 @@ export default {
           if (xPos + clip.startSample >= clip.xPos && xPos + clip.startSample <= clip.xPos + clip.endSample) {
             // has hovered over a clip handle
             anyHandleHovered = true;
-            if (xPos > clip.xPos - 10 && xPos < clip.xPos + 10) {
+            if (xPos > clip.xPos - 10 && xPos < clip.xPos + clipHandle.hookWidth) {
               e.target.classList.add('e-resize');
               clip.willResize = 'start';
             } else if (
-              xPos + clip.startSample > clip.xPos + clip.endSample - 10 &&
-              xPos + clip.startSample < clip.xPos + clip.endSample + 10
+              xPos + clip.startSample > clip.xPos + clip.endSample - clipHandle.hookWidth &&
+              xPos + clip.startSample < clip.xPos + clip.endSample + clipHandle.hookWidth
             ) {
               e.target.classList.add('e-resize');
               clip.willResize = 'end';
@@ -874,6 +873,21 @@ export default {
 
         this.renderTrack(clip.trackId);
       }
+    },
+
+    duplicateClips() {
+      this.selectedClips.forEach(clip => {
+        const newClip = { ...clip };
+        newClip.xPos = clip.xPos + clip.endSample;
+        newClip.selected = false;
+        this.clips.push(newClip);
+        this.trackClips[clip.trackId].push(newClip);
+
+        const canvas = this.$refs[`track-canvas-${clip.trackId}`][0];
+        const ctx = canvas.getContext('2d');
+        this.renderTrack(clip.trackId);
+        // this.renderClip(clip, ctx);
+      });
     },
 
     onMouseUp(e) {
@@ -1232,6 +1246,9 @@ export default {
           case 46: //delete - delete current track
             this.deleteTrack(this.currentTrackIndex);
             break;
+          case 66: //b - duplicate selected clips
+            if (e.ctrlKey) this.duplicateClips();
+            break;
           case 77: //m - mute current track
             this.m_pressed = false;
             if (e.ctrlKey) this.currentTrack.trackGain.toggleMute();
@@ -1249,7 +1266,7 @@ export default {
             this.transpose++;
             break;
           default:
-            // console.log(e.keyCode);
+            console.log(e.keyCode);
             break;
         }
       }
