@@ -872,7 +872,10 @@ export default {
             if (xPos > clip.xPos - 10 && xPos < clip.xPos + 10) {
               e.target.classList.add('e-resize');
               clip.willResize = 'start';
-            } else if (xPos > clip.xPos + clip.endSample - 10 && xPos < clip.xPos + clip.endSample + 10) {
+            } else if (
+              xPos + clip.startSample > clip.xPos + clip.endSample - 10 &&
+              xPos + clip.startSample < clip.xPos + clip.endSample + 10
+            ) {
               e.target.classList.add('e-resize');
               clip.willResize = 'end';
             } else {
