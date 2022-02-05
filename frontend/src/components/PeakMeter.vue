@@ -50,7 +50,6 @@ export default {
     startAnimation() {
       this.now = performance.now();
       this.next = this.now + this.nextTime;
-      console.log('start', this.now);
       this.renderPeaks();
     },
 

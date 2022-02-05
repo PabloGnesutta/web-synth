@@ -84,7 +84,11 @@
                   @mousedown="onCanvasMouseDown($event, track.id)"
                   @mousewheel="onCanvasContainerWheel"
                 >
-                  <canvas :ref="`track-canvas-${track.id}`" :height="timeline.trackHeight"></canvas>
+                  <canvas
+                    :ref="`track-canvas-${track.id}`"
+                    :id="track.id"
+                    :height="timeline.trackHeight"
+                  ></canvas>
                 </div>
 
                 <!-- Right Controls -->
@@ -682,14 +686,15 @@ export default {
 
     playClip(clip) {
       console.log('play clip', clip.id);
-      const offset = (this.cursorX - clip.xPos) * clip.sampleDuration;
       clip.source = this.context.createBufferSource();
       clip.source.buffer = clip.buffer;
 
-      const track = this.tracks.find(track => track.id == clip.trackId); // esto es una verga
+      const offsetStart = (this.cursorX - clip.xPos) * clip.sampleDuration;
+      const offsetEnd = (clip.xPos + clip.numSamples - this.cursorX) * clip.sampleDuration;
 
+      const track = this.tracks.find(track => track.id == clip.trackId); // esto es una verga
       clip.source.connect(this.clipDestination || track.trackGain.inputNode);
-      clip.source.start(0, offset, clip.durationf);
+      clip.source.start(0, offsetStart, offsetEnd);
       clip.playing = true;
 
       clip.source.onended = () => {
@@ -754,7 +759,12 @@ export default {
     onCanvasMouseDown(e, trackId) {
       window.addEventListener('mousemove', this.onMouseMove);
       window.addEventListener('mouseup', this.onMouseUp);
-      //todo: remove mouse move listeners for track canvases to resize clips
+
+      //todo: invert order, listen to mouse move, and then on click act basig on if it would drag or whatever
+      const timelines = document.querySelectorAll('.timeline');
+      for (var i = 0; i < timelines.length; i++) {
+        timelines[i].removeEventListener('mousemove', this.captureDragging);
+      }
 
       const xPos =
         (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
@@ -799,7 +809,16 @@ export default {
       for (var i = 0; i < this.clips.length; i++) {
         const clip = this.clips[i];
         if (clip.selected) {
-          clip.xPos += e.movementX;
+          if (clip.willResize) {
+            if (clip.willResize === 'start') {
+              clip.xPos += e.movementX;
+            } else {
+              clip.numSamples += e.movementX;
+            }
+          } else {
+            clip.xPos += e.movementX;
+          }
+
           if (clip.xPos + clip.numSamples > this.timeline.lastSample)
             this.timeline.lastSample = clip.xPos + clip.numSamples;
 
@@ -811,9 +830,45 @@ export default {
     onMouseUp(e) {
       window.removeEventListener('mousemove', this.onMouseMove);
       window.removeEventListener('mouseup', this.onMouseUp);
-      //todo: add mouse move listeners for track canvases to resize clips
+
+      const timelines = document.querySelectorAll('.timeline');
+      for (var i = 0; i < timelines.length; i++) {
+        timelines[i].addEventListener('mousemove', this.captureDragging);
+      }
     },
 
+    //todo: invert order, listen to mouse move, and then on click act basig on if it would drag or whatever
+    captureDragging(e) {
+      const xPos =
+        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
+      const yPos = e.clientY - e.target.getBoundingClientRect().y;
+      const trackId = e.target.id;
+      let anyClipHovered = false;
+
+      // todo: instead of traversing trackClips, determine the clip by it's y position in relation to the container
+      if (yPos <= clipHandle.height) {
+        const clips = this.trackClips[trackId];
+        for (var i = 0; i < clips.length; i++) {
+          const clip = clips[i];
+          if (xPos >= clip.xPos && xPos <= clip.xPos + clip.numSamples) {
+            // has hovered over a clip handle
+            anyClipHovered = true;
+            if (xPos > clip.xPos - 10 && xPos < clip.xPos + 10) {
+              e.target.classList.add('e-resize');
+              clip.willResize = 'start';
+            } else if (xPos > clip.xPos + clip.numSamples - 10 && xPos < clip.xPos + clip.numSamples + 10) {
+              e.target.classList.add('e-resize');
+              clip.willResize = 'end';
+            } else {
+              e.target.classList.remove('e-resize');
+              clip.willResize = null;
+            }
+          }
+        }
+      }
+
+      if (!anyClipHovered) e.target.classList.remove('e-resize');
+    },
     positionCursor(xPos) {
       if (this.recording) return;
       this.cursorX = xPos;
