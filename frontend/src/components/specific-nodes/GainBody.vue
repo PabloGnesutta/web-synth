@@ -26,17 +26,17 @@
     </div>
 
     <!-- Analyser -->
-    <AnalyserRender :analyser="analyser" />
+    <PeakMeter :analyser="analyser" />
   </div>
 </template>
 
 <script>
 import Knob from '../Knob';
-import AnalyserRender from '../AnalyserRender';
+import PeakMeter from '../PeakMeter';
 
 export default {
   name: 'GainBody',
-  components: { Knob, AnalyserRender },
+  components: { Knob, PeakMeter },
   props: ['Node', 'analyser', 'recEnabled', 'selected'],
 
   data() {

@@ -17,7 +17,7 @@
             <div class="instrument-enabler-inner" :class="{ enabled: instrumentEnabled }"></div>
           </div>
 
-          <div v-if="Node.saveString" class="preset-icon" @click="savePreset()">[S]</div>
+          <div v-if="Node.saveString" class="preset-icon select-none" @click="savePreset()">[S]</div>
           <div v-if="showPresetNames" class="preset-names">
             <div
               v-for="(presetName, presetIndex) in presetNames"
@@ -332,6 +332,9 @@ export default {
 }
 
 // Specific Node Styles:
+.Surgeon {
+  width: 310px;
+}
 .BiquadFilter {
   width: 154px;
 }

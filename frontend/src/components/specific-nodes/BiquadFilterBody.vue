@@ -45,7 +45,7 @@
 
     <div class="lfo-container">
       <!-- Modulator Waveshape -->
-      <div>
+      <div class="select-none">
         <span>LFO</span>
         <select @input="setModType($event)">
           <option v-for="modType in Node.modTypes" :key="modType" :selected="modType === Node.modType">
