@@ -23,6 +23,7 @@
           :transpose="transpose"
           :projects="projects"
           :projectName="projectName"
+          :projectId="projectId"
           :lastSample="timeline.lastSample"
           :unsaved="unsaved"
         />
@@ -35,10 +36,12 @@
           @createInstrument="createInstrument"
           @createEffect="createAndInsertEffect"
           @loadPreset="loadPreset"
+          @onFocus="setFocus"
           :instrument-is-loaded="!!currentTrack"
+          :focused="focusing === 'sidebar'"
         />
 
-        <div class="right-col">
+        <div class="right-col" :class="{ focused: focusing === 'tracks' }" @click="setFocus('tracks')">
           <div class="top-controls">
             <!-- Click -->
             <Click ref="click" />
@@ -54,13 +57,14 @@
                 <div class="info-item">curr: {{ cursorX }}</div>
                 <div class="info-item">last: {{ timeline.lastSample }}</div>
                 <!-- <div class="info-item">zoom: {{ timeline.sampleWidth }}</div> -->
+                <div class="info-item">{{ focusing }}</div>
                 <div class="info-item last">{{ globalEnd }}</div>
               </div>
             </div>
           </div>
 
           <!-- Tracks -->
-          <div class="tracklist-wrapper custom-scrollbar" :class="{ mapping: mapping }">
+          <div class="tracklist-wrapper custom-scrollbar">
             <div class="tracklist">
               <div
                 v-for="(track, t) in tracks"
@@ -92,14 +96,15 @@
                 </div>
 
                 <!-- Right Controls -->
-                <div class="right-controls">
-                  <GainBody
+                <div class="right-controls-wrapper">
+                  <RightControls
                     :Node="track.trackGain"
                     :analyser="track.trackGainAnalyser"
                     :recEnabled="track.recEnabled"
                     :selected="currentTrackIndex === t"
                     @toggleRecEnabled="toggleRecEnabled(track)"
                     @knobClicked="knobClicked"
+                    @selectTrack="selectTrack(t)"
                   />
                 </div>
               </div>
@@ -197,15 +202,16 @@ const clipHandle = {
   height: 20,
   hookWidth: 10,
   color: '#10ff7050',
-  selectedColor: '#10ff7090',
+  selectedColor: '#ff652d96',
 };
 const sampleErrorMargin = 10;
 
 import db from '@/db/index.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
 import { mapMutations, mapGetters } from 'vuex';
+import { $ } from '../dom-utils/DomUtils';
 import NodeRender from '../components/NodeRender';
-import GainBody from '../components/specific-nodes/GainBody';
+import RightControls from '../components/RightControls';
 import SpectrumWaveshape from '../components/SpectrumWaveshape';
 import Pad from '@/components/user-interface/Pad';
 import Header from '../components/Header';
@@ -223,7 +229,7 @@ export default {
     Sidebar,
     NodeRender,
     SpectrumWaveshape,
-    GainBody,
+    RightControls,
     ExportModal,
   },
   data() {
@@ -295,6 +301,7 @@ export default {
       octave: 3,
       transpose: 0,
       m_pressed: false,
+      focusing: 'tracks',
     };
   },
 
@@ -320,14 +327,14 @@ export default {
   },
 
   mounted() {
-    document.querySelector('.home-wrapper').addEventListener('click', this.init);
+    $('.home-wrapper').addEventListener('click', this.init);
   },
 
   methods: {
     ...mapMutations(['setAppIsMapping', 'setContext']),
 
     init() {
-      document.querySelector('.home-wrapper').removeEventListener('click', this.init);
+      $('.home-wrapper').removeEventListener('click', this.init);
       Node.context = new (window.AudioContext || window.webkitAudioContext)();
       this.setContext(Node.context);
       db.init(projects => {
@@ -338,12 +345,12 @@ export default {
       this.createMasterGain();
 
       this.$nextTick(() => {
-        const canvasOverlayContainer = document.querySelector('.canvas-overlay');
+        const canvasOverlayContainer = $('.canvas-overlay');
         canvasOverlayContainer.style.left = this.trackProps.leftCtrlsWidth + 'px';
 
         this.canvasOverlay = this.$refs['canvas-overlay'];
         this.canvasOverlayCtx = this.canvasOverlay.getContext('2d');
-        this.computeTimelineWidth();
+        this.computeTimelineDimensions();
 
         this.createTrack(createInstrument('Drumkit'));
         this.createTrack(createInstrument('Femod'));
@@ -375,8 +382,11 @@ export default {
       // }, startInterval + duration);
     },
 
-    computeTimelineWidth() {
-      const trackList = document.querySelector('.tracklist');
+    setFocus(target) {
+      this.focusing = target;
+    },
+    computeTimelineDimensions() {
+      const trackList = $('.tracklist');
       this.timeline.viewportWidth =
         trackList.offsetWidth - this.trackProps.leftCtrlsWidth - this.trackProps.rightCtrlsWidth;
 
@@ -388,7 +398,7 @@ export default {
     },
 
     onResize() {
-      this.computeTimelineWidth();
+      this.computeTimelineDimensions();
       this.tracks.forEach(track => {
         track.canvas.width = this.timeline.viewportWidth;
       });
@@ -659,7 +669,6 @@ export default {
     },
     //render clip
     renderClip(clip, ctx) {
-      console.log(clip);
       const clipXPos = clip.xPos;
       const clipEnd = clipXPos + clip.endSample;
       // only if in viewport
@@ -724,7 +733,10 @@ export default {
       for (let c = 0; c < this.clips.length; c++) {
         const clip = this.clips[c];
         if (!clip.playing)
-          if (this.cursorX >= clip.xPos && this.cursorX < clip.xPos + clip.endSample - sampleErrorMargin) {
+          if (
+            this.cursorX >= clip.xPos &&
+            this.cursorX < clip.xPos + clip.endSample - clip.startSample - sampleErrorMargin
+          ) {
             this.playClip(clip);
           }
       }
@@ -802,7 +814,7 @@ export default {
         this.positionCursor(xPos);
       }
 
-      const timelines = document.querySelectorAll('.timeline');
+      const timelines = $('.timeline');
       for (var i = 0; i < timelines.length; i++)
         timelines[i].removeEventListener('mousemove', this.onCanvasMouseMove);
       window.addEventListener('mousemove', this.onWindowMousemove);
@@ -897,7 +909,7 @@ export default {
     },
 
     onMouseUp(e) {
-      const timelines = document.querySelectorAll('.timeline');
+      const timelines = $('.timeline');
       for (var i = 0; i < timelines.length; i++) {
         timelines[i].addEventListener('mousemove', this.onCanvasMouseMove);
       }
@@ -913,6 +925,7 @@ export default {
         this.onStopBtn();
       }
     },
+    //render cursor
     renderCursor() {
       this.canvasOverlayCtx.clearRect(0, 0, this.timeline.viewportWidth, this.canvasOverlay.height);
       this.canvasOverlayCtx.fillRect(
@@ -982,7 +995,7 @@ export default {
       this.renderCursor();
 
       this.$nextTick(() => {
-        const canvasContainer = document.querySelector('.timeline');
+        const canvasContainer = $('.timeline')[0];
         const canvas = this.$refs[`track-canvas-${track.id}`][0];
         canvas.width = canvasContainer.offsetWidth;
         track.canvas = canvas;
@@ -1092,7 +1105,7 @@ export default {
       effects.push(Node);
       this.$nextTick(() => {
         const trackInnerClass = '.track-detail_' + this.currentTrackIndex;
-        const trackInner = document.querySelector(trackInnerClass);
+        const trackInner = $(trackInnerClass);
         if (trackInner) {
           trackInner.scrollTo(trackInner.offsetWidth, 0);
         }
@@ -1193,8 +1206,7 @@ export default {
       const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
 
       if (noteKeyIndex !== -1) {
-        let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-
+        const noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
         this.keypressListeners.forEach(scaleInterface => {
           scaleInterface.instrument.stopNote(noteIndex);
         });
@@ -1211,10 +1223,12 @@ export default {
       } else {
         switch (e.keyCode) {
           case 38: //arrow   up - select track
+            if (this.focusing !== 'tracks') return;
             var futureTrackIndex = this.currentTrackIndex - 1;
             if (futureTrackIndex >= 0) this.selectTrack(futureTrackIndex);
             break;
           case 40: //arrow down - select track
+            if (this.focusing !== 'tracks') return;
             var futureTrackIndex = this.currentTrackIndex + 1;
             if (futureTrackIndex < this.tracks.length) this.selectTrack(futureTrackIndex);
             break;
@@ -1233,7 +1247,7 @@ export default {
       } else {
         switch (e.keyCode) {
           case 13: //enter - rec/stop
-            this.onRec();
+            if (this.focusing !== 'sidebar') this.onRec();
             break;
           case 27: //esc -
             this.onStopBtn();
@@ -1281,6 +1295,9 @@ export default {
     // LOAD/SAVE
 
     hardReset(generateSomeNodes) {
+      console.log('hard reset');
+      this.projectId = undefined;
+      this.projectName = 'untitled';
       this.clips = [];
       this.trackClips = {};
       this.trackIdCount = 0;
@@ -1288,9 +1305,11 @@ export default {
       this.currentTrackIndex = 0;
       this.clipIdCount = 0;
       this.timeline.lastSample = 0;
-      this.computeTimelineWidth();
+      this.timeline.viewportWidth = undefined;
       this.globalStart = 0;
       this.cursorX = 0;
+      this.unsaved = true;
+      this.computeTimelineDimensions();
 
       for (var i = 0; i < this.tracks.length; i++) this.deleteTrack(i);
       this.tracks = [];
@@ -1309,13 +1328,30 @@ export default {
     onSave(newProjectName) {
       if (!db.projects[this.projectId] || newProjectName) {
         // new project
-        this.projectName = newProjectName || prompt('Project name', 'WebDaw Project');
-        if (!this.projectName) return;
-
+        this.projectName = newProjectName;
         this.projectId = ++db.projectIdCount;
         db.projects[this.projectId] = { name: this.projectName };
-        db.updateProjectsList({ projects: db.projects, idCount: this.projectId }, () => {});
+        db.updateProjectsList({ projects: db.projects, idCount: this.projectId }, () => {
+          console.log('projects updated');
+        });
       }
+
+      db.save(
+        this.projectId,
+        'project_data',
+        {
+          globalStart: this.globalStart,
+          cursorX: this.cursorX,
+          tempo: this.tempo,
+          octave: this.octave,
+          transpose: this.transpose,
+          masterOutputKnob: this.masterOutputKnob,
+          followCursor: this.followCursor,
+        },
+        () => {
+          console.log('project_data saved');
+        }
+      );
 
       const tracks = [];
       this.tracks.forEach(track => {
@@ -1350,6 +1386,9 @@ export default {
       this.projectId = parseInt(projectId);
       this.projectName = projectName;
 
+      db.get(this.projectId, 'project_data', data => {
+        this.loadProjectData(data);
+      });
       db.get(this.projectId, 'tracks', data => {
         this.loadTracks(data);
       });
@@ -1357,9 +1396,17 @@ export default {
         this.loadTrackClips(data);
         this.unsaved = false;
       });
-      // todo: load click values
     },
-
+    loadProjectData(projectData) {
+      // todo: load click values
+      console.log('load project data');
+      this.globalStart = projectData.globalStart;
+      this.cursorX = projectData.cursorX;
+      this.masterOutputKnob = projectData.masterOutputKnob;
+      this.followCursor = projectData.followCursor;
+      this.octave = projectData.octave;
+      this.transpose = projectData.transpose;
+    },
     loadTracks(tracks) {
       tracks.forEach(track => {
         this.loadInstrument(track.instrument, track.id);
@@ -1368,13 +1415,13 @@ export default {
         });
       });
     },
-
     loadTrackClips(trackClips) {
       let clipsProcessed = 0;
       let numClips = 0;
       for (const trackId in trackClips) {
         const clips = trackClips[trackId];
         numClips += clips.length;
+        // if there is no clips, onLoadFinish never triggers
         clips.forEach(clip => {
           const blobReader = new FileReader();
           blobReader.onloadend = () => {
@@ -1387,10 +1434,10 @@ export default {
               clip.sampleRate = Math.round(clip.buffer.length / clip.numSamples);
               clip.playing = false;
               this.clips.push(clip);
+
               // determine total timeleine width
               const endPos = clip.xPos + clip.numSamples; //endSample
               if (endPos > this.timeline.lastSample) this.timeline.lastSample = endPos;
-
               // might fail because of race condition?
               if (++clipsProcessed >= numClips) this.onLoadFinish(trackClips);
             });
@@ -1401,11 +1448,10 @@ export default {
     },
 
     onLoadFinish(trackClips) {
+      console.log('onLoadFinish');
       this.trackClips = trackClips;
-      this.globalStart = 0;
-      this.cursorX = 0;
       this.$nextTick(() => {
-        this.computeTimelineWidth();
+        this.computeTimelineDimensions();
         this.moveCanvas(0);
         this.renderCursor();
       });
@@ -1649,11 +1695,12 @@ canvas {
 .right-col {
   background: black;
   flex: 1;
+  border: 1px solid transparent;
+  border-bottom: 0;
 }
-
-.top-controls {
+.right-col.focused {
+  border-color: rgb(156, 156, 0);
 }
-
 // Info
 .info-wrapper {
   background: #222;
@@ -1686,10 +1733,6 @@ canvas {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-}
-
-.tracklist-wrapper.mapping {
-  border-color: var(--color-1);
 }
 
 .tracklist {
@@ -1726,7 +1769,7 @@ canvas {
   flex: 1;
   height: 64px;
 }
-.right-controls {
+.right-controls-wrapper {
   width: var(--right-controls-width);
 }
 

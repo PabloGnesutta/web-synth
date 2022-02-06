@@ -6,6 +6,7 @@ request.onupgradeneeded = function () {
   // The database did not previously exist, so create object stores and indexes.
   const db = request.result;
   db.createObjectStore("projects");
+  db.createObjectStore("project_data");
   db.createObjectStore("track_clips");
   db.createObjectStore("tracks");
   hasUpgraded = true;

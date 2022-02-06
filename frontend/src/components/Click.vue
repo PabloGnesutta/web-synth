@@ -14,12 +14,28 @@
 
     <div class="slider-container">
       <span class="label tempo">{{ tempo }} bpm</span>
-      <input v-model="tempoKnobValue" type="range" min="30" max="300" step="1" @input="setTempoWithSlider" />
+      <input
+        v-model="tempoKnobValue"
+        class="select-none"
+        type="range"
+        min="30"
+        max="300"
+        step="1"
+        @input="setTempoWithSlider"
+      />
     </div>
 
     <div class="slider-container">
       <span class="label volume">vol: {{ clickLevel }}</span>
-      <input v-model="clickLevel" type="range" min="0" max="3" step="0.1" @input="setClickLevel" />
+      <input
+        v-model="clickLevel"
+        class="select-none"
+        type="range"
+        min="0"
+        max="3"
+        step="0.1"
+        @input="setClickLevel"
+      />
     </div>
 
     <div class="mute-unmute" :class="{ muted: muted }" @click="toggleMute">M</div>

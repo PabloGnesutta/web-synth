@@ -1,5 +1,5 @@
 <template>
-  <div class="Header">
+  <div class="Header" @click="$emit('onFocus', 'header')">
     <div class="header" :class="{ recording, playing }">
       <div class="main-container">
         <!-- SAVES -->
@@ -9,7 +9,7 @@
             <div v-if="fileMenuOpen" class="menu">
               <div class="menu-item" @click="onNew">New</div>
               <div class="menu-item" @click="onSave">Save</div>
-              <div class="menu-item" @click="onSaveAs">Save as</div>
+              <div v-if="projectId" class="menu-item" @click="onSaveAs">Save as</div>
               <div class="has-submenu" @mouseenter="loadMenuOpen = true" @mouseleave="loadMenuOpen = false">
                 <div class="menu-item" :class="{ active: loadMenuOpen }">Open</div>
                 <div v-if="loadMenuOpen" class="sub-menu">
@@ -74,6 +74,7 @@ export default {
     'lastSample',
     'projects',
     'projectName',
+    'projectId',
     'unsaved',
   ],
   data() {
@@ -121,7 +122,13 @@ export default {
       this.$emit('onNew');
     },
     onSave() {
-      this.$emit('onSave');
+      let newProjectName = undefined;
+      if (!this.projectId) {
+        newProjectName = newProjectName || prompt('Project name', 'WebDaw Project');
+        if (!newProjectName) return;
+        if (this.nameExists(newProjectName)) return alert('exists');
+      }
+      this.$emit('onSave', newProjectName);
     },
 
     onSaveAs() {
@@ -129,7 +136,7 @@ export default {
       if (newProjectName === this.projectName) {
         this.onSave();
       } else {
-        // todo: verify if exists and prompt overwrite
+        if (this.nameExists(newProjectName)) return alert('exists');
         this.$emit('onSave', newProjectName);
       }
     },
@@ -147,8 +154,10 @@ export default {
       this.$emit('onMidiMap');
     },
 
-    nameExists(name) {
-      return this.saveNames.findIndex(sv => sv.name === name);
+    nameExists(projectName) {
+      for (const id in this.projects)
+        if (this.projects[id].name.toLowerCase() === projectName.toLowerCase()) return true;
+      return false;
     },
   },
 };

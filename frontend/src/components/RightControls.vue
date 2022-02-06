@@ -1,12 +1,12 @@
 <template>
-  <div class="gain-body select-none" :class="{ selected }">
+  <div class="right-controls select-none" :class="{ selected }" @click.self="$emit('selectTrack')">
     <!-- Mute/Rec enabled -->
     <div class="node-controls">
-      <div class="rec-enabled-disabled" @click="toggleRecEnabled">
+      <div class="rec-enabled-disabled" @click.stop="toggleRecEnabled">
         <div v-if="recEnabled" class="rec-btn rec-enabled">Rec enabled</div>
         <div v-else class="rec-btn rec-disabled">Rec disabled</div>
       </div>
-      <div class="mute-unmute select-none" @click="toggleMute">
+      <div class="mute-unmute select-none" @click.stop="toggleMute">
         <div v-if="Node.muted" class="unmute">M</div>
         <div v-else class="mute">M</div>
       </div>
@@ -14,7 +14,7 @@
 
     <!-- Level -->
     <div class="level">
-      <div @click="knobClicked(Node.name + '-level')">
+      <div @click.stop="knobClicked(Node.name + '-level')">
         <Knob
           :ref="Node.name + '-level'"
           :initVal="Node.gain"
@@ -31,11 +31,11 @@
 </template>
 
 <script>
-import Knob from '../Knob';
-import PeakMeter from '../PeakMeter';
+import Knob from './Knob';
+import PeakMeter from './PeakMeter';
 
 export default {
-  name: 'GainBody',
+  name: 'RightControls',
   components: { Knob, PeakMeter },
   props: ['Node', 'analyser', 'recEnabled', 'selected'],
 
@@ -68,14 +68,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.gain-body {
+.right-controls {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0.5rem 0.5rem 0.5rem 1.5rem;
   background: #111;
 }
-.gain-body.selected {
+.right-controls.selected {
   background: #333;
 }
 .node-controls {

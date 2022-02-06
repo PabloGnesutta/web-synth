@@ -1,18 +1,25 @@
 <template>
-  <div class="sidebar-wrapper">
+  <div class="sidebar-wrapper" :class="{ focused }" @click="$emit('onFocus', 'sidebar')">
     <div v-if="presetNamesLoaded" class="sidebar custom-scrollbar">
       <!-- Instruments -->
       <div class="menu instruments">
         <div class="label">Instruments</div>
-        <div v-for="instrument in instruments" :key="instrument.className" class="nodes-container">
-          <div class="node-item">
+        <div v-for="(instrument, i) in instruments" :key="instrument.className" class="nodes-container">
+          <div
+            class="node-item"
+            :class="{ selected: selectedType === 'instruments' && selectedParentIndex === i }"
+          >
             <span
               @click="togglePresetsDropdown(instrument)"
               class="arrow"
               :class="{ rotate: instrument.showPresets }"
               >></span
             >
-            <span @dblclick="createInstrument(instrument.className)" class="node-item-name">
+            <span
+              class="node-item-name"
+              @click="selectParent('instruments', i)"
+              @dblclick="createInstrument(instrument.className)"
+            >
               {{ instrument.displayName }}
             </span>
           </div>
@@ -32,12 +39,19 @@
       <!-- Effects -->
       <div class="menu effects">
         <div class="label">Effects</div>
-        <div v-for="effect in effects" :key="effect.className" class="nodes-container">
-          <div class="node-item">
+        <div v-for="(effect, e) in effects" :key="effect.className" class="nodes-container">
+          <div
+            class="node-item"
+            :class="{ selected: selectedType === 'effects' && selectedParentIndex === e }"
+          >
             <span @click="togglePresetsDropdown(effect)" class="arrow" :class="{ rotate: effect.showPresets }"
               >></span
             >
-            <span @dblclick="createEffect(effect.className)" class="node-item-name">
+            <span
+              @click="selectParent('effects', e)"
+              @dblclick="createEffect(effect.className)"
+              class="node-item-name"
+            >
               {{ effect.displayName }}
             </span>
           </div>
@@ -60,7 +74,7 @@
 <script>
 export default {
   name: 'Sidebar',
-  props: ['instrumentIsLoaded'],
+  props: ['instrumentIsLoaded', 'focused'],
   data() {
     return {
       instruments: [
@@ -80,9 +94,19 @@ export default {
         { displayName: 'Distortion', className: 'Distortion', showPresets: false },
       ],
       presetNamesLoaded: false,
+      selectedParentIndex: null,
+      selectedType: null,
     };
   },
-
+  watch: {
+    focused() {
+      if (this.focused) this.addKeyListeners();
+      else this.removeKeyListeners();
+    },
+  },
+  beforeDestroy() {
+    this.removeKeyListeners();
+  },
   created() {
     this.instruments.forEach(instrument => {
       const presetNamesKey = instrument.className + '-preset-names';
@@ -104,19 +128,53 @@ export default {
   },
 
   methods: {
+    selectParent(nodeType, index) {
+      this.selectedType = nodeType;
+      this.selectedParentIndex = index;
+    },
+    addKeyListeners() {
+      window.addEventListener('keydown', this.onKeyDown);
+    },
+    removeKeyListeners() {
+      window.removeEventListener('keydown', this.onKeyDown);
+    },
+    onKeyDown(e) {
+      switch (e.keyCode) {
+        case 13: //enter
+          if (this.selectedType === 'instruments')
+            this.createInstrument(this.instruments[this.selectedParentIndex].className);
+          else this.createEffect(this.effects[this.selectedParentIndex].className);
+          break;
+        case 37: //arrow left
+          break;
+        case 38: //arrow up
+          if (this.selectedParentIndex - 1 >= 0) this.selectedParentIndex--;
+          else {
+            this.selectedType = this.selectedType === 'instruments' ? 'effects' : 'instruments';
+            this.selectedParentIndex = this[this.selectedType].length - 1;
+          }
+          break;
+        case 39: //arrow right
+          break;
+        case 40: //arrow down
+          if (this.selectedParentIndex + 1 < this[this.selectedType].length) this.selectedParentIndex++;
+          else {
+            this.selectedType = this.selectedType === 'instruments' ? 'effects' : 'instruments';
+            this.selectedParentIndex = 0;
+          }
+          break;
+      }
+    },
     createInstrument(className) {
       this.$emit('createInstrument', className);
     },
     createEffect(className) {
       if (this.instrumentIsLoaded) this.$emit('createEffect', className);
     },
-
     // Presets
-
     togglePresetsDropdown(instrumentOrEffect) {
       instrumentOrEffect.showPresets = !instrumentOrEffect.showPresets;
     },
-
     loadPreset(className, presetIndex, instrumentOrEffect) {
       if (instrumentOrEffect === 'effect' && !this.instrumentIsLoaded) return;
       const store = localStorage.getItem(className + '-presets');
@@ -129,6 +187,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.sidebar-wrapper {
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
+  border-top: 1px solid transparent;
+}
+.sidebar-wrapper.focused {
+  border-color: rgb(156, 156, 0);
+}
 .sidebar {
   padding: 0 0.25rem;
   height: var(--mid-section-height);
@@ -165,8 +231,11 @@ export default {
     flex: 1;
     padding: 0.25rem;
   }
-  .node-item-name:hover {
+  .node-item:hover {
     background: #333;
+  }
+  .node-item.selected {
+    background: #444;
   }
 }
 
