@@ -659,6 +659,7 @@ export default {
     },
     //render clip
     renderClip(clip, ctx) {
+      console.log(clip);
       const clipXPos = clip.xPos;
       const clipEnd = clipXPos + clip.endSample;
       // only if in viewport
@@ -845,20 +846,28 @@ export default {
 
     // resize or move clips
     onWindowMousemove(e) {
-      for (var i = 0; i < this.clips.length; i++) {
-        const clip = this.clips[i];
+      for (var i = 0; i < this.selectedClips.length; i++) {
+        const clip = this.selectedClips[i];
         if (clip.selected) {
           if (clip.willResize) {
             if (clip.willResize === 'start') {
+              // resize from start
               if (clip.startSample + e.movementX >= 0) {
-                clip.startSample += e.movementX;
-                clip.xPos += e.movementX;
+                if (clip.startSample + e.movementX < clip.endSample - 13) {
+                  // prevent reducing the clip to 0
+                  clip.startSample += e.movementX;
+                  clip.xPos += e.movementX;
+                }
               } else {
                 clip.startSample = 0;
               }
             } else {
+              // resize from end
               if (clip.endSample + e.movementX <= clip.numSamples) {
-                clip.endSample += e.movementX;
+                if (clip.endSample + e.movementX > clip.startSample + 13) {
+                  // prevent reducing the clip to 0
+                  clip.endSample += e.movementX;
+                }
               } else {
                 clip.endSample = clip.numSamples;
               }
@@ -878,15 +887,12 @@ export default {
     duplicateClips() {
       this.selectedClips.forEach(clip => {
         const newClip = { ...clip };
-        newClip.xPos = clip.xPos + clip.endSample;
+        clip.xPos = clip.xPos + clip.endSample - clip.startSample;
         newClip.selected = false;
         this.clips.push(newClip);
         this.trackClips[clip.trackId].push(newClip);
 
-        const canvas = this.$refs[`track-canvas-${clip.trackId}`][0];
-        const ctx = canvas.getContext('2d');
         this.renderTrack(clip.trackId);
-        // this.renderClip(clip, ctx);
       });
     },
 
