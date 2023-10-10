@@ -1,4 +1,4 @@
-# Web Synth/DAW
+# A digital audio workstation (DAW) with custom synthesizers, effects, ability to record and export audio multi-tracks.
 
 ## Run in your local environment
 ```
