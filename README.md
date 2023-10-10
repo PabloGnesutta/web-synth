@@ -1,5 +1,7 @@
 # A digital audio workstation (DAW) with custom synthesizers, effects, ability to record and export audio multi-tracks.
 
+See it live at: https://websynth.pablognesutta.com
+
 ## Run in your local environment
 ```
 go to /frontend and 'run npm install' and then run 'npm run serve' 
