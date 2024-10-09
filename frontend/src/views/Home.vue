@@ -3,43 +3,18 @@
     <div v-if="inited" class="home-inner">
       <!-- Top Section -->
       <div class="top-section">
-        <Header
-          :ref="'header'"
-          @onRec="onRec"
-          @onPlay="onPlay"
-          @onStop="onStopBtn"
-          @onNew="hardReset(true)"
-          @onSave="onSave"
-          @onLoad="onLoad"
-          @onExport="onExport"
-          @onFollow="onFollow"
-          @onMidiMap="onMidiMap"
-          :playing="playing"
-          :recording="recording"
-          :exporting="exporting"
-          :following="followCursor"
-          :mapping="mapping"
-          :octave="octave"
-          :transpose="transpose"
-          :projects="projects"
-          :projectName="projectName"
-          :projectId="projectId"
-          :lastSample="timeline.lastSample"
-          :unsaved="unsaved"
-        />
+        <Header :ref="'header'" @onRec="onRec" @onPlay="onPlay" @onStop="onStopBtn" @onNew="hardReset(true)"
+          @onSave="onSave" @onLoad="onLoad" @onExport="onExport" @onFollow="onFollow" @onMidiMap="onMidiMap"
+          :playing="playing" :recording="recording" :exporting="exporting" :following="followCursor" :mapping="mapping"
+          :octave="octave" :transpose="transpose" :projects="projects" :projectName="projectName" :projectId="projectId"
+          :lastSample="timeline.lastSample" :unsaved="unsaved" :isNew="isNew" />
       </div>
 
       <!-- Mid Section -->
       <div class="mid-section">
-        <Sidebar
-          class="left-col"
-          @createInstrument="createInstrument"
-          @createEffect="createAndInsertEffect"
-          @loadPreset="loadPreset"
-          @onFocus="setFocus"
-          :instrument-is-loaded="!!currentTrack"
-          :focused="focusing === 'sidebar'"
-        />
+        <Sidebar class="left-col" @createInstrument="createInstrument" @createEffect="createAndInsertEffect"
+          @loadPreset="loadPreset" @onFocus="setFocus" :instrument-is-loaded="!!currentTrack"
+          :focused="focusing === 'sidebar'" />
 
         <div class="right-col" :class="{ focused: focusing === 'tracks' }" @click="setFocus('tracks')">
           <div class="top-controls">
@@ -47,11 +22,8 @@
             <Click ref="click" />
             <!-- Info -->
             <div class="info-wrapper select-none">
-              <div
-                class="info-container no-scrollbar"
-                :style="{ width: timeline.viewportWidth + 'px' }"
-                @click="logInfo"
-              >
+              <div class="info-container no-scrollbar" :style="{ width: timeline.viewportWidth + 'px' }"
+                @click="logInfo">
                 <div class="info-item">{{ globalStart }}</div>
                 <!-- <div class="info-item">vpW: {{ timeline.viewportWidth }}</div> -->
                 <div class="info-item">curr: {{ cursorX }}</div>
@@ -66,13 +38,8 @@
           <!-- Tracks -->
           <div class="tracklist-wrapper custom-scrollbar">
             <div class="tracklist">
-              <div
-                v-for="(track, t) in tracks"
-                :key="track.id"
-                class="track"
-                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
-                @click.self="selectTrack(t)"
-              >
+              <div v-for="(track, t) in tracks" :key="track.id" class="track"
+                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }" @click.self="selectTrack(t)">
                 <div class="left-controls no-scrollbar" @click="selectTrack(t)">
                   <div class="left-ctrls-inner">
                     <div @click.stop="deleteTrack(t)" class="pointer">[X]</div>
@@ -82,30 +49,17 @@
                 </div>
 
                 <!-- Track Timeline -->
-                <div
-                  class="timeline"
-                  :ref="`timeline-${track.id}`"
-                  @mousedown="onCanvasMouseDown($event, track.id)"
-                  @mousewheel="onCanvasContainerWheel"
-                >
-                  <canvas
-                    :ref="`track-canvas-${track.id}`"
-                    :id="track.id"
-                    :height="timeline.trackHeight"
-                  ></canvas>
+                <div class="timeline" :ref="`timeline-${track.id}`" @mousedown="onCanvasMouseDown($event, track.id)"
+                  @mousewheel="onCanvasContainerWheel">
+                  <canvas :ref="`track-canvas-${track.id}`" :id="track.id" :height="timeline.trackHeight"></canvas>
                 </div>
 
                 <!-- Right Controls -->
                 <div class="right-controls-wrapper">
-                  <RightControls
-                    :Node="track.trackGain"
-                    :analyser="track.trackGainAnalyser"
-                    :recEnabled="track.recEnabled"
-                    :selected="currentTrackIndex === t"
-                    @toggleRecEnabled="toggleRecEnabled(track)"
-                    @knobClicked="knobClicked"
-                    @selectTrack="selectTrack(t)"
-                  />
+                  <RightControls :Node="track.trackGain" :analyser="track.trackGainAnalyser"
+                    :recEnabled="track.recEnabled" :selected="currentTrackIndex === t"
+                    @toggleRecEnabled="toggleRecEnabled(track)" @knobClicked="knobClicked"
+                    @selectTrack="selectTrack(t)" />
                 </div>
               </div>
 
@@ -118,13 +72,8 @@
             <div class="track master">
               <div class="left-controls">Master</div>
               <div class="master-knob-wrapper" @click="knobClicked('MasterGain')">
-                <Knob
-                  :ref="'MasterGain'"
-                  minVal="0"
-                  maxVal="1"
-                  :initVal="masterOutputKnob"
-                  @knobTurned="setMasterGainValue"
-                />
+                <Knob :ref="'MasterGain'" minVal="0" maxVal="1" :initVal="masterOutputKnob"
+                  @knobTurned="setMasterGainValue" />
               </div>
             </div>
           </div>
@@ -133,35 +82,19 @@
 
       <!-- Bottom section: Current Track detail -->
       <div class="bottom-section">
-        <div
-          v-if="currentTrack"
-          class="track-detail custom-scrollbar"
-          :class="'track-detail_' + currentTrackIndex"
-        >
+        <div v-if="currentTrack" class="track-detail custom-scrollbar" :class="'track-detail_' + currentTrackIndex">
           <!-- Instrument -->
           <div class="track-instrument">
-            <NodeRender
-              :Node="currentTrack.instrument"
-              :analyser="currentTrack.instrumentAnalyser"
-              :instrumentEnabled="currentTrack.instrumentEnabled"
-              @deleteNode="deleteTrack"
-              @toggleInstrumentEnabled="toggleInstrumentEnabled"
-              @knobClicked="knobClicked"
-            />
+            <NodeRender :Node="currentTrack.instrument" :analyser="currentTrack.instrumentAnalyser"
+              :instrumentEnabled="currentTrack.instrumentEnabled" @deleteNode="deleteTrack"
+              @toggleInstrumentEnabled="toggleInstrumentEnabled" @knobClicked="knobClicked" />
           </div>
 
           <!-- Effects -->
           <div class="track-effects">
-            <NodeRender
-              v-for="(Node, effectIndex) in currentTrack.effects"
-              :Node="Node"
-              :analyser="Node.analyser"
-              :key="Node.id"
-              :ref="'Node-' + effectIndex"
-              @deleteNode="deleteEffect(effectIndex)"
-              @levelClicked="levelClicked(Node)"
-              @knobClicked="knobClicked"
-            />
+            <NodeRender v-for="(Node, effectIndex) in currentTrack.effects" :Node="Node" :analyser="Node.analyser"
+              :key="Node.id" :ref="'Node-' + effectIndex" @deleteNode="deleteEffect(effectIndex)"
+              @levelClicked="levelClicked(Node)" @knobClicked="knobClicked" />
             <div class="placeholder"></div>
           </div>
           <div class="analyser-render-wrapper">
@@ -206,7 +139,7 @@ const clipHandle = {
 };
 const sampleErrorMargin = 10;
 
-import db from '@/db/index.js';
+import dbObj from '@/db/index.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
 import { mapMutations, mapGetters } from 'vuex';
 import { $ } from '../dom-utils/DomUtils';
@@ -235,9 +168,11 @@ export default {
   data() {
     return {
       inited: false,
-      projectId: undefined,
-      projectName: 'untitled',
+      isNew: true,
       projects: null,
+      projectId: undefined,
+      projectIdCount: undefined,
+      projectName: 'untitled',
 
       tracks: [],
       trackIdCount: 0,
@@ -337,8 +272,10 @@ export default {
       $('.home-wrapper').removeEventListener('click', this.init);
       Node.context = new (window.AudioContext || window.webkitAudioContext)();
       this.setContext(Node.context);
-      db.init(projects => {
-        this.projects = projects;
+      dbObj.initDb(dbData => {
+        console.log('db inited', dbData);
+        this.projects = dbData.projects;
+        this.projectIdCount = dbData.projectIdCount;
       });
 
       this.inited = true;
@@ -582,7 +519,7 @@ export default {
       };
     },
 
-    captureBarsLoop(cursorStep) {
+    captureBarsLoop(cursorStep = 1) {
       this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, cursorStep));
       for (var r = 0; r < this.renderDataObjects.length; r++) {
         const renderDataObject = this.renderDataObjects[r];
@@ -732,13 +669,14 @@ export default {
       // play clip if corresponds
       for (let c = 0; c < this.clips.length; c++) {
         const clip = this.clips[c];
-        if (!clip.playing)
+        if (!clip.playing) {
           if (
             this.cursorX >= clip.xPos &&
             this.cursorX < clip.xPos + clip.endSample - clip.startSample - sampleErrorMargin
           ) {
             this.playClip(clip);
           }
+        }
       }
     },
     unselectClips() {
@@ -976,10 +914,11 @@ export default {
       trackGain.connectNativeNode(this.masterInput, 'Mixer Gain');
 
       this.trackIdCount++;
+      const _trackId = trackId || this.trackIdCount;
       const track = {
-        id: trackId || this.trackIdCount,
-        name: 'Track ' + this.trackIdCount,
-        displayName: 'Track ' + this.trackIdCount,
+        id: _trackId,
+        name: 'Track ' + _trackId,
+        displayName: 'Track ' + _trackId,
         instrument,
         effects: [],
         trackGain,
@@ -990,7 +929,7 @@ export default {
 
       this.tracks.push(track);
 
-      this.trackClips[this.trackIdCount] = [];
+      this.trackClips[_trackId] = [];
       this.canvasOverlay.height = this.timeline.trackHeight * this.tracks.length;
       this.renderCursor();
 
@@ -1180,8 +1119,8 @@ export default {
         scaleInterface.instrument.stopNote(noteIndex);
       });
     },
-    onPadTouchCancel(e) {},
-    onPadTouchMove(e) {},
+    onPadTouchCancel(e) { },
+    onPadTouchMove(e) { },
 
     // Keyboard
     onKeydown(e) {
@@ -1296,47 +1235,63 @@ export default {
 
     hardReset(generateSomeNodes) {
       console.log('hard reset');
+      this.projects = {};
       this.projectId = undefined;
+      this.projectIdCount = undefined;
       this.projectName = 'untitled';
       this.clips = [];
+      this.clipIdCount = 0;
       this.trackClips = {};
       this.trackIdCount = 0;
       this.currentTrack = null;
       this.currentTrackIndex = 0;
-      this.clipIdCount = 0;
       this.timeline.lastSample = 0;
       this.timeline.viewportWidth = undefined;
       this.globalStart = 0;
+      this.globalEnd = 0;
       this.cursorX = 0;
       this.unsaved = true;
       this.computeTimelineDimensions();
 
-      for (var i = 0; i < this.tracks.length; i++) this.deleteTrack(i);
+
+      while (this.tracks.length) {
+        this.deleteTrack(0);
+      }
       this.tracks = [];
       // todo: reset Nodes' Ids
-
       if (generateSomeNodes) {
         this.createTrack(createInstrument('Drumkit'));
         this.createTrack(createInstrument('Femod'));
         this.createAndInsertEffect('BiquadFilter');
       }
-
       this.renderCanvas();
       this.renderCursor();
     },
 
     onSave(newProjectName) {
-      if (!db.projects[this.projectId] || newProjectName) {
+      console.log('onsave', newProjectName, this.projectId, this.projectIdCount);
+      if (this.isNew || newProjectName) {
         // new project
-        this.projectName = newProjectName;
-        this.projectId = ++db.projectIdCount;
-        db.projects[this.projectId] = { name: this.projectName };
-        db.updateProjectsList({ projects: db.projects, idCount: this.projectId }, () => {
+        console.log('isnew', this.isNew);
+        const newId = this.projectIdCount + 1;
+        const projectsObj = { ...this.projects };
+        projectsObj[newId] = { id: newId, name: newProjectName };
+        dbObj.updateProjectsList({ projects: projectsObj, idCount: newId }, () => {
           console.log('projects updated');
+          this.projectId = newId;
+          this.projectName = newProjectName;
+          this.projectIdCount = newId;
+          this.isNew = false;
+          this.projects[newId] = projectsObj;
+          this.saveData();
         });
+      } else {
+        this.saveData();
       }
+    },
 
-      db.save(
+    saveData() {
+      dbObj.save(
         this.projectId,
         'project_data',
         {
@@ -1361,7 +1316,7 @@ export default {
           effects: track.effects.map(effect => JSON.parse(effect.saveString())),
         });
       });
-      db.save(this.projectId, 'tracks', tracks, () => {
+      dbObj.save(this.projectId, 'tracks', tracks, () => {
         console.log('tracks saved');
       });
 
@@ -1375,7 +1330,7 @@ export default {
           return saveClip;
         });
       }
-      db.save(this.projectId, 'track_clips', trackClips, () => {
+      dbObj.save(this.projectId, 'track_clips', trackClips, () => {
         console.log('track_clips saved');
         this.unsaved = false;
       });
@@ -1386,20 +1341,23 @@ export default {
       this.projectId = parseInt(projectId);
       this.projectName = projectName;
 
-      db.get(this.projectId, 'project_data', data => {
-        this.loadProjectData(data);
+      dbObj.get(this.projectId, 'project_data', data => {
+        this.loadProjectData(projectId, data);
       });
-      db.get(this.projectId, 'tracks', data => {
+      dbObj.get(this.projectId, 'tracks', data => {
         this.loadTracks(data);
       });
-      db.get(this.projectId, 'track_clips', data => {
+      dbObj.get(this.projectId, 'track_clips', data => {
         this.loadTrackClips(data);
         this.unsaved = false;
       });
+
+      this.isNew = false;
     },
-    loadProjectData(projectData) {
+    loadProjectData(projectId, projectData) {
       // todo: load click values
-      console.log('load project data');
+      console.log('load project data', projectId, projectData);
+      this.projectId = projectId;
       this.globalStart = projectData.globalStart;
       this.cursorX = projectData.cursorX;
       this.masterOutputKnob = projectData.masterOutputKnob;
@@ -1408,6 +1366,7 @@ export default {
       this.transpose = projectData.transpose;
     },
     loadTracks(tracks) {
+      console.log('load tracks data', tracks);
       tracks.forEach(track => {
         this.loadInstrument(track.instrument, track.id);
         track.effects.forEach(effect => {
@@ -1416,6 +1375,7 @@ export default {
       });
     },
     loadTrackClips(trackClips) {
+      console.log('load trackClips data', trackClips);
       let clipsProcessed = 0;
       let numClips = 0;
       for (const trackId in trackClips) {
@@ -1436,8 +1396,8 @@ export default {
               this.clips.push(clip);
 
               // determine total timeleine width
-              const endPos = clip.xPos + clip.numSamples; //endSample
-              if (endPos > this.timeline.lastSample) this.timeline.lastSample = endPos;
+              const lastSample = clip.xPos + clip.numSamples;
+              if (lastSample > this.timeline.lastSample) this.timeline.lastSample = lastSample;
               // might fail because of race condition?
               if (++clipsProcessed >= numClips) this.onLoadFinish(trackClips);
             });
@@ -1630,7 +1590,7 @@ export default {
         input.onmidimessage = this.onMIDIMessage;
       }
     },
-    onMIDIFailure() {},
+    onMIDIFailure() { },
 
     addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {
@@ -1676,6 +1636,7 @@ canvas {
   height: 100vh;
   background: transparent;
 }
+
 .home-inner {
   height: 100vh;
   display: flex;
@@ -1692,19 +1653,23 @@ canvas {
   height: var(--mid-section-height);
   display: flex;
 }
+
 .right-col {
   background: black;
   flex: 1;
   border: 1px solid transparent;
   border-bottom: 0;
 }
+
 .right-col.focused {
   border-color: rgb(156, 156, 0);
 }
+
 // Info
 .info-wrapper {
   background: #222;
 }
+
 .info-container {
   margin-left: var(--left-controls-width);
   width: calc(100% - var(--left-controls-width) - var(--right-controls-width));
@@ -1712,21 +1677,26 @@ canvas {
   display: flex;
   align-items: center;
   background: teal;
+
   &:first-child {
     padding-left: 0.25rem;
   }
+
   &:last-child {
     padding-right: 0.25rem;
   }
 }
+
 .info-item {
   padding: 0.25rem 0 0.25rem 0;
   min-width: 95px;
 }
+
 .info-item.last {
   flex: 1;
   text-align: right;
 }
+
 .tracklist-wrapper {
   height: calc(100vh - var(--top-section-height) - var(--top-controls-height) - var(--bottom-section-height));
   overflow-y: scroll;
@@ -1745,9 +1715,11 @@ canvas {
   justify-content: space-between;
   background: #111;
 }
+
 .track.selected {
   background: #333;
 }
+
 .left-controls {
   width: var(--left-controls-width);
   padding: 1.4rem 0.5rem;
@@ -1756,12 +1728,14 @@ canvas {
   padding-right: 2rem;
   user-select: none;
 }
+
 .left-ctrls-inner {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding-right: 100px;
 }
+
 .timeline {
   position: relative;
   background: transparent;
@@ -1769,6 +1743,7 @@ canvas {
   flex: 1;
   height: 64px;
 }
+
 .right-controls-wrapper {
   width: var(--right-controls-width);
 }
@@ -1784,6 +1759,7 @@ canvas {
   padding: 0 0.75rem;
   background: rgb(0, 53, 53);
 }
+
 .master-knob-wrapper {
   margin-right: 1rem;
 }
@@ -1795,10 +1771,12 @@ canvas {
   justify-content: center;
   align-items: center;
   background: transparent;
+
   .current-track-empty-state {
     font-size: 1.75rem;
   }
 }
+
 .track-detail {
   flex: 1;
   display: flex;
@@ -1822,10 +1800,12 @@ canvas {
   display: flex;
   gap: 0.5em;
 }
+
 .analyser-render-wrapper {
   margin-left: 1rem;
   align-self: end;
 }
+
 .welcome-msg {
   position: fixed;
   top: 50%;

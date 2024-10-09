@@ -27,7 +27,7 @@
             </div>
           </div>
           <div v-if="projectName" class="current-save-name">
-            {{ projectName }}
+            [{{ projectId }}] {{ projectName }}
             <span v-if="unsaved">[*]</span>
           </div>
           <div v-if="fileMenuOpen" class="backdrop" @click="fileMenuOpen = false"></div>
@@ -76,6 +76,7 @@ export default {
     'projectName',
     'projectId',
     'unsaved',
+    'isNew'
   ],
   data() {
     return {
@@ -123,7 +124,7 @@ export default {
     },
     onSave() {
       let newProjectName = undefined;
-      if (!this.projectId) {
+      if (this.isNew) {
         newProjectName = newProjectName || prompt('Project name', 'WebDaw Project');
         if (!newProjectName) return;
         if (this.nameExists(newProjectName)) return alert('exists');

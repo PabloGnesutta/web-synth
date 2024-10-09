@@ -85,7 +85,7 @@ export default {
         var x = 0;
         for (var i = 0; i < this.dataArrayLength; i++) {
           barHeight = this.dataArray[i].map(0, 255, 1, this.canvasHeight);
-          this.ctx.fillStyle = 'rgb(' + barHeight + ', 50, 50)';
+          this.ctx.fillStyle = 'rgb(' + barHeight.map(1, this.canvasHeight, 32, 64) + ', 128, 128)';
           this.ctx.fillRect(x, this.canvasHeight, this.freqBarWidth, -barHeight);
 
           x += this.freqBarWidth; //

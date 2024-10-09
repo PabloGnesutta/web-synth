@@ -4,12 +4,12 @@ let db;
 
 request.onupgradeneeded = function () {
   // The database did not previously exist, so create object stores and indexes.
-  hasUpgraded = true;
   const db = request.result;
   db.createObjectStore("projects");
   db.createObjectStore("project_data");
   db.createObjectStore("track_clips");
   db.createObjectStore("tracks");
+  hasUpgraded = true;
 };
 
 request.onsuccess = function () {
@@ -27,29 +27,25 @@ request.onsuccess = function () {
 export default {
   initDb(cb) {
     const numRequests = 2;
-    var projects = {};
-    var projectIdCount = 0;
-    let fulfilledRequests = 0;
+    var fulfilledRequests = 0;
 
     const tx = db.transaction('projects', "readwrite");
     const store = tx.objectStore('projects');
 
-    store.get('projectIdCount').onsuccess = (event) => {
-      console.log(event)
-      projectIdCount = event.target.result;
+    //this.projects
+    store.get('projects').onsuccess = (event) => {
+      this.projects = event.target.result;
       onDbInitFinish();
     };
-    store.get('projects').onsuccess = (event) => {
-      projects = event.target.result;
+    //this.projectIdCount
+    store.get('projectIdCount').onsuccess = (event) => {
+      this.projectIdCount = event.target.result;
       onDbInitFinish();
     };
 
     const onDbInitFinish = () => {
       fulfilledRequests++;
-      if (fulfilledRequests >= numRequests) cb({
-        projects,
-        projectIdCount
-      });
+      if (fulfilledRequests >= numRequests) cb(this.projects);
     };
   },
 
@@ -71,7 +67,6 @@ export default {
   },
 
   updateProjectsList(data, cb) {
-    console.log('update data', data)
     const tx = db.transaction('projects', "readwrite");
     const store = tx.objectStore('projects');
 
