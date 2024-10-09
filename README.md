@@ -1,3 +1,9 @@
+IMPORTANT:
+For the Frontend:
+Latest Node version supported is 14.21.3
+Further versions will fail to start the dev environment and build the project.
+
+
 # A digital audio workstation (DAW) with custom synthesizers, effects, ability to record and export audio multi-tracks.
 
 See it live at: https://websynth.pablognesutta.com
