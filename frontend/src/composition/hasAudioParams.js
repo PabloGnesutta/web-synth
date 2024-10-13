@@ -1,3 +1,6 @@
+const { addSaveFunction } = require("../class/nodeUtils");
+
+
 module.exports = function hasDryWet(target) {
   target.setAudioParam = function (paramIndex, value) {
     const param = target.audioParams[paramIndex];
@@ -7,16 +10,10 @@ module.exports = function hasDryWet(target) {
     target.audioParams[paramIndex].value = newValue;
   };
 
-  target.destroyers.push(function () { target.audioParams = null; });
+  target.destroyers.push(() => target.audioParams = null);
 
-  if (!target.saveFunctions) target.saveFunctions = [];
-
-  target.saveFunctions.push(function () {
-    return {
-      name: 'audioParams',
-      value: target.audioParams.map(param => {
-        return { name: param.name, value: param.value };
-      }),
-    };
-  });
+  addSaveFunction(target, () => ({
+    name: 'audioParams',
+    value: target.audioParams.map(param => ({ name: param.name, value: param.value })),
+  }));
 };

@@ -1,6 +1,8 @@
-const Node = require("../Node");
 const hasDryWet = require("../../composition/hasDryWet");
 const hasInnerNodeAudioParams = require("../../composition/hasInnerNodeAudioParams");
+const { runSaveFunctions } = require("../nodeUtils");
+const Node = require("../Node");
+
 
 const initialGain = 1;
 
@@ -83,25 +85,14 @@ class EQ3 extends Node {
   }
 
   saveString() {
-    const jsonString = {
-      name: this.name,
-    };
-
-    this.saveParams.forEach(param => {
-      jsonString[param.name] = param.value;
-    });
-
-    this.saveFunctions.forEach(saveFunction => {
-      const { name, value } = saveFunction();
-      jsonString[name] = value;
-    });
-
-    return JSON.stringify(jsonString);
+    const effectData = { name: this.name };
+    this.saveParams.forEach(param => effectData[param.name] = param.value);
+    runSaveFunctions(effectData, this.saveFunctions);
+    return JSON.stringify(effectData);
   }
 
   destroy() {
     super.destroy();
-
     this.mid.disconnect();
     this.mid = null;
     this.high.disconnect();

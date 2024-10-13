@@ -1,6 +1,8 @@
-const Node = require("../Node");
 const hasDryWet = require("../../composition/hasDryWet");
 const hasInnerNodeAudioParams = require("../../composition/hasInnerNodeAudioParams");
+const { runSaveFunctions } = require("../nodeUtils");
+const Node = require("../Node");
+
 
 const minDelayTime = 0.01;
 const maxDelayTime = 3;
@@ -53,21 +55,13 @@ class Delay extends Node {
   }
 
   saveString() {
-    const jsonString = {
+    const effectData = {
       name: this.name,
       type: this.type,
     };
-
-    this.saveParams.forEach(param => {
-      jsonString[param.name] = param.value;
-    });
-
-    this.saveFunctions.forEach(saveFunction => {
-      const { name, value } = saveFunction();
-      jsonString[name] = value;
-    });
-
-    return JSON.stringify(jsonString);
+    this.saveParams.forEach(param => effectData[param.name] = param.value);
+    runSaveFunctions(effectData, this.saveFunctions);
+    return JSON.stringify(effectData);
   }
 
   destroy() {

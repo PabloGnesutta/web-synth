@@ -1,4 +1,6 @@
+const { addSaveFunction } = require("../class/nodeUtils");
 const Node = require("../class/Node");
+
 
 module.exports = function hasDryWet(target, initialValue = 1) {
   target.dryGain = Node.context.createGain();
@@ -28,7 +30,7 @@ module.exports = function hasDryWet(target, initialValue = 1) {
   // set default value
   target.setDryWet(initialValue);
 
-  target.destroyers.push(function () {
+  target.destroyers.push(() => {
     target.dryGain.disconnect();
     target.wetGain.disconnect();
 
@@ -36,12 +38,8 @@ module.exports = function hasDryWet(target, initialValue = 1) {
     target.wetGain = null;
   });
 
-  if (!target.saveFunctions) target.saveFunctions = [];
-
-  target.saveFunctions.push(function () {
-    return {
-      name: 'dryWet',
-      value: target.dryWet.value
-    };
-  });
+  addSaveFunction(target, () => ({
+    name: 'dryWet',
+    value: target.dryWet.value
+  }));
 };

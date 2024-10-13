@@ -1,7 +1,8 @@
-const Node = require("../Node");
-const dirName = "/audio/samples/";
 const drumSamples = require("../../data/drumSamples");
+const Node = require("../Node");
 
+
+const dirName = "/audio/samples/";
 const initialGain = 1.2;
 
 class Drumkit extends Node {
@@ -46,15 +47,9 @@ class Drumkit extends Node {
   stopNote(i) { }
 
   saveString() {
-    const jsonString = {
-      name: this.name,
-    };
-
-    this.saveParams.forEach(param => {
-      jsonString[param.name] = param.value;
-    });
-
-    return JSON.stringify(jsonString);
+    const instrumentData = { name: this.name };
+    this.saveParams.forEach(param => instrumentData[param.name] = param.value);
+    return JSON.stringify(instrumentData);
   }
 
   destroy() {

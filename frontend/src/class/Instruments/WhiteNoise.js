@@ -1,10 +1,10 @@
-const Node = require("../Node");
 const hasAudioParams = require("../../composition/hasAudioParams");
 const hasInnerNodeAudioParams = require("../../composition/hasInnerNodeAudioParams");
+const Node = require("../Node");
+
 
 const QMax = 30;
 const frequencyMax = 7000;
-
 const initialGain = 1;
 
 class WhiteNoise extends Node {
@@ -114,18 +114,13 @@ class WhiteNoise extends Node {
 
   // todo: handle load effect
   saveString() {
-    const jsonString = { name: this.name };
-
-    this.saveParams.forEach(param => {
-      jsonString[param.name] = param.value;
-    });
-
-    return JSON.stringify(jsonString);
+    const instrumentData = { name: this.name };
+    this.saveParams.forEach(param => instrumentData[param.name] = param.value);
+    return JSON.stringify(instrumentData);
   }
 
   destroy() {
     super.destroy();
-
     this.mod.disconnect();
     this.modGain.disconnect();
   }

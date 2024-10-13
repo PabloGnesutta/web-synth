@@ -1,3 +1,6 @@
+const { addSaveFunction } = require("../class/nodeUtils");
+
+
 module.exports = function hasDryWet(target) {
   target.setInnerNodeAudioParam = function (indexOrName, value) {
     const innerNodeAudioParam = target.innerNodeAudioParams[indexOrName];
@@ -5,16 +8,10 @@ module.exports = function hasDryWet(target) {
     target.innerNodeAudioParams[indexOrName].value = parseFloat(value);
   };
 
-  target.destroyers.push(function () { target.innerNodeAudioParams = null; });
+  target.destroyers.push(() => target.innerNodeAudioParams = null);
 
-  if (!target.saveFunctions) target.saveFunctions = [];
-
-  target.saveFunctions.push(function () {
-    return {
-      name: 'innerNodeAudioParams',
-      value: target.innerNodeAudioParams.map(param => {
-        return { name: param.name, value: param.value };
-      }),
-    };
-  });
+  addSaveFunction(target, () => ({
+    name: 'innerNodeAudioParams',
+    value: target.innerNodeAudioParams.map(param => ({ name: param.name, value: param.value })),
+  }));
 };

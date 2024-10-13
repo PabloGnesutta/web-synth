@@ -28,6 +28,12 @@
               v-for="(presetName, presetIndex) in instrument.presetNames"
               :key="presetName"
               class="preset-item"
+              :class="{
+                selected:
+                  selectedType === 'instruments' &&
+                  selectedParentIndex === i &&
+                  selectedChildIndex === presetIndex,
+              }"
               @dblclick="loadPreset(instrument.className, presetIndex, 'instrument')"
             >
               {{ presetName }}
@@ -95,6 +101,7 @@ export default {
       ],
       presetNamesLoaded: false,
       selectedParentIndex: null,
+      selectedChildIndex: -1,
       selectedType: null,
     };
   },
@@ -146,19 +153,45 @@ export default {
           else this.createEffect(this.effects[this.selectedParentIndex].className);
           break;
         case 37: //arrow left
+          if (!this.selectedParentIndex) return;
+          this.closePresetsDropdown(this[this.selectedType][this.selectedParentIndex]);
           break;
         case 38: //arrow up
-          if (this.selectedParentIndex - 1 >= 0) this.selectedParentIndex--;
-          else {
+          if (this[this.selectedType][this.selectedParentIndex].showPresets) {
+            //presets menu  open
+            if (this.selectedChildIndex - 1 >= 0) {
+              this.selectedChildIndex--;
+            } else {
+              this.selectedChildIndex =
+                this[this.selectedType][this.selectedParentIndex].presetNames.length - 1;
+            }
+          } else if (this.selectedParentIndex - 1 >= 0) {
+            this.selectedParentIndex--;
+          } else {
             this.selectedType = this.selectedType === 'instruments' ? 'effects' : 'instruments';
             this.selectedParentIndex = this[this.selectedType].length - 1;
           }
           break;
         case 39: //arrow right
+          if (!this.selectedParentIndex) return;
+          if (this[this.selectedType][this.selectedParentIndex].presetNames)
+            // hast presets
+            this.openPresetsDropdown(this[this.selectedType][this.selectedParentIndex]);
           break;
         case 40: //arrow down
-          if (this.selectedParentIndex + 1 < this[this.selectedType].length) this.selectedParentIndex++;
-          else {
+          if (this[this.selectedType][this.selectedParentIndex].showPresets) {
+            // presets menu open
+            if (
+              this.selectedChildIndex + 1 <
+              this[this.selectedType][this.selectedParentIndex].presetNames.length
+            ) {
+              this.selectedChildIndex++;
+            } else {
+              this.selectedChildIndex = 0;
+            }
+          } else if (this.selectedParentIndex + 1 < this[this.selectedType].length) {
+            this.selectedParentIndex++;
+          } else {
             this.selectedType = this.selectedType === 'instruments' ? 'effects' : 'instruments';
             this.selectedParentIndex = 0;
           }
@@ -174,6 +207,12 @@ export default {
     // Presets
     togglePresetsDropdown(instrumentOrEffect) {
       instrumentOrEffect.showPresets = !instrumentOrEffect.showPresets;
+    },
+    openPresetsDropdown(instrumentOrEffect) {
+      instrumentOrEffect.showPresets = true;
+    },
+    closePresetsDropdown(instrumentOrEffect) {
+      instrumentOrEffect.showPresets = false;
     },
     loadPreset(className, presetIndex, instrumentOrEffect) {
       if (instrumentOrEffect === 'effect' && !this.instrumentIsLoaded) return;
@@ -240,12 +279,16 @@ export default {
 }
 
 .preset-item {
-  padding: 0.25rem 0.5rem 0.25rem 1.75rem;
+  padding: 0.25rem 0.5rem 0.25rem 1em;
+  margin-left: 0.75rem;
   margin-bottom: 0.25rem;
   user-select: none;
   cursor: default;
   &:hover {
     background: #333;
+  }
+  &.selected {
+    background: #444;
   }
 }
 

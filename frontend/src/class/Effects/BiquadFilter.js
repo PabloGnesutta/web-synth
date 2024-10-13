@@ -1,7 +1,9 @@
-const Node = require("../Node");
 const hasDryWet = require("../../composition/hasDryWet");
 const hasAudioParams = require("../../composition/hasAudioParams");
 const hasInnerNodeAudioParams = require("../../composition/hasInnerNodeAudioParams");
+const { runSaveFunctions } = require("../nodeUtils");
+const Node = require("../Node");
+
 
 const initialGain = 1;
 
@@ -161,22 +163,18 @@ class BiquadFilter extends Node {
   }
 
   saveString() {
-    const jsonString = {
+    const effectData = {
       name: this.name,
       type: this.type,
       modType: this.modType
     };
 
     this.saveParams.forEach(param => {
-      jsonString[param.name] = param.value;
+      effectData[param.name] = param.value;
     });
 
-    this.saveFunctions.forEach(saveFunction => {
-      const { name, value } = saveFunction();
-      jsonString[name] = value;
-    });
-
-    return JSON.stringify(jsonString);
+    runSaveFunctions(effectData, this.saveFunctions)
+    return JSON.stringify(effectData);
   }
 
   destroy() {

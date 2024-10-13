@@ -1,5 +1,5 @@
-const Node = require("../Node");
 const noteFrequencies = require("../../data/noteFrequencies");
+const Node = require("../Node");
 
 
 const polyphony = 15;
@@ -210,29 +210,18 @@ class Femod extends Node {
   }
 
   saveString() {
-    const jsonString = {
+    const instrumentData = {
       name: this.name,
-      baseParams: [
-        { name: 'gain', value: this.gain },
-      ],
-      customParams: this.customParams.map(param => {
-        return { name: param.name, value: param.value };
-      }),
-      modulationParams: this.modulationParams.map(param => {
-        return { name: param.name, value: param.value };
-      }),
+      baseParams: [{ name: 'gain', value: this.gain }],
+      customParams: this.customParams.map(param => ({ name: param.name, value: param.value })),
+      modulationParams: this.modulationParams.map(param => ({ name: param.name, value: param.value })),
     };
-
-    this.saveParams.forEach(param => {
-      jsonString[param.name] = param.value;
-    });
-
-    return JSON.stringify(jsonString);
+    this.saveParams.forEach(param => instrumentData[param.name] = param.value);
+    return JSON.stringify(instrumentData);
   }
 
   destroy() {
     super.destroy();
-
     this.inUse = null;
     this.available = null;
     this.noteIndexInUse = null;

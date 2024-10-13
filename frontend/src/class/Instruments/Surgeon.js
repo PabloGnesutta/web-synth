@@ -1,12 +1,11 @@
-const Node = require("../Node");
 const noteFrequencies = require("../../data/noteFrequencies");
+const Node = require("../Node");
+
 
 const polyphony = 12;
-
 const modulatorPeak = 2000;
 const carrierConstraints = { minValue: 0, maxValue: 1, value: 1 };
 const modulatorConstraints = { minValue: 0, maxValue: modulatorPeak, value: modulatorPeak };
-
 const initialGain = 0.7;
 const oscillatorsPerNote = 3;
 
@@ -288,24 +287,19 @@ class Surgeon extends Node {
   // }
 
   saveString() {
-    const jsonString = {
+    const instrumentData = {
       name: this.name,
       oscillatorGroupProps: this.oscillatorGroupProps,
       minValues: this.minValues,
       maxValues: this.maxValues
     };
-
-    this.saveParams.forEach(param => {
-      jsonString[param.name] = param.value;
-    });
-
-    return JSON.stringify(jsonString);
+    this.saveParams.forEach(param => instrumentData[param.name] = param.value);
+    return JSON.stringify(instrumentData);
   }
 
   destroy() {
     //chequear
     super.destroy();
-
     this.inUse = null;
     this.available = null;
     this.noteIndexInUse = null;
@@ -363,7 +357,6 @@ class Surgeon extends Node {
   getInuseIndexByNote(i) {
     return this.noteIndexInUse.findIndex(ni => ni === i);
   }
-
 }
 
 module.exports = Surgeon;

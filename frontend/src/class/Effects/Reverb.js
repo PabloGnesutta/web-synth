@@ -1,8 +1,9 @@
-const Node = require("../Node");
 const hasDryWet = require("../../composition/hasDryWet");
+const { runSaveFunctions } = require("../nodeUtils");
+const Node = require("../Node");
+
 
 const dirName = "/audio/impulse_responses/";
-
 const initialGain = 1;
 
 class Reverb extends Node {
@@ -36,21 +37,13 @@ class Reverb extends Node {
   }
 
   saveString() {
-    const jsonString = {
+    const effectData = {
       name: this.name,
       type: this.type,
     };
-
-    this.saveParams.forEach(param => {
-      jsonString[param.name] = param.value;
-    });
-
-    this.saveFunctions.forEach(saveFunction => {
-      const { name, value } = saveFunction();
-      jsonString[name] = value;
-    });
-
-    return JSON.stringify(jsonString);
+    this.saveParams.forEach(param => effectData[param.name] = param.value);
+    runSaveFunctions(effectData, this.saveFunctions);
+    return JSON.stringify(effectData);
   }
 
   destroy() {

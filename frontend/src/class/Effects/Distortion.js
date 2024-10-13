@@ -1,5 +1,7 @@
-const Node = require("../Node");
 const hasDryWet = require("../../composition/hasDryWet");
+const { runSaveFunctions } = require("../nodeUtils");
+const Node = require("../Node");
+
 
 const initialGain = 1;
 
@@ -65,28 +67,18 @@ class Distortion extends Node {
   };
 
   saveString() {
-    const jsonString = {
+    const effectData = {
       oversample: this.oversample,
-      customParams: this.customParams.map(param => {
-        return { name: param.name, value: param.value };
-      }),
+      customParams: this.customParams.map(param => ({ name: param.name, value: param.value })),
     };
-
-    this.saveParams.forEach(param => {
-      jsonString[param.name] = param.value;
-    });
-
-    this.saveFunctions.forEach(saveFunction => {
-      const { name, value } = saveFunction();
-      jsonString[name] = value;
-    });
-
-    return JSON.stringify(jsonString);
+    this.saveParams.forEach(param => effectData[param.name] = param.value);
+    runSaveFunctions(effectData, this.saveFunctions);
+    return JSON.stringify(effectData);
   }
 
   destroy() {
     super.destroy();
-    this.customParams = null
+    this.customParams = null;
   }
 }
 
