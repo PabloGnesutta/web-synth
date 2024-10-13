@@ -1,6 +1,7 @@
 const Node = require("../Node");
 const noteFrequencies = require("../../data/noteFrequencies");
 
+
 const polyphony = 15;
 const peak = 1;
 const initialGain = 0.5;
@@ -26,6 +27,12 @@ class Femod extends Node {
     this.oscillators = Array(polyphony);
 
     this.inputNode.connect(this.outputNode);
+
+    saveObject?.baseParams.forEach(param => {
+      if (param.name === 'gain') {
+        this.setGain(param.value);
+      }
+    });
 
     this.initModulationParams(saveObject?.modulationParams);
     this.initCustomParams(saveObject?.customParams);
@@ -205,6 +212,9 @@ class Femod extends Node {
   saveString() {
     const jsonString = {
       name: this.name,
+      baseParams: [
+        { name: 'gain', value: this.gain },
+      ],
       customParams: this.customParams.map(param => {
         return { name: param.name, value: param.value };
       }),

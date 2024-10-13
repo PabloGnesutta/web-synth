@@ -35,7 +35,6 @@ export default {
     const store = tx.objectStore('projects');
 
     store.get('projectIdCount').onsuccess = (event) => {
-      console.log(event)
       projectIdCount = event.target.result;
       onDbInitFinish();
     };
@@ -71,7 +70,7 @@ export default {
   },
 
   updateProjectsList(data, cb) {
-    console.log('update data', data)
+    console.log('update data', data);
     const tx = db.transaction('projects', "readwrite");
     const store = tx.objectStore('projects');
 

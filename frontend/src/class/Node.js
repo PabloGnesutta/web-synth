@@ -52,8 +52,10 @@ class Node {
 
   setGain(value) {
     this.gain = value;
-    if (!this.muted)
-      this.outputNode.gain.setValueAtTime(value, 0);
+    if (!this.muted) {
+      // this.outputNode.gain.setValueAtTime(value, 0);
+      this.outputNode.gain.value = value;
+    }
   }
 
   setMute(muted) {

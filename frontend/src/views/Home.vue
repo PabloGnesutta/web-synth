@@ -592,7 +592,6 @@ export default {
     },
     //render canvas
     renderCanvas() {
-      console.log('render canvas');
       for (const trackId in this.trackClips) {
         this.renderTrack(trackId);
       }
@@ -639,7 +638,6 @@ export default {
     },
 
     playClip(clip) {
-      console.log('play clip', clip.id);
       clip.source = this.context.createBufferSource();
       clip.source.buffer = clip.buffer;
 
@@ -1272,7 +1270,6 @@ export default {
     },
 
     onSave(newProjectName) {
-      console.log('onsave', newProjectName, this.projectId, this.projectIdCount);
       if (this.isNew || newProjectName) {
         // new project
         console.log('isnew', this.isNew);
@@ -1334,17 +1331,13 @@ export default {
         this.unsaved = false;
       });
     },
-
     onLoad({ projectId, projectName }) {
-      console.log('onload');
       // TODO: Set some flag on for a loading modal or smth
       this.hardReset();
       this.projectId = parseInt(projectId);
       this.projectName = projectName;
 
       dbObj.get(this.projectId, 'project_data', projectData => {
-        console.log('load project_data', projectData);
-        this.projectId = projectId;
         this.globalStart = projectData.globalStart;
         this.cursorX = projectData.cursorX;
         this.masterOutputKnob = projectData.masterOutputKnob;
@@ -1353,7 +1346,7 @@ export default {
         this.transpose = projectData.transpose;
         // todo: load click values
 
-        dbObj.get(this.projectId, 'tracks', tracks => {
+        dbObj.get(parseInt(this.projectId), 'tracks', tracks => {
           console.log('load tracks', tracks);
           tracks.forEach(track => {
             this.loadInstrument(track.instrument, track.id);
@@ -1367,7 +1360,7 @@ export default {
 
           this.unsaved = false;
           this.isNew = false;
-
+          console.log('end load', this.projectId, typeof this.projectId);
           // TODO: Set said flag back off
         });
       });
@@ -1416,7 +1409,6 @@ export default {
     },
 
     loadInstrument(instSaveString, trackId) {
-      console.log('loadInstrument');
       const instrument = createInstrument(instSaveString.nodeType, instSaveString);
       this.createTrack(instrument, trackId);
     },
@@ -1620,8 +1612,6 @@ export default {
         avg += clip.sampleDuration;
         c++;
       });
-      // console.log('sample min:', min);
-      // console.log('sample max:', max);
       console.log('sample rate avg:', sum / c);
       console.log('sample duration avg:', avg / c);
     },
