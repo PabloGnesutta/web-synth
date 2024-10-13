@@ -593,7 +593,9 @@ export default {
     //render canvas
     renderCanvas() {
       console.log('render canvas');
-      for (const trackId in this.trackClips) this.renderTrack(trackId);
+      for (const trackId in this.trackClips) {
+        this.renderTrack(trackId);
+      }
     },
     //render track
     renderTrack(trackId) {
@@ -905,6 +907,7 @@ export default {
     },
 
     createTrack(instrument, trackId) {
+      console.log('createTrack');
       const trackGain = new Gain('Track Gain');
       const trackGainAnalyser = this.context.createAnalyser();
       trackGainAnalyser.fftSize = fftSize;
@@ -934,7 +937,7 @@ export default {
       this.renderCursor();
 
       this.$nextTick(() => {
-        const canvasContainer = $('.timeline')[0];
+        const canvasContainer = this.$refs[`timeline-${track.id}`][0];
         const canvas = this.$refs[`track-canvas-${track.id}`][0];
         canvas.width = canvasContainer.offsetWidth;
         track.canvas = canvas;
@@ -1234,7 +1237,7 @@ export default {
     // LOAD/SAVE
 
     hardReset(generateSomeNodes) {
-      console.log('hard reset');
+      console.log('hardReset');
       this.projects = {};
       this.projectId = undefined;
       this.projectIdCount = undefined;
@@ -1257,7 +1260,7 @@ export default {
       while (this.tracks.length) {
         this.deleteTrack(0);
       }
-      this.tracks = [];
+      // this.tracks = [];
       // todo: reset Nodes' Ids
       if (generateSomeNodes) {
         this.createTrack(createInstrument('Drumkit'));
@@ -1277,13 +1280,13 @@ export default {
         const projectsObj = { ...this.projects };
         projectsObj[newId] = { id: newId, name: newProjectName };
         dbObj.updateProjectsList({ projects: projectsObj, idCount: newId }, () => {
-          console.log('projects updated');
           this.projectId = newId;
           this.projectName = newProjectName;
           this.projectIdCount = newId;
           this.isNew = false;
           this.projects[newId] = projectsObj;
           this.saveData();
+          console.log('projects updated');
         });
       } else {
         this.saveData();
@@ -1303,22 +1306,18 @@ export default {
           masterOutputKnob: this.masterOutputKnob,
           followCursor: this.followCursor,
         },
-        () => {
-          console.log('project_data saved');
-        }
+        () => { console.log('project_data saved'); }
       );
 
-      const tracks = [];
-      this.tracks.forEach(track => {
-        tracks.push({
+      const tracks = this.tracks.map(track => {
+        return {
           id: track.id,
           instrument: JSON.parse(track.instrument.saveString()),
           effects: track.effects.map(effect => JSON.parse(effect.saveString())),
-        });
+        };
       });
-      dbObj.save(this.projectId, 'tracks', tracks, () => {
-        console.log('tracks saved');
-      });
+
+      dbObj.save(this.projectId, 'tracks', tracks, () => console.log('tracks saved'));
 
       const trackClips = {};
       for (const trackId in this.trackClips) {
@@ -1337,51 +1336,50 @@ export default {
     },
 
     onLoad({ projectId, projectName }) {
+      console.log('onload');
+      // TODO: Set some flag on for a loading modal or smth
       this.hardReset();
       this.projectId = parseInt(projectId);
       this.projectName = projectName;
 
-      dbObj.get(this.projectId, 'project_data', data => {
-        this.loadProjectData(projectId, data);
-      });
-      dbObj.get(this.projectId, 'tracks', data => {
-        this.loadTracks(data);
-      });
-      dbObj.get(this.projectId, 'track_clips', data => {
-        this.loadTrackClips(data);
-        this.unsaved = false;
-      });
+      dbObj.get(this.projectId, 'project_data', projectData => {
+        console.log('load project_data', projectData);
+        this.projectId = projectId;
+        this.globalStart = projectData.globalStart;
+        this.cursorX = projectData.cursorX;
+        this.masterOutputKnob = projectData.masterOutputKnob;
+        this.followCursor = projectData.followCursor;
+        this.octave = projectData.octave;
+        this.transpose = projectData.transpose;
+        // todo: load click values
 
-      this.isNew = false;
-    },
-    loadProjectData(projectId, projectData) {
-      // todo: load click values
-      console.log('load project data', projectId, projectData);
-      this.projectId = projectId;
-      this.globalStart = projectData.globalStart;
-      this.cursorX = projectData.cursorX;
-      this.masterOutputKnob = projectData.masterOutputKnob;
-      this.followCursor = projectData.followCursor;
-      this.octave = projectData.octave;
-      this.transpose = projectData.transpose;
-    },
-    loadTracks(tracks) {
-      console.log('load tracks data', tracks);
-      tracks.forEach(track => {
-        this.loadInstrument(track.instrument, track.id);
-        track.effects.forEach(effect => {
-          this.loadEffect(effect);
+        dbObj.get(this.projectId, 'tracks', tracks => {
+          console.log('load tracks', tracks);
+          tracks.forEach(track => {
+            this.loadInstrument(track.instrument, track.id);
+            track.effects.forEach(effect => this.loadEffect(effect));
+          });
+
+          dbObj.get(this.projectId, 'track_clips', trackClips => {
+            console.log('load track_clips', trackClips);
+            this.loadTrackClips(trackClips);
+          });
+
+          this.unsaved = false;
+          this.isNew = false;
+
+          // TODO: Set said flag back off
         });
       });
     },
+
     loadTrackClips(trackClips) {
-      console.log('load trackClips data', trackClips);
       let clipsProcessed = 0;
       let numClips = 0;
       for (const trackId in trackClips) {
         const clips = trackClips[trackId];
         numClips += clips.length;
-        // if there is no clips, onLoadFinish never triggers
+        // if there are no clips, onLoadFinish never triggers
         clips.forEach(clip => {
           const blobReader = new FileReader();
           blobReader.onloadend = () => {
@@ -1418,13 +1416,16 @@ export default {
     },
 
     loadInstrument(instSaveString, trackId) {
+      console.log('loadInstrument');
       const instrument = createInstrument(instSaveString.nodeType, instSaveString);
       this.createTrack(instrument, trackId);
     },
+
     loadEffect(effectSaveString) {
       const effect = createEffect(effectSaveString.nodeType, effectSaveString);
       this.insertEffect(effect);
     },
+
     loadPreset(saveString) {
       if (saveString.nodeRol === 'Instrument') {
         this.loadInstrument(saveString);
@@ -1437,7 +1438,9 @@ export default {
 
     onExport() {
       this.export.name = prompt('File name?', 'web-synth-export');
-      if (!this.export.name) return;
+      if (!this.export.name) {
+        return;
+      }
       this.onStopBtn();
       this.onStopBtn();
       this.export = {};
