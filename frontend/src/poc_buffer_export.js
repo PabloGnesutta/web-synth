@@ -1,4 +1,6 @@
 /*
+Esto es un POC para exportar sumando buffers en vez de grabar el output en tiempo real
+
 Sumar buffers te crea un nuevo buffer con toda la data... después
 hay que ver cómo sincronizar cada clip con sus diferentes start y end positions
 */

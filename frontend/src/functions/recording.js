@@ -1,5 +1,6 @@
 const Node = require("../class/Node");
 
+
 function startRecord(vueInstance) {
   vueInstance.totalProcessingTracks = 0;
   vueInstance.recording = true;

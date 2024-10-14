@@ -3,18 +3,44 @@
     <div v-if="inited" class="home-inner">
       <!-- Top Section -->
       <div class="top-section">
-        <Header :ref="'header'" @onRec="onRec" @onPlay="onPlay" @onStop="onStopBtn" @onNew="hardReset(true)"
-          @onSave="onSave" @onLoad="onLoad" @onExport="onExport" @onFollow="onFollow" @onMidiMap="onMidiMap"
-          :playing="playing" :recording="recording" :exporting="exporting" :following="followCursor" :mapping="mapping"
-          :octave="octave" :transpose="transpose" :projects="projects" :projectName="projectName" :projectId="projectId"
-          :lastSample="timeline.lastSample" :unsaved="unsaved" :isNew="isNew" />
+        <Header
+          :ref="'header'"
+          @onRec="onRec"
+          @onPlay="onPlay"
+          @onStop="onStopBtn"
+          @onNew="hardReset(true)"
+          @onSave="onSave"
+          @onLoad="onLoad"
+          @onExport="onExport"
+          @onFollow="onFollow"
+          @onMidiMap="onMidiMap"
+          :playing="playing"
+          :recording="recording"
+          :exporting="exporting"
+          :following="followCursor"
+          :mapping="mapping"
+          :octave="octave"
+          :transpose="transpose"
+          :projects="projects"
+          :projectName="projectName"
+          :projectId="projectId"
+          :lastSample="timeline.lastSample"
+          :unsaved="unsaved"
+          :isNew="isNew"
+        />
       </div>
 
       <!-- Mid Section -->
       <div class="mid-section">
-        <Sidebar class="left-col" @createInstrument="createInstrument" @createEffect="createAndInsertEffect"
-          @loadPreset="loadPreset" @onFocus="setFocus" :instrument-is-loaded="!!currentTrack"
-          :focused="focusing === 'sidebar'" />
+        <Sidebar
+          class="left-col"
+          @createInstrument="createInstrument"
+          @createEffect="createAndInsertEffect"
+          @loadPreset="loadPreset"
+          @onFocus="setFocus"
+          :instrument-is-loaded="!!currentTrack"
+          :focused="focusing === 'sidebar'"
+        />
 
         <div class="right-col" :class="{ focused: focusing === 'tracks' }" @click="setFocus('tracks')">
           <div class="top-controls">
@@ -22,8 +48,11 @@
             <Click ref="click" />
             <!-- Info -->
             <div class="info-wrapper select-none">
-              <div class="info-container no-scrollbar" :style="{ width: timeline.viewportWidth + 'px' }"
-                @click="logInfo">
+              <div
+                class="info-container no-scrollbar"
+                :style="{ width: timeline.viewportWidth + 'px' }"
+                @click="logInfo"
+              >
                 <div class="info-item">{{ globalStart }}</div>
                 <!-- <div class="info-item">vpW: {{ timeline.viewportWidth }}</div> -->
                 <div class="info-item">curr: {{ cursorX }}</div>
@@ -38,8 +67,13 @@
           <!-- Tracks -->
           <div class="tracklist-wrapper custom-scrollbar">
             <div class="tracklist">
-              <div v-for="(track, t) in tracks" :key="track.id" class="track"
-                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }" @click.self="selectTrack(t)">
+              <div
+                v-for="(track, t) in tracks"
+                :key="track.id"
+                class="track"
+                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
+                @click.self="selectTrack(t)"
+              >
                 <div class="left-controls no-scrollbar" @click="selectTrack(t)">
                   <div class="left-ctrls-inner">
                     <div @click.stop="deleteTrack(t)" class="pointer">[X]</div>
@@ -49,17 +83,30 @@
                 </div>
 
                 <!-- Track Timeline -->
-                <div class="timeline" :ref="`timeline-${track.id}`" @mousedown="onCanvasMouseDown($event, track.id)"
-                  @mousewheel="onCanvasContainerWheel">
-                  <canvas :ref="`track-canvas-${track.id}`" :id="track.id" :height="timeline.trackHeight"></canvas>
+                <div
+                  class="timeline"
+                  :ref="`timeline-${track.id}`"
+                  @mousedown="onCanvasMouseDown($event, track.id)"
+                  @mousewheel="onCanvasContainerWheel"
+                >
+                  <canvas
+                    :ref="`track-canvas-${track.id}`"
+                    :id="track.id"
+                    :height="timeline.trackHeight"
+                  ></canvas>
                 </div>
 
                 <!-- Right Controls -->
                 <div class="right-controls-wrapper">
-                  <RightControls :Node="track.trackGain" :analyser="track.trackGainAnalyser"
-                    :recEnabled="track.recEnabled" :selected="currentTrackIndex === t"
-                    @toggleRecEnabled="toggleRecEnabled(track)" @knobClicked="knobClicked"
-                    @selectTrack="selectTrack(t)" />
+                  <RightControls
+                    :Node="track.trackGain"
+                    :analyser="track.trackGainAnalyser"
+                    :recEnabled="track.recEnabled"
+                    :selected="currentTrackIndex === t"
+                    @toggleRecEnabled="toggleRecEnabled(track)"
+                    @knobClicked="knobClicked"
+                    @selectTrack="selectTrack(t)"
+                  />
                 </div>
               </div>
 
@@ -72,8 +119,13 @@
             <div class="track master">
               <div class="left-controls">Master</div>
               <div class="master-knob-wrapper" @click="knobClicked('MasterGain')">
-                <Knob :ref="'MasterGain'" minVal="0" maxVal="1" :initVal="masterOutputKnob"
-                  @knobTurned="setMasterGainValue" />
+                <Knob
+                  :ref="'MasterGain'"
+                  minVal="0"
+                  maxVal="1"
+                  :initVal="masterOutputKnob"
+                  @knobTurned="setMasterGainValue"
+                />
               </div>
             </div>
           </div>
@@ -82,19 +134,35 @@
 
       <!-- Bottom section: Current Track detail -->
       <div class="bottom-section">
-        <div v-if="currentTrack" class="track-detail custom-scrollbar" :class="'track-detail_' + currentTrackIndex">
+        <div
+          v-if="currentTrack"
+          class="track-detail custom-scrollbar"
+          :class="'track-detail_' + currentTrackIndex"
+        >
           <!-- Instrument -->
           <div class="track-instrument">
-            <NodeRender :Node="currentTrack.instrument" :analyser="currentTrack.instrumentAnalyser"
-              :instrumentEnabled="currentTrack.instrumentEnabled" @deleteNode="deleteTrack"
-              @toggleInstrumentEnabled="toggleInstrumentEnabled" @knobClicked="knobClicked" />
+            <NodeRender
+              :Node="currentTrack.instrument"
+              :analyser="currentTrack.instrumentAnalyser"
+              :instrumentEnabled="currentTrack.instrumentEnabled"
+              @deleteNode="deleteTrack"
+              @toggleInstrumentEnabled="toggleInstrumentEnabled"
+              @knobClicked="knobClicked"
+            />
           </div>
 
           <!-- Effects -->
           <div class="track-effects">
-            <NodeRender v-for="(Node, effectIndex) in currentTrack.effects" :Node="Node" :analyser="Node.analyser"
-              :key="Node.id" :ref="'Node-' + effectIndex" @deleteNode="deleteEffect(effectIndex)"
-              @levelClicked="levelClicked(Node)" @knobClicked="knobClicked" />
+            <NodeRender
+              v-for="(Node, effectIndex) in currentTrack.effects"
+              :Node="Node"
+              :analyser="Node.analyser"
+              :key="Node.id"
+              :ref="'Node-' + effectIndex"
+              @deleteNode="deleteEffect(effectIndex)"
+              @levelClicked="levelClicked(Node)"
+              @knobClicked="knobClicked"
+            />
             <div class="placeholder"></div>
           </div>
           <div class="analyser-render-wrapper">
@@ -140,19 +208,25 @@ const clipHandle = {
 const sampleErrorMargin = 10;
 
 import { mapMutations, mapGetters } from 'vuex';
-import dbObj from '@/db/index.js';
-import { createInstrument, createEffect } from '../factory/NodeFactory';
 import { $ } from '../dom-utils/DomUtils';
-import NodeRender from '../components/NodeRender';
-import RightControls from '../components/RightControls';
-import SpectrumWaveshape from '../components/SpectrumWaveshape';
-import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
-import Click from '../components/Click';
-import Knob from '../components/Knob';
+import dbObj from '@/db/index.js';
+import NodeRender from '@/components/NodeRender';
+import RightControls from '@/components/RightControls';
+import SpectrumWaveshape from '@/components/SpectrumWaveshape';
+import Header from '@/components/Header';
+import Sidebar from '@/components/Sidebar';
+import Click from '@/components/Click';
+import Knob from '@/components/Knob';
 import Pad from '@/components/user-interface/Pad';
 import ExportModal from '@/components/modals/ExportModal';
-import { startRecord, startRecordSingleTrack, stopRecord, stopRecordSingleTrack } from '../recording/record';
+import { createInstrument, createEffect } from '../factory/NodeFactory';
+import {
+  startRecord,
+  startRecordSingleTrack,
+  stopRecord,
+  stopRecordSingleTrack,
+} from '../functions/recording';
+import { startExport, finishRecExport } from '../functions/exports.js';
 
 export default {
   name: 'Home',
@@ -216,7 +290,7 @@ export default {
       globalStart: 0,
       globalEnd: 0,
       cursorX: 0,
-      lastPlayCursorPos: 0,
+      lastCursorPos: 0,
       recordingRaf: null,
       playbackRaf: null,
 
@@ -299,24 +373,6 @@ export default {
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
       window.addEventListener('resize', this.onResize);
-
-      setTimeout(() => { this.test(); }, 500);
-    },
-
-    test() {
-      // this.onRec();
-      // setTimeout(() => {
-      //   this.onRec();
-      // }, 2000);
-      // const startInterval = 1000;
-      // let duration = 10000;
-      // let c = 0;
-      // setInterval(() => {
-      //   this.onRec();
-      //   setTimeout(() => {
-      //     this.onRec();
-      //   }, duration);
-      // }, startInterval + duration);
     },
 
     setFocus(target) {
@@ -344,6 +400,9 @@ export default {
     },
 
     // RECORDING
+    onRec() {
+      this.recording ? stopRecord(this) : startRecord(this);
+    },
     toggleRecEnabled(track) {
       track.recEnabled = !track.recEnabled;
       if (this.recording) {
@@ -354,20 +413,17 @@ export default {
         }
       }
     },
-    onRec() {
-      this.recording ? stopRecord(this) : startRecord(this);
-    },
-
 
     // PLAYBACK
-
     onPlay() {
-      if (this.recording) return;
+      if (this.recording) {
+        return;
+      }
       if (this.playing) {
         this.onStopBtn();
-        this.cursorX = this.lastPlayCursorPos;
+        this.cursorX = this.lastCursorPos;
       }
-      this.lastPlayCursorPos = this.cursorX;
+      this.lastCursorPos = this.cursorX;
       this.playAllTracks();
     },
 
@@ -398,13 +454,10 @@ export default {
     },
 
     stopAllClips() {
-      this.clips.forEach(clip => {
-        clip.source && clip.source.stop();
-      });
+      this.clips.forEach(clip => clip.source && clip.source.stop());
     },
 
     // RENDERING
-
     generateRenderDataObject(track) {
       const analyser = track.trackGainAnalyser;
       const clip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
@@ -417,7 +470,6 @@ export default {
         dataArray: new Float32Array(analyser.fftSize),
       };
     },
-
     captureBarsLoop(cursorStep = 1) {
       this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, cursorStep));
       for (var r = 0; r < this.renderDataObjects.length; r++) {
@@ -447,7 +499,6 @@ export default {
       this.moveCursor(cursorStep);
       if (this.followCursor) this.moveCarret();
     },
-
     renderClipBar(clip, ctx, x) {
       const bar = clip.bars[x];
 
@@ -533,8 +584,32 @@ export default {
       }
     },
 
+    // Timeline Interactions
+    onFollow() {
+      this.followCursor = !this.followCursor;
+    },
+    moveCursor(amount) {
+      this.cursorX += amount;
+      this.renderCursor();
+
+      if (this.recording || !this.playing) return;
+      if (this.cursorX > this.timeline.lastSample) return this.exporting && finishRecExport(this);
+
+      // play clip if corresponds
+      for (let c = 0; c < this.clips.length; c++) {
+        const clip = this.clips[c];
+        if (!clip.playing) {
+          if (
+            this.cursorX >= clip.xPos &&
+            this.cursorX < clip.xPos + clip.endSample - clip.startSample - sampleErrorMargin
+          ) {
+            this.playClip(clip);
+          }
+        }
+      }
+    },
     playClip(clip) {
-      clip.source = this.context.createBufferSource();
+      clip.source = Node.context.createBufferSource();
       clip.source.buffer = clip.buffer;
 
       const offsetStart = (this.cursorX - clip.xPos + clip.startSample) * clip.sampleDuration;
@@ -551,29 +626,6 @@ export default {
         clip.source = null;
         delete clip.source;
       };
-    },
-
-    // Timeline Interactions
-
-    moveCursor(amount) {
-      this.cursorX += amount;
-      this.renderCursor();
-
-      if (this.recording || !this.playing) return;
-      if (this.cursorX > this.timeline.lastSample) return this.exporting && this.finishRecExport();
-
-      // play clip if corresponds
-      for (let c = 0; c < this.clips.length; c++) {
-        const clip = this.clips[c];
-        if (!clip.playing) {
-          if (
-            this.cursorX >= clip.xPos &&
-            this.cursorX < clip.xPos + clip.endSample - clip.startSample - sampleErrorMargin
-          ) {
-            this.playClip(clip);
-          }
-        }
-      }
     },
     unselectClips() {
       if (!this.selectedClips.length) return;
@@ -737,7 +789,6 @@ export default {
         newClip.selected = false;
         this.clips.push(newClip);
         this.trackClips[clip.trackId].push(newClip);
-
         this.renderTrack(clip.trackId);
       });
     },
@@ -759,7 +810,6 @@ export default {
         this.onStopBtn();
       }
     },
-    //render cursor
     renderCursor() {
       this.canvasOverlayCtx.clearRect(0, 0, this.timeline.viewportWidth, this.canvasOverlay.height);
       this.canvasOverlayCtx.fillRect(
@@ -794,16 +844,14 @@ export default {
     },
 
     // Tracks, Instruments & Effects
-
     createInstrument(className) {
       const Node = createInstrument(className);
       this.createTrack(Node);
     },
 
     createTrack(instrument, trackId) {
-      console.log('createTrack');
       const trackGain = new Gain('Track Gain');
-      const trackGainAnalyser = this.context.createAnalyser();
+      const trackGainAnalyser = Node.context.createAnalyser();
       trackGainAnalyser.fftSize = fftSize;
 
       instrument.connect(trackGain);
@@ -847,16 +895,16 @@ export default {
       if (instrument.nodeType === 'Drumkit') {
         this.numpadListeners.push({
           instrument,
-          trackName: track.name,
+          trackName: track.name, // todo: should be track id
         });
       } else {
         this.keypressListeners.push({
           instrument,
-          trackName: track.name,
+          trackName: track.name, // todo: should be track id
         });
         this.xyPadListeners.push({
           instrument,
-          trackName: track.name,
+          trackName: track.name, // todo: should be track id
         });
       }
 
@@ -973,12 +1021,12 @@ export default {
     },
 
     createMasterGain() {
-      this.masterOutput = this.context.createGain();
+      this.masterOutput = Node.context.createGain();
       this.masterOutput.gain.value = this.masterOutputKnob;
 
-      this.masterInput = this.context.createGain();
+      this.masterInput = Node.context.createGain();
       this.masterInput.connect(this.masterOutput);
-      this.masterOutput.connect(this.context.destination);
+      this.masterOutput.connect(Node.context.destination);
     },
 
     setMasterGainValue(val) {
@@ -1018,8 +1066,8 @@ export default {
         scaleInterface.instrument.stopNote(noteIndex);
       });
     },
-    onPadTouchCancel(e) { },
-    onPadTouchMove(e) { },
+    onPadTouchCancel(e) {},
+    onPadTouchMove(e) {},
 
     // Keyboard
     onKeydown(e) {
@@ -1152,7 +1200,6 @@ export default {
       this.unsaved = true;
       this.computeTimelineDimensions();
 
-
       while (this.tracks.length) {
         this.deleteTrack(0);
       }
@@ -1201,7 +1248,9 @@ export default {
           masterOutputKnob: this.masterOutputKnob,
           followCursor: this.followCursor,
         },
-        () => { console.log('project_data saved'); }
+        () => {
+          console.log('project_data saved');
+        }
       );
 
       const tracks = this.tracks.map(track => {
@@ -1275,7 +1324,7 @@ export default {
           const blobReader = new FileReader();
           blobReader.onloadend = () => {
             const arrayBuffer = blobReader.result;
-            this.context.decodeAudioData(arrayBuffer, audioBuffer => {
+            Node.context.decodeAudioData(arrayBuffer, audioBuffer => {
               clip.buffer = audioBuffer;
               clip.duration = clip.buffer.duration;
               clip.numSamples = clip.bars.length;
@@ -1325,86 +1374,25 @@ export default {
     },
 
     // EXPORT
-
     onExport() {
       const exportName = prompt('File name?', 'web-synth-export');
       if (!exportName) {
         return;
       }
       this.onStopBtn();
-      this.onStopBtn();
+      this.onStopBtn(); // call twice to jump to the start of the timeline
       this.export = { name: exportName };
       this.exporting = true;
-      this.recordExport();
+      startExport(this);
       this.clipDestination = this.masterInput;
       this.playAllTracks();
     },
-
-    finishRecExport() {
-      this.exportMediaRecorder.stop();
-      this.exporting = false;
-      this.onStopBtn();
-    },
-
-    onRecordExportFinish() {
-      this.exportMediaRecorder = null;
-      this.clipDestination = null;
-
-      if (!this.export.canceled) {
-        this.downloadBlob(this.export.blob, this.export.name);
-        this.export.name = null;
-      }
-    },
-
     cancelExport() {
       this.export.canceled = true;
-      this.finishRecExport();
-    },
-
-    recordExport() {
-      let chunks = [];
-      let mediaStreamDestination = this.context.createMediaStreamDestination();
-      this.exportMediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
-
-      this.masterOutput.connect(mediaStreamDestination);
-
-      this.exportMediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
-      // When recording's finished, process data chunk
-      // into a Blob, and save it for future use
-      this.exportMediaRecorder.onstop = () => {
-        const blobReader = new FileReader();
-        const blob = new Blob(chunks, { type: 'audio/ogg' });
-
-        blobReader.onloadend = () => {
-          const arrayBuffer = blobReader.result;
-          this.context.decodeAudioData(arrayBuffer, audioBuffer => {
-            this.export.blob = blob;
-            this.export.buffer = audioBuffer;
-            this.onRecordExportFinish();
-          });
-        };
-
-        blobReader.readAsArrayBuffer(blob);
-        mediaStreamDestination = null;
-        chunks = null;
-      };
-
-      this.exportMediaRecorder.start();
-    },
-
-    downloadBlob(blob, fileName) {
-      const a = document.createElement('a');
-      a.setAttribute('href', URL.createObjectURL(blob));
-      a.setAttribute('download', fileName);
-      a.click();
-    },
-
-    onFollow() {
-      this.followCursor = !this.followCursor;
+      finishRecExport(this);
     },
 
     // MIDI
-
     triggerNoteOn(note, channel) {
       this.keypressListeners.forEach(scaleInterface => {
         scaleInterface.instrument.playNote(note);
@@ -1483,7 +1471,7 @@ export default {
         input.onmidimessage = this.onMIDIMessage;
       }
     },
-    onMIDIFailure() { },
+    onMIDIFailure() {},
 
     addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {
