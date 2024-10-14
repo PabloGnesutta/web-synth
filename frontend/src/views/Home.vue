@@ -139,19 +139,21 @@ const clipHandle = {
 };
 const sampleErrorMargin = 10;
 
+import { mapMutations, mapGetters } from 'vuex';
 import dbObj from '@/db/index.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
-import { mapMutations, mapGetters } from 'vuex';
 import { $ } from '../dom-utils/DomUtils';
 import NodeRender from '../components/NodeRender';
 import RightControls from '../components/RightControls';
 import SpectrumWaveshape from '../components/SpectrumWaveshape';
-import Pad from '@/components/user-interface/Pad';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import Click from '../components/Click';
 import Knob from '../components/Knob';
+import Pad from '@/components/user-interface/Pad';
 import ExportModal from '@/components/modals/ExportModal';
+import { startRecord, startRecordSingleTrack, stopRecord, stopRecordSingleTrack } from '../recording/record';
+
 export default {
   name: 'Home',
   components: {
@@ -298,9 +300,7 @@ export default {
       window.addEventListener('keydown', this.onKeydown);
       window.addEventListener('resize', this.onResize);
 
-      setTimeout(() => {
-        this.test();
-      }, 500);
+      setTimeout(() => { this.test(); }, 500);
     },
 
     test() {
@@ -322,6 +322,7 @@ export default {
     setFocus(target) {
       this.focusing = target;
     },
+
     computeTimelineDimensions() {
       const trackList = $('.tracklist');
       this.timeline.viewportWidth =
@@ -347,118 +348,16 @@ export default {
       track.recEnabled = !track.recEnabled;
       if (this.recording) {
         if (track.recEnabled) {
-          this.startRecSingleTrack(track);
+          startRecordSingleTrack(this, track);
         } else {
-          this.stopRecSingleTrack(track);
+          stopRecordSingleTrack(this, track);
         }
       }
     },
     onRec() {
-      this.recording ? this.stopRec() : this.startRec();
-    },
-    startRec() {
-      this.totalProcessingTracks = 0;
-      this.recording = true;
-      this.renderDataObjects = [];
-      this.tracks
-        .filter(track => track.recEnabled)
-        .forEach(track => {
-          this.startRecSingleTrack(track);
-        });
-
-      let cursorStep = 1;
-      if (this.playing) cursorStep = 0;
-
-      this.playing = true;
-      this.captureBarsLoop(cursorStep);
+      this.recording ? stopRecord(this) : startRecord(this);
     },
 
-    startRecSingleTrack(track) {
-      this.totalProcessingTracks++;
-
-      let chunks = [];
-      let mediaStreamDestination = this.context.createMediaStreamDestination();
-      const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
-
-      this.mediaRecorders[track.id] = mediaRecorder;
-      track.trackGain.connectNativeNode(mediaStreamDestination);
-
-      // init clip
-      const clip = {
-        trackId: track.id,
-        id: ++this.clipIdCount,
-        xPos: this.cursorX,
-        startSample: 0,
-        endSample: 0,
-        numSamples: 0,
-        sampleRate: 0,
-        playing: true,
-      };
-      this.clips.push(clip);
-      this.trackClips[track.id].push(clip);
-
-      mediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
-      // When recording's finished, process data chunk
-      // into a Blob, and save it for future use
-      mediaRecorder.onstop = () => {
-        const blobReader = new FileReader();
-        const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
-
-        blobReader.onloadend = () => {
-          const arrayBuffer = blobReader.result;
-          this.context.decodeAudioData(arrayBuffer, audioBuffer => {
-            clip.blob = blob;
-            clip.buffer = audioBuffer;
-            clip.duration = clip.buffer.duration;
-            clip.numSamples = clip.bars.length;
-            clip.endSample = clip.bars.length;
-            clip.sampleDuration = clip.buffer.duration / clip.numSamples;
-            clip.playing = false;
-            clip.sampleRate = Math.round(clip.buffer.length / clip.numSamples);
-            this.totalProcessingTracks--;
-            if (this.totalProcessingTracks <= 0) this.onRecFinish();
-          });
-        };
-
-        blobReader.readAsArrayBuffer(blob);
-        mediaStreamDestination = null;
-        chunks = null;
-      };
-
-      mediaRecorder.start();
-
-      this.renderDataObjects.push(this.generateRenderDataObject(track));
-    },
-
-    // Stop Rec
-    stopRec() {
-      this.recording = false;
-      this.playing = false;
-
-      for (const trackId in this.mediaRecorders) {
-        this.mediaRecorders[trackId].stop();
-        delete this.mediaRecorders[trackId];
-      }
-
-      this.mediaRecorders = {};
-
-      cancelAnimationFrame(this.recordingRaf);
-      cancelAnimationFrame(this.playbackRaf);
-      this.recordingRaf = null;
-      this.playbackRaf = null;
-    },
-
-    stopRecSingleTrack(track) {
-      this.mediaRecorders[track.id].stop();
-      delete this.mediaRecorders[track.id];
-
-      let index = this.renderDataObjects.findIndex(o => o.trackId == track.id);
-      this.renderDataObjects.splice(index, 1);
-    },
-
-    onRecFinish() {
-      this.logInfo();
-    },
 
     // PLAYBACK
 
@@ -494,7 +393,7 @@ export default {
         }
       }
       if (this.recording) {
-        this.stopRec();
+        stopRecord(this);
       }
     },
 
@@ -590,13 +489,11 @@ export default {
         this.renderCanvas();
       }
     },
-    //render canvas
     renderCanvas() {
       for (const trackId in this.trackClips) {
         this.renderTrack(trackId);
       }
     },
-    //render track
     renderTrack(trackId) {
       const clips = this.trackClips[trackId];
       const canvas = this.$refs[`track-canvas-${trackId}`][0];
@@ -605,7 +502,6 @@ export default {
       ctx.clearRect(0, 0, canvas.width, this.timeline.trackHeight);
       for (var c = 0; c < clips.length; c++) this.renderClip(clips[c], ctx);
     },
-    //render clip
     renderClip(clip, ctx) {
       const clipXPos = clip.xPos;
       const clipEnd = clipXPos + clip.endSample;
@@ -982,7 +878,9 @@ export default {
       let track = this.tracks[trackIndex];
 
       // clips
-      if (this.recording) if (track.recEnabled) this.stopRecSingleTrack(track);
+      if (this.recording && track.recEnabled) {
+        stopRecordSingleTrack(this, track);
+      }
 
       delete this.trackClips[track.id];
       //todo: eliminate clips from this.clips
@@ -1429,13 +1327,13 @@ export default {
     // EXPORT
 
     onExport() {
-      this.export.name = prompt('File name?', 'web-synth-export');
-      if (!this.export.name) {
+      const exportName = prompt('File name?', 'web-synth-export');
+      if (!exportName) {
         return;
       }
       this.onStopBtn();
       this.onStopBtn();
-      this.export = {};
+      this.export = { name: exportName };
       this.exporting = true;
       this.recordExport();
       this.clipDestination = this.masterInput;
