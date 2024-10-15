@@ -159,6 +159,7 @@ import {
   stopRecordSingleTrack,
 } from '../functions/recording';
 import { startExport, finishRecExport } from '../functions/exports.js';
+import { loadProject, saveProject } from '../functions/load-save.js';
 
 export default {
   name: 'Home',
@@ -1126,132 +1127,11 @@ export default {
     },
 
     onSave(newProjectName) {
-      if (this.isNew || newProjectName) {
-        // new project
-        console.log('isnew', this.isNew);
-        const newId = this.projectIdCount + 1;
-        const projectsObj = { ...this.projects };
-        projectsObj[newId] = { id: newId, name: newProjectName };
-        dbObj.updateProjectsList({ projects: projectsObj, idCount: newId }, () => {
-          this.projectId = newId;
-          this.projectName = newProjectName;
-          this.projectIdCount = newId;
-          this.isNew = false;
-          this.projects[newId] = projectsObj;
-          this.saveData();
-          console.log('projects updated');
-        });
-      } else {
-        this.saveData();
-      }
+      saveProject(this, newProjectName);
     },
 
-    saveData() {
-      dbObj.save(
-        this.projectId,
-        'project_data',
-        {
-          globalStart: this.globalStart,
-          cursorX: this.cursorX,
-          tempo: this.tempo,
-          octave: this.octave,
-          transpose: this.transpose,
-          masterOutputKnob: this.masterOutputKnob,
-          followCursor: this.followCursor,
-        },
-        () => {
-          console.log('project_data saved');
-        }
-      );
-
-      const tracks = this.tracks.map(track => ({
-        id: track.id,
-        instrument: JSON.parse(track.instrument.saveString()),
-        effects: track.effects.map(effect => JSON.parse(effect.saveString())),
-      }));
-
-      dbObj.save(this.projectId, 'tracks', tracks, () => console.log('tracks saved'));
-
-      const trackClips = {};
-      for (const trackId in this.trackClips) {
-        const clips = this.trackClips[trackId];
-        trackClips[trackId] = clips.map(clip => {
-          const saveClip = { ...clip };
-          delete saveClip.buffer;
-          delete saveClip.selected;
-          return saveClip;
-        });
-      }
-      dbObj.save(this.projectId, 'track_clips', trackClips, () => {
-        console.log('track_clips saved');
-        this.unsaved = false;
-      });
-    },
     onLoad({ projectId, projectName }) {
-      // TODO: Set some flag on for a loading modal or smth
-      this.hardReset();
-      this.projectId = parseInt(projectId);
-      this.projectName = projectName;
-
-      dbObj.get(this.projectId, 'project_data', projectData => {
-        this.globalStart = projectData.globalStart;
-        this.cursorX = projectData.cursorX;
-        this.masterOutputKnob = projectData.masterOutputKnob;
-        this.followCursor = projectData.followCursor;
-        this.octave = projectData.octave;
-        this.transpose = projectData.transpose;
-        // todo: load click values
-
-        dbObj.get(parseInt(this.projectId), 'tracks', tracks => {
-          console.log('load tracks', tracks);
-          tracks.forEach(track => {
-            this.loadInstrument(track.instrument, track.id);
-            track.effects.forEach(effect => this.loadEffect(effect));
-          });
-
-          dbObj.get(this.projectId, 'track_clips', trackClips => {
-            console.log('load track_clips', trackClips);
-            this.loadTrackClips(trackClips);
-          });
-
-          this.unsaved = false;
-          this.isNew = false;
-          console.log('end load', this.projectId, typeof this.projectId);
-          // TODO: Set said flag back off
-        });
-      });
-    },
-
-    loadTrackClips(trackClips) {
-      let clipsProcessed = 0;
-      let numClips = 0;
-      for (const trackId in trackClips) {
-        const clips = trackClips[trackId];
-        numClips += clips.length;
-        // if there are no clips, onLoadFinish never triggers
-        clips.forEach(clip => {
-          const blobReader = new FileReader();
-          blobReader.onloadend = () => {
-            const arrayBuffer = blobReader.result;
-            Node.context.decodeAudioData(arrayBuffer, audioBuffer => {
-              clip.buffer = audioBuffer;
-              clip.duration = clip.buffer.duration;
-              clip.numSamples = clip.bars.length;
-              clip.sampleDuration = clip.buffer.duration / clip.numSamples;
-              clip.sampleRate = Math.round(clip.buffer.length / clip.numSamples);
-              clip.playing = false;
-              this.clips.push(clip);
-
-              // determine total timeleine width
-              const lastSample = clip.xPos + clip.numSamples;
-              if (lastSample > this.timeline.lastSample) this.timeline.lastSample = lastSample;
-              // might fail because of race condition?
-              if (++clipsProcessed >= numClips) this.onLoadFinish(trackClips);
-            });
-          };
-          blobReader.readAsArrayBuffer(clip.blob);
-        });
-      }
+      loadProject(this, projectId, projectName);
     },
 
     onLoadFinish(trackClips) {
@@ -1384,7 +1264,7 @@ export default {
 
     addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {
-        // remove if statement to enable
+        // TODO: remove if statement to enable
         if (1 == 2) {
           e = e || window.event;
           if (e) e.returnValue = 'Sure?';

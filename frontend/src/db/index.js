@@ -24,7 +24,9 @@ request.onsuccess = function () {
 };
 
 
-export default {
+// TODO: Promisify
+
+module.exports = {
   initDb(cb) {
     const numRequests = 2;
     var projects = {};
