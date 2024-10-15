@@ -131,12 +131,6 @@ var fftSize = 1024;
 
 const minSampleWidth = 1;
 const carretMovementAmount = 50;
-const clipHandle = {
-  height: 20,
-  hookWidth: 10,
-  color: '#10ff7050',
-  selectedColor: '#ff652d96',
-};
 const sampleErrorMargin = 10;
 
 import { mapMutations, mapGetters } from 'vuex';
@@ -160,6 +154,10 @@ import {
 } from '../functions/recording';
 import { startExport, finishRecExport } from '../functions/exports.js';
 import { loadProject, saveProject } from '../functions/load-save.js';
+import { playSingleClip } from '../functions/playback.js';
+import { clipHandle, selectClipOnHandleClick } from '../functions/timeline-interaction.js';
+import { state } from '../state/vueInstance.js';
+
 
 export default {
   name: 'Home',
@@ -305,6 +303,8 @@ export default {
       window.addEventListener('keyup', this.onKeyup);
       window.addEventListener('keydown', this.onKeydown);
       window.addEventListener('resize', this.onResize);
+
+      state.instance = this;
     },
 
     setFocus(target) {
@@ -360,6 +360,10 @@ export default {
     playAllTracks() {
       this.playing = true;
       this.moveTimielineWithPlayback();
+    },
+
+    playClip(clip) {
+      playSingleClip(this, clip);
     },
 
     onStopBtn() {
@@ -452,17 +456,47 @@ export default {
     moveTimielineWithPlayback() {
       this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null));
       this.moveCursor(1);
-      if (this.followCursor) this.moveCarret();
-      if (this.exporting) this.exportProgress = ~~((this.cursorX * 100) / this.timeline.lastSample);
+      if (this.followCursor) {
+        this.moveCarret();
+      }
+      if (this.exporting) {
+        this.exportProgress = ~~((this.cursorX * 100) / this.timeline.lastSample);
+      }
+    },
+
+    moveCursor(amount) {
+      this.cursorX += amount;
+      this.renderCursor();
+
+      if (this.recording || !this.playing) {
+        return;
+      }
+      if (this.exporting && this.cursorX > this.timeline.lastSample) {
+        return finishRecExport(this);
+      }
+
+      // play clip if corresponds
+      for (let c = 0; c < this.clips.length; c++) {
+        const clip = this.clips[c];
+        if (!clip.playing) {
+          if (
+            this.cursorX >= clip.xPos &&
+            this.cursorX < clip.xPos + clip.endSample - clip.startSample - sampleErrorMargin
+          ) {
+            this.playClip(clip);
+          }
+        }
+      }
     },
 
     moveCarret() {
-      if ((this.cursorX - this.globalStart) * this.timeline.sampleWidth > this.timeline.viewportWidth)
+      if ((this.cursorX - this.globalStart) * this.timeline.sampleWidth > this.timeline.viewportWidth) {
         this.moveCanvas(this.timeline.carretSkip);
-      else if (this.cursorX * this.timeline.sampleWidth < this.globalStart) {
+      } else if (this.cursorX * this.timeline.sampleWidth < this.globalStart) {
         this.moveCanvas(-this.timeline.carretSkip);
       }
     },
+
     moveCanvas(amount) {
       if (this.globalStart - amount >= 0) {
         this.globalStart -= amount;
@@ -520,120 +554,10 @@ export default {
     onFollow() {
       this.followCursor = !this.followCursor;
     },
-    moveCursor(amount) {
-      this.cursorX += amount;
-      this.renderCursor();
-
-      if (this.recording || !this.playing) return;
-      if (this.exporting && this.cursorX > this.timeline.lastSample) return finishRecExport(this);
-
-      // play clip if corresponds
-      for (let c = 0; c < this.clips.length; c++) {
-        const clip = this.clips[c];
-        if (!clip.playing) {
-          if (
-            this.cursorX >= clip.xPos &&
-            this.cursorX < clip.xPos + clip.endSample - clip.startSample - sampleErrorMargin
-          ) {
-            this.playClip(clip);
-          }
-        }
-      }
-    },
-    playClip(clip) {
-      clip.playing = true;
-      clip.source = Node.context.createBufferSource();
-      clip.source.buffer = clip.buffer;
-
-      const offsetStart = (this.cursorX - clip.xPos + clip.startSample) * clip.sampleDuration;
-      const offsetEnd = (clip.xPos + clip.endSample - this.cursorX) * clip.sampleDuration;
-
-      const track = this.tracks.find(track => track.id == clip.trackId); // esto es una verga
-      clip.source.connect(this.clipDestination || track.trackGain.inputNode);
-      clip.source.start(0, offsetStart, offsetEnd);
-
-      clip.source.onended = () => {
-        clip.playing = false;
-        clip.source.disconnect();
-        clip.source = null;
-        delete clip.source;
-      };
-    },
-    unselectClips() {
-      if (!this.selectedClips.length) return;
-      const trackIds = new Set();
-
-      this.selectedClips.forEach(clip => {
-        clip.selected = false;
-        trackIds.add(clip.trackId);
-      });
-      this.selectedClips = [];
-      trackIds.forEach(trackId => this.renderTrack(trackId));
-    },
-    selectOneClip(clip) {
-      const trackIds = new Set([clip.trackId]);
-
-      this.selectedClips.forEach(selectedClip => {
-        selectedClip.selected = false;
-        trackIds.add(selectedClip.trackId);
-      });
-      clip.selected = true;
-      this.selectedClips = [clip];
-      trackIds.forEach(trackId => this.renderTrack(trackId));
-    },
-    unselectOneCLip(clip) {
-      clip.selected = false;
-      const index = this.selectedClips.findIndex(selectedClip => selectedClip.id === clip.id);
-      this.selectedClips.splice(index, 1);
-      const trackId = clip.trackId;
-      this.renderTrack(trackId);
-    },
 
     // slect clip on handle clicked
     onCanvasMouseDown(e, trackId) {
-      const xPos =
-        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
-      const yPos = e.clientY - e.target.getBoundingClientRect().y;
-
-      let anyClipSelected = false;
-      let anyHandleClicked = false;
-      if (yPos <= clipHandle.height) {
-        const clips = this.trackClips[trackId];
-        for (var i = 0; i < clips.length; i++) {
-          const clip = clips[i];
-          if (xPos >= clip.xPos && xPos + clip.startSample <= clip.xPos + clip.endSample) {
-            // has clicked on a clip handle
-            anyHandleClicked = true;
-            if (e.ctrlKey) {
-              if (!clip.selected) {
-                clip.selected = true;
-                this.selectedClips.push(clip);
-                anyClipSelected = true;
-              } else {
-                this.unselectOneCLip(clip);
-              }
-            } else {
-              if (!clip.selected) {
-                this.selectOneClip(clip);
-              }
-            }
-          }
-        }
-      }
-
-      if (anyHandleClicked) {
-        if (anyClipSelected) this.renderTrack(trackId);
-      } else {
-        this.unselectClips();
-        this.positionCursor(xPos);
-      }
-
-      const timelines = $('.timeline');
-      for (var i = 0; i < timelines.length; i++) {
-        timelines[i].removeEventListener('mousemove', this.onCanvasMouseMove);
-      }
-      window.addEventListener('mousemove', this.onWindowMousemove);
-      window.addEventListener('mouseup', this.onMouseUp);
+      selectClipOnHandleClick(this, e, trackId);
     },
 
     // set if clip will resize
@@ -668,7 +592,9 @@ export default {
         }
       }
 
-      if (!anyHandleHovered) e.target.classList.remove('e-resize');
+      if (!anyHandleHovered) {
+        e.target.classList.remove('e-resize');
+      }
     },
 
     // resize or move clips
@@ -733,7 +659,9 @@ export default {
     },
 
     positionCursor(xPos) {
-      if (this.recording) return;
+      if (this.recording) {
+        return;
+      }
       this.cursorX = xPos;
       this.renderCursor();
       if (this.playing) {

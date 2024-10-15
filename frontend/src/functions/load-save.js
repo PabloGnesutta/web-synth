@@ -1,4 +1,5 @@
 const indexedDB = require('../db/index');
+const Node = require("../class/Node");
 
 
 function saveProject(vueInstance, newProjectName) {
