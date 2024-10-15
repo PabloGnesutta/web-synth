@@ -14,37 +14,24 @@
 
     <div class="slider-container">
       <span class="label tempo">{{ tempo }} bpm</span>
-      <input
-        v-model="tempoKnobValue"
-        class="select-none"
-        type="range"
-        min="30"
-        max="300"
-        step="1"
-        @input="setTempoWithSlider"
-      />
+      <input v-model="tempoKnobValue" class="select-none" type="range" min="30" max="300" step="1"
+        @input="setTempoWithSlider" />
     </div>
 
     <div class="slider-container">
       <span class="label volume">vol: {{ clickLevel }}</span>
-      <input
-        v-model="clickLevel"
-        class="select-none"
-        type="range"
-        min="0"
-        max="3"
-        step="0.1"
-        @input="setClickLevel"
-      />
+      <input v-model="clickLevel" class="select-none" type="range" min="0" max="3" step="0.1" @input="setClickLevel" />
     </div>
 
     <div class="mute-unmute" :class="{ muted: muted }" @click="toggleMute">M</div>
   </div>
 </template>
 
+
 <script>
 import { mapGetters, mapMutations } from 'vuex';
-const Node = require('../class/Node');
+import Node from '../class/Node';
+
 
 export default {
   name: 'Click',
@@ -70,12 +57,12 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['context', 'tempo', 'totalBeats', 'secondsPerBeat']),
+    ...mapGetters(['tempo', 'totalBeats', 'secondsPerBeat']),
   },
 
   mounted() {
-    this.clickGain = this.context.createGain();
-    this.clickGain.connect(this.context.destination);
+    this.clickGain = Node.context.createGain();
+    this.clickGain.connect(Node.context.destination);
     this.clickGain.gain.setValueAtTime(this.clickLevel, 0);
 
     this.loadClickSamples();
@@ -97,7 +84,7 @@ export default {
 
     turnOn() {
       this.nextBeat = 1;
-      this.nextBeatTime = this.context.currentTime;
+      this.nextBeatTime = Node.context.currentTime;
       this.setCurrentBeat(1);
       this.setNextBeatTime(this.nextBeatTime);
       this.setTempoWithSlider();
@@ -145,7 +132,7 @@ export default {
     },
 
     sheduleClickNote(time) {
-      const source = this.context.createBufferSource();
+      const source = Node.context.createBufferSource();
       if (this.nextBeat === 1) source.buffer = this.clickBuffer1;
       else source.buffer = this.clickBuffer2;
 
@@ -154,7 +141,7 @@ export default {
     },
 
     scheduler() {
-      while (this.nextBeatTime < this.context.currentTime + this.scheduleAheadTime) {
+      while (this.nextBeatTime < Node.context.currentTime + this.scheduleAheadTime) {
         this.sheduleClickNote(this.nextBeatTime);
         this.nextNote();
       }
@@ -169,7 +156,7 @@ export default {
       request1.responseType = 'arraybuffer';
 
       request1.onload = function () {
-        that.context.decodeAudioData(request1.response, audioBuffer => {
+        Node.context.decodeAudioData(request1.response, audioBuffer => {
           that.clickBuffer1 = audioBuffer;
         });
       };
@@ -180,7 +167,7 @@ export default {
       request2.responseType = 'arraybuffer';
 
       request2.onload = function () {
-        that.context.decodeAudioData(request2.response, audioBuffer => {
+        Node.context.decodeAudioData(request2.response, audioBuffer => {
           that.clickBuffer2 = audioBuffer;
         });
       };
@@ -204,12 +191,14 @@ export default {
   display: inline-block;
   user-select: none;
   cursor: pointer;
+
   div {
     padding: 0.5em;
     background: rosybrown;
     min-width: 50px;
   }
 }
+
 .click-on {
   div {
     background: green;
@@ -221,9 +210,11 @@ export default {
   justify-content: center;
   font-size: 1.2rem;
   user-select: none;
+
   .current-signature {
     padding: 0.2em;
   }
+
   .signature-control {
     font-weight: bold;
     cursor: pointer;

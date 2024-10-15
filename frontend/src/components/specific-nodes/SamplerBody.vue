@@ -15,14 +15,8 @@
         <div class="param-name">{{ customParam.displayName }}</div>
 
         <div @click="knobClicked(Node.name + '-' + customParam.name)">
-          <Knob
-            :ref="Node.name + '-' + customParam.name"
-            :unit="customParam.unit"
-            :minVal="customParam.minValue"
-            :maxVal="customParam.maxValue"
-            :initVal="customParam.value"
-            @knobTurned="setCustomParam(cpIndex, $event)"
-          />
+          <Knob :ref="Node.name + '-' + customParam.name" :unit="customParam.unit" :minVal="customParam.minValue"
+            :maxVal="customParam.maxValue" :initVal="customParam.value" @knobTurned="setCustomParam(cpIndex, $event)" />
         </div>
       </div>
     </div>
@@ -33,8 +27,10 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+import Node from '../../class/Node';
 import Knob from '../Knob';
+
+
 export default {
   name: 'SamplerBody',
   components: { Knob },
@@ -43,10 +39,6 @@ export default {
     return {
       fileName: '',
     };
-  },
-
-  computed: {
-    ...mapGetters(['context']),
   },
 
   methods: {
@@ -59,7 +51,7 @@ export default {
       fileReader.onloadend = () => {
         const arrayBuffer = fileReader.result;
 
-        this.context.decodeAudioData(arrayBuffer, audioBuffer => {
+        Node.context.decodeAudioData(arrayBuffer, audioBuffer => {
           this.Node.loadBuffer(audioBuffer);
         });
       };
@@ -88,12 +80,14 @@ export default {
   width: 100%;
   background: #222;
   position: relative;
+
   .label {
     padding: 2em 0.3em;
     overflow-x: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
   input {
     opacity: 0;
     position: absolute;
@@ -112,6 +106,7 @@ export default {
 .stop-placeholder {
   height: 20px;
 }
+
 .stop-btn {
   cursor: pointer;
 }

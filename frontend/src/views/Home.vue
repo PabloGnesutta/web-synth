@@ -3,44 +3,18 @@
     <div v-if="inited" class="home-inner">
       <!-- Top Section -->
       <div class="top-section">
-        <Header
-          :ref="'header'"
-          @onRec="onRec"
-          @onPlay="onPlay"
-          @onStop="onStopBtn"
-          @onNew="hardReset(true)"
-          @onSave="onSave"
-          @onLoad="onLoad"
-          @onExport="onExport"
-          @onFollow="onFollow"
-          @onMidiMap="onMidiMap"
-          :playing="playing"
-          :recording="recording"
-          :exporting="exporting"
-          :following="followCursor"
-          :mapping="mapping"
-          :octave="octave"
-          :transpose="transpose"
-          :projects="projects"
-          :projectName="projectName"
-          :projectId="projectId"
-          :lastSample="timeline.lastSample"
-          :unsaved="unsaved"
-          :isNew="isNew"
-        />
+        <Header :ref="'header'" @onRec="onRec" @onPlay="onPlay" @onStop="onStopBtn" @onNew="hardReset(true)"
+          @onSave="onSave" @onLoad="onLoad" @onExport="onExport" @onFollow="onFollow" @onMidiMap="onMidiMap"
+          :playing="playing" :recording="recording" :exporting="exporting" :following="followCursor" :mapping="mapping"
+          :octave="octave" :transpose="transpose" :projects="projects" :projectName="projectName" :projectId="projectId"
+          :lastSample="timeline.lastSample" :unsaved="unsaved" :isNew="isNew" />
       </div>
 
       <!-- Mid Section -->
       <div class="mid-section">
-        <Sidebar
-          class="left-col"
-          @createInstrument="createInstrument"
-          @createEffect="createAndInsertEffect"
-          @loadPreset="loadPreset"
-          @onFocus="setFocus"
-          :instrument-is-loaded="!!currentTrack"
-          :focused="focusing === 'sidebar'"
-        />
+        <Sidebar class="left-col" @createInstrument="createInstrument" @createEffect="createAndInsertEffect"
+          @loadPreset="loadPreset" @onFocus="setFocus" :instrument-is-loaded="!!currentTrack"
+          :focused="focusing === 'sidebar'" />
 
         <div class="right-col" :class="{ focused: focusing === 'tracks' }" @click="setFocus('tracks')">
           <div class="top-controls">
@@ -48,11 +22,8 @@
             <Click ref="click" />
             <!-- Info -->
             <div class="info-wrapper select-none">
-              <div
-                class="info-container no-scrollbar"
-                :style="{ width: timeline.viewportWidth + 'px' }"
-                @click="logInfo"
-              >
+              <div class="info-container no-scrollbar" :style="{ width: timeline.viewportWidth + 'px' }"
+                @click="logInfo">
                 <div class="info-item">{{ globalStart }}</div>
                 <!-- <div class="info-item">vpW: {{ timeline.viewportWidth }}</div> -->
                 <div class="info-item">curr: {{ cursorX }}</div>
@@ -67,13 +38,8 @@
           <!-- Tracks -->
           <div class="tracklist-wrapper custom-scrollbar">
             <div class="tracklist">
-              <div
-                v-for="(track, t) in tracks"
-                :key="track.id"
-                class="track"
-                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
-                @click.self="selectTrack(t)"
-              >
+              <div v-for="(track, t) in tracks" :key="track.id" class="track"
+                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }" @click.self="selectTrack(t)">
                 <div class="left-controls no-scrollbar" @click="selectTrack(t)">
                   <div class="left-ctrls-inner">
                     <div @click.stop="deleteTrack(t)" class="pointer">[X]</div>
@@ -83,30 +49,17 @@
                 </div>
 
                 <!-- Track Timeline -->
-                <div
-                  class="timeline"
-                  :ref="`timeline-${track.id}`"
-                  @mousedown="onCanvasMouseDown($event, track.id)"
-                  @mousewheel="onCanvasContainerWheel"
-                >
-                  <canvas
-                    :ref="`track-canvas-${track.id}`"
-                    :id="track.id"
-                    :height="timeline.trackHeight"
-                  ></canvas>
+                <div class="timeline" :ref="`timeline-${track.id}`" @mousedown="onCanvasMouseDown($event, track.id)"
+                  @mousewheel="onCanvasContainerWheel">
+                  <canvas :ref="`track-canvas-${track.id}`" :id="track.id" :height="timeline.trackHeight"></canvas>
                 </div>
 
                 <!-- Right Controls -->
                 <div class="right-controls-wrapper">
-                  <RightControls
-                    :Node="track.trackGain"
-                    :analyser="track.trackGainAnalyser"
-                    :recEnabled="track.recEnabled"
-                    :selected="currentTrackIndex === t"
-                    @toggleRecEnabled="toggleRecEnabled(track)"
-                    @knobClicked="knobClicked"
-                    @selectTrack="selectTrack(t)"
-                  />
+                  <RightControls :Node="track.trackGain" :analyser="track.trackGainAnalyser"
+                    :recEnabled="track.recEnabled" :selected="currentTrackIndex === t"
+                    @toggleRecEnabled="toggleRecEnabled(track)" @knobClicked="knobClicked"
+                    @selectTrack="selectTrack(t)" />
                 </div>
               </div>
 
@@ -119,13 +72,8 @@
             <div class="track master">
               <div class="left-controls">Master</div>
               <div class="master-knob-wrapper" @click="knobClicked('MasterGain')">
-                <Knob
-                  :ref="'MasterGain'"
-                  minVal="0"
-                  maxVal="1"
-                  :initVal="masterOutputKnob"
-                  @knobTurned="setMasterGainValue"
-                />
+                <Knob :ref="'MasterGain'" minVal="0" maxVal="1" :initVal="masterOutputKnob"
+                  @knobTurned="setMasterGainValue" />
               </div>
             </div>
           </div>
@@ -134,35 +82,19 @@
 
       <!-- Bottom section: Current Track detail -->
       <div class="bottom-section">
-        <div
-          v-if="currentTrack"
-          class="track-detail custom-scrollbar"
-          :class="'track-detail_' + currentTrackIndex"
-        >
+        <div v-if="currentTrack" class="track-detail custom-scrollbar" :class="'track-detail_' + currentTrackIndex">
           <!-- Instrument -->
           <div class="track-instrument">
-            <NodeRender
-              :Node="currentTrack.instrument"
-              :analyser="currentTrack.instrumentAnalyser"
-              :instrumentEnabled="currentTrack.instrumentEnabled"
-              @deleteNode="deleteTrack"
-              @toggleInstrumentEnabled="toggleInstrumentEnabled"
-              @knobClicked="knobClicked"
-            />
+            <NodeRender :Node="currentTrack.instrument" :analyser="currentTrack.instrumentAnalyser"
+              :instrumentEnabled="currentTrack.instrumentEnabled" @deleteNode="deleteTrack"
+              @toggleInstrumentEnabled="toggleInstrumentEnabled" @knobClicked="knobClicked" />
           </div>
 
           <!-- Effects -->
           <div class="track-effects">
-            <NodeRender
-              v-for="(Node, effectIndex) in currentTrack.effects"
-              :Node="Node"
-              :analyser="Node.analyser"
-              :key="Node.id"
-              :ref="'Node-' + effectIndex"
-              @deleteNode="deleteEffect(effectIndex)"
-              @levelClicked="levelClicked(Node)"
-              @knobClicked="knobClicked"
-            />
+            <NodeRender v-for="(Node, effectIndex) in currentTrack.effects" :Node="Node" :analyser="Node.analyser"
+              :key="Node.id" :ref="'Node-' + effectIndex" @deleteNode="deleteEffect(effectIndex)"
+              @levelClicked="levelClicked(Node)" @knobClicked="knobClicked" />
             <div class="placeholder"></div>
           </div>
           <div class="analyser-render-wrapper">
@@ -317,7 +249,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['context', 'appIsMapping', 'appConnecting']),
+    ...mapGetters(['appIsMapping', 'appConnecting']),
   },
 
   beforeDestroy() {
@@ -342,12 +274,11 @@ export default {
   },
 
   methods: {
-    ...mapMutations(['setAppIsMapping', 'setContext']),
+    ...mapMutations(['setAppIsMapping']),
 
     init() {
       $('.home-wrapper').removeEventListener('click', this.init);
       Node.context = new (window.AudioContext || window.webkitAudioContext)();
-      this.setContext(Node.context);
       dbObj.initDb(dbData => {
         console.log('db inited', dbData);
         this.projects = dbData.projects;
@@ -393,9 +324,7 @@ export default {
 
     onResize() {
       this.computeTimelineDimensions();
-      this.tracks.forEach(track => {
-        track.canvas.width = this.timeline.viewportWidth;
-      });
+      this.tracks.forEach(track => track.canvas.width = this.timeline.viewportWidth);
       this.moveCanvas(0);
     },
 
@@ -551,7 +480,9 @@ export default {
       const ctx = canvas.getContext('2d');
 
       ctx.clearRect(0, 0, canvas.width, this.timeline.trackHeight);
-      for (var c = 0; c < clips.length; c++) this.renderClip(clips[c], ctx);
+      for (var c = 0; c < clips.length; c++) {
+        this.renderClip(clips[c], ctx);
+      }
     },
     renderClip(clip, ctx) {
       const clipXPos = clip.xPos;
@@ -593,7 +524,7 @@ export default {
       this.renderCursor();
 
       if (this.recording || !this.playing) return;
-      if (this.cursorX > this.timeline.lastSample) return this.exporting && finishRecExport(this);
+      if (this.exporting && this.cursorX > this.timeline.lastSample) return finishRecExport(this);
 
       // play clip if corresponds
       for (let c = 0; c < this.clips.length; c++) {
@@ -609,6 +540,7 @@ export default {
       }
     },
     playClip(clip) {
+      clip.playing = true;
       clip.source = Node.context.createBufferSource();
       clip.source.buffer = clip.buffer;
 
@@ -618,7 +550,6 @@ export default {
       const track = this.tracks.find(track => track.id == clip.trackId); // esto es una verga
       clip.source.connect(this.clipDestination || track.trackGain.inputNode);
       clip.source.start(0, offsetStart, offsetEnd);
-      clip.playing = true;
 
       clip.source.onended = () => {
         clip.playing = false;
@@ -636,9 +567,7 @@ export default {
         trackIds.add(clip.trackId);
       });
       this.selectedClips = [];
-      trackIds.forEach(trackId => {
-        this.renderTrack(trackId);
-      });
+      trackIds.forEach(trackId => this.renderTrack(trackId));
     },
     selectOneClip(clip) {
       const trackIds = new Set([clip.trackId]);
@@ -649,9 +578,7 @@ export default {
       });
       clip.selected = true;
       this.selectedClips = [clip];
-      trackIds.forEach(trackId => {
-        this.renderTrack(trackId);
-      });
+      trackIds.forEach(trackId => this.renderTrack(trackId));
     },
     unselectOneCLip(clip) {
       clip.selected = false;
@@ -701,8 +628,9 @@ export default {
       }
 
       const timelines = $('.timeline');
-      for (var i = 0; i < timelines.length; i++)
+      for (var i = 0; i < timelines.length; i++) {
         timelines[i].removeEventListener('mousemove', this.onCanvasMouseMove);
+      }
       window.addEventListener('mousemove', this.onWindowMousemove);
       window.addEventListener('mouseup', this.onMouseUp);
     },
@@ -775,8 +703,9 @@ export default {
           }
         }
 
-        if (clip.xPos + clip.endSample > this.timeline.lastSample)
+        if (clip.xPos + clip.endSample > this.timeline.lastSample) {
           this.timeline.lastSample = clip.xPos + clip.endSample;
+        }
 
         this.renderTrack(clip.trackId);
       }
@@ -845,8 +774,7 @@ export default {
 
     // Tracks, Instruments & Effects
     createInstrument(className) {
-      const Node = createInstrument(className);
-      this.createTrack(Node);
+      this.createTrack(createInstrument(className));
     },
 
     createTrack(instrument, trackId) {
@@ -910,9 +838,7 @@ export default {
 
       if (this.recording) {
         if (track.recEnabled) {
-          this.$nextTick(() => {
-            this.startRecSingleTrack(track);
-          });
+          this.$nextTick(() => this.startRecSingleTrack(track));
         }
       }
       // scroll
@@ -972,9 +898,7 @@ export default {
         this.selectTrack(futureTrackIndex);
       }
 
-      this.$nextTick(() => {
-        this.canvasOverlay.height = this.timeline.trackHeight * this.tracks.length;
-      });
+      this.$nextTick(() => this.canvasOverlay.height = this.timeline.trackHeight * this.tracks.length);
     },
 
     // Effects:
@@ -1015,9 +939,7 @@ export default {
 
       this.currentTrackIndex = t;
       this.currentTrack = null;
-      this.$nextTick(() => {
-        this.currentTrack = this.tracks[this.currentTrackIndex];
-      });
+      this.$nextTick(() => this.currentTrack = this.tracks[this.currentTrackIndex]);
     },
 
     createMasterGain() {
@@ -1055,19 +977,15 @@ export default {
     onPadTouchStart(currentIndex) {
       const noteKeyIndex = currentIndex;
       let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-      this.xyPadListeners.forEach(scaleInterface => {
-        scaleInterface.instrument.playNote(noteIndex);
-      });
+      this.xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(noteIndex));
     },
     onPadTouchEnd(currentIndex) {
       const noteKeyIndex = currentIndex;
       let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-      this.xyPadListeners.forEach(scaleInterface => {
-        scaleInterface.instrument.stopNote(noteIndex);
-      });
+      this.xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(noteIndex));
     },
-    onPadTouchCancel(e) {},
-    onPadTouchMove(e) {},
+    onPadTouchCancel(e) { },
+    onPadTouchMove(e) { },
 
     // Keyboard
     onKeydown(e) {
@@ -1080,9 +998,7 @@ export default {
         if (noteIndex < 0) noteIndex = 0;
         if (noteIndex > numNotes - 1) noteIndex = numNotes - 1;
 
-        this.keypressListeners.forEach(scaleInterface => {
-          scaleInterface.instrument.playNote(noteIndex);
-        });
+        this.keypressListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(noteIndex));
       } else {
         this.onOtherKeydown(e);
       }
@@ -1093,9 +1009,7 @@ export default {
 
       if (noteKeyIndex !== -1) {
         const noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-        this.keypressListeners.forEach(scaleInterface => {
-          scaleInterface.instrument.stopNote(noteIndex);
-        });
+        this.keypressListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(noteIndex));
       } else {
         this.onOtherKeyup(e);
       }
@@ -1103,9 +1017,7 @@ export default {
     onOtherKeydown(e) {
       if (e.keyCode >= 97 && e.keyCode <= 105) {
         //1-9:
-        this.numpadListeners.forEach(scaleInterface => {
-          scaleInterface.instrument.playNote(+e.key);
-        });
+        this.numpadListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(+e.key));
       } else {
         switch (e.keyCode) {
           case 38: //arrow   up - select track
@@ -1203,7 +1115,6 @@ export default {
       while (this.tracks.length) {
         this.deleteTrack(0);
       }
-      // this.tracks = [];
       // todo: reset Nodes' Ids
       if (generateSomeNodes) {
         this.createTrack(createInstrument('Drumkit'));
@@ -1253,13 +1164,11 @@ export default {
         }
       );
 
-      const tracks = this.tracks.map(track => {
-        return {
-          id: track.id,
-          instrument: JSON.parse(track.instrument.saveString()),
-          effects: track.effects.map(effect => JSON.parse(effect.saveString())),
-        };
-      });
+      const tracks = this.tracks.map(track => ({
+        id: track.id,
+        instrument: JSON.parse(track.instrument.saveString()),
+        effects: track.effects.map(effect => JSON.parse(effect.saveString())),
+      }));
 
       dbObj.save(this.projectId, 'tracks', tracks, () => console.log('tracks saved'));
 
@@ -1471,7 +1380,7 @@ export default {
         input.onmidimessage = this.onMIDIMessage;
       }
     },
-    onMIDIFailure() {},
+    onMIDIFailure() { },
 
     addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {

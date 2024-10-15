@@ -1,30 +1,17 @@
-
 <template>
   <div class="node-wrapper">
-    <div
-      :ref="Node.name"
-      class="node"
-      :class="[Node.nodeType, getCssNodeName(Node.name), { folded: folded }]"
-    >
+    <div :ref="Node.name" class="node" :class="[Node.nodeType, getCssNodeName(Node.name), { folded: folded }]">
       <!-- Node Header -->
       <div class="node-header">
         <div class="top-left">
-          <div
-            v-if="Node.nodeRol === 'Instrument'"
-            class="instrument-enabler"
-            @click="toggleInstrumentEnabled"
-          >
+          <div v-if="Node.nodeRol === 'Instrument'" class="instrument-enabler" @click="toggleInstrumentEnabled">
             <div class="instrument-enabler-inner" :class="{ enabled: instrumentEnabled }"></div>
           </div>
 
           <div v-if="Node.saveString" class="preset-icon select-none" @click="savePreset()">[S]</div>
           <div v-if="showPresetNames" class="preset-names">
-            <div
-              v-for="(presetName, presetIndex) in presetNames"
-              :key="presetName"
-              class="preset-name"
-              @click="loadPreset(presetIndex)"
-            >
+            <div v-for="(presetName, presetIndex) in presetNames" :key="presetName" class="preset-name"
+              @click="loadPreset(presetIndex)">
               {{ presetName }}
             </div>
           </div>
@@ -50,13 +37,8 @@
         <div v-if="Node.dryWet" class="dry-wet">
           <div class="param-name">dry/wet</div>
           <div @click="knobClicked(Node.name + '-dry-wet')">
-            <Knob
-              :ref="Node.name + '-dry-wet'"
-              :initVal="Node.dryWet.value"
-              :minVal="Node.dryWet.minValue"
-              :maxVal="Node.dryWet.maxValue"
-              @knobTurned="setDryWet($event)"
-            />
+            <Knob :ref="Node.name + '-dry-wet'" :initVal="Node.dryWet.value" :minVal="Node.dryWet.minValue"
+              :maxVal="Node.dryWet.maxValue" @knobTurned="setDryWet($event)" />
           </div>
         </div>
 
@@ -64,13 +46,8 @@
         <div class="level">
           <div class="param-name">Level</div>
           <div @click="knobClicked(Node.name + '-level')">
-            <Knob
-              :ref="Node.name + '-level'"
-              :initVal="Node.gain"
-              :minVal="Node.minGain"
-              :maxVal="Node.maxGain"
-              @knobTurned="setNodeGain($event)"
-            />
+            <Knob :ref="Node.name + '-level'" :initVal="Node.gain" :minVal="Node.minGain" :maxVal="Node.maxGain"
+              @knobTurned="setNodeGain($event)" />
           </div>
         </div>
       </div>
@@ -127,7 +104,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['context', 'appConnecting', 'originNode']),
+    ...mapGetters(['appConnecting', 'originNode']),
   },
 
   methods: {
@@ -222,6 +199,7 @@ export default {
 .node.folded {
   width: 34px;
   overflow: hidden;
+
   .backdrop {
     display: block;
     position: absolute;
@@ -230,6 +208,7 @@ export default {
     background: rgba(0, 0, 0, 0.82);
     z-index: 1;
     cursor: pointer;
+
     .name-folded {
       transform: rotate(-90deg) translateX(-100%);
       position: inherit;
@@ -247,15 +226,19 @@ export default {
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.5rem;
+
   .top-left {
     display: flex;
     gap: 0.5rem;
+
     .preset-icon {
       cursor: pointer;
+
       &:hover {
         color: coral;
       }
     }
+
     .preset-names {
       position: absolute;
       top: 1.5rem;
@@ -265,6 +248,7 @@ export default {
       padding: 0.5rem;
     }
   }
+
   .node-name {
     flex: 1;
     text-align: center;
@@ -274,6 +258,7 @@ export default {
     font-size: 1.1rem;
     cursor: pointer;
   }
+
   .top-right {
     display: flex;
     justify-content: flex-end;
@@ -320,12 +305,14 @@ export default {
 
 .instrument-enabler {
   cursor: pointer;
+
   .instrument-enabler-inner {
     width: 15px;
     height: 15px;
     background: red;
     // transition: background-color 0.2s ease-out;
   }
+
   .instrument-enabler-inner.enabled {
     background: green;
   }
@@ -335,12 +322,15 @@ export default {
 .Surgeon {
   width: 310px;
 }
+
 .BiquadFilter {
   width: 154px;
 }
+
 .Compressor {
   width: 200px;
 }
+
 .Delay {
   width: 154px;
 }

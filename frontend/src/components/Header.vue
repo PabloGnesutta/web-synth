@@ -13,12 +13,8 @@
               <div class="has-submenu" @mouseenter="loadMenuOpen = true" @mouseleave="loadMenuOpen = false">
                 <div class="menu-item" :class="{ active: loadMenuOpen }">Open</div>
                 <div v-if="loadMenuOpen" class="sub-menu">
-                  <div
-                    v-for="(project, key) in projects"
-                    :key="key"
-                    class="menu-item"
-                    @click="onLoad(key, project.name)"
-                  >
+                  <div v-for="(project, key) in projects" :key="key" class="menu-item"
+                    @click="onLoad(key, project.name)">
                     {{ project.name }}
                   </div>
                 </div>
@@ -35,13 +31,17 @@
 
         <div class="mid">
           <!-- PLAY -->
-          <div class="playback-btn play" :class="{ active: playing }" @click="onPlay"><PlayIcon /></div>
+          <div class="playback-btn play" :class="{ active: playing }" @click="onPlay">
+            <PlayIcon />
+          </div>
           <!-- REC -->
           <div class="playback-btn rec" :class="{ active: recording }" @click="onRec">
             <RecIcon :active="recording" />
           </div>
           <!-- STOP -->
-          <div class="playback-btn stop" @click="onStop"><StopIcon /></div>
+          <div class="playback-btn stop" @click="onStop">
+            <StopIcon />
+          </div>
           <!-- Follow -->
         </div>
 
@@ -125,9 +125,13 @@ export default {
     onSave() {
       let newProjectName = undefined;
       if (this.isNew) {
-        newProjectName = newProjectName || prompt('Project name', 'WebDaw Project');
-        if (!newProjectName) return;
-        if (this.nameExists(newProjectName)) return alert('exists');
+        newProjectName = prompt('Project name', 'WebDaw Project');
+        if (!newProjectName) {
+          return;
+        }
+        if (this.nameExists(newProjectName)) {
+          return alert('Name already exists');
+        }
       }
       this.$emit('onSave', newProjectName);
     },
@@ -137,7 +141,9 @@ export default {
       if (newProjectName === this.projectName) {
         this.onSave();
       } else {
-        if (this.nameExists(newProjectName)) return alert('exists');
+        if (this.nameExists(newProjectName)) {
+          return alert('exists');
+        }
         this.$emit('onSave', newProjectName);
       }
     },
@@ -146,7 +152,7 @@ export default {
       this.$emit('onLoad', { projectId, projectName });
     },
 
-    deleteSave() {},
+    deleteSave() { },
 
     onFollow() {
       this.$emit('onFollow');
@@ -156,8 +162,11 @@ export default {
     },
 
     nameExists(projectName) {
-      for (const id in this.projects)
-        if (this.projects[id].name.toLowerCase() === projectName.toLowerCase()) return true;
+      for (const id in this.projects) {
+        if (this.projects[id].name.toLowerCase() === projectName.toLowerCase()) {
+          return true;
+        }
+      }
       return false;
     },
   },
@@ -176,15 +185,16 @@ export default {
   gap: 0.5em;
   border-top: 3px solid #111;
   border-bottom: 3px solid #111;
-  // border-left: 1px solid #111;
-  // border-right: 1px solid #111;
 }
+
 .header.playing {
   border-color: green;
 }
+
 .header.recording {
   border-color: crimson;
 }
+
 .main-container {
   width: 100%;
   display: flex;
@@ -206,42 +216,51 @@ export default {
   align-items: center;
   gap: 1rem;
 }
+
 // File Menu
 .file-menu {
   position: relative;
   z-index: 1;
 }
+
 .file-menu.active {
   color: teal;
 }
+
 .menu {
   position: fixed;
   top: 42px;
   min-width: 40px;
   background: white;
 }
+
 .menu-btn {
   padding: 0.5rem 4rem 0.5rem 1rem;
   user-select: none;
 }
+
 .menu-item {
   padding: 0.5rem 2rem 0.5rem 1rem;
   color: #222;
   user-select: none;
 }
+
 .menu-item:hover {
   position: relative;
   background: #333;
   color: white;
 }
+
 // Submenu
 .has-submenu {
   position: relative;
+
   .menu-item.active {
     background: #333;
     color: white;
   }
 }
+
 .sub-menu {
   background: #ddd;
   position: absolute;
@@ -258,12 +277,15 @@ export default {
   justify-content: center;
   gap: 2rem;
 }
+
 .playback-btn {
   cursor: pointer;
 }
+
 .play.active {
   color: rgb(13, 247, 13);
 }
+
 .rec.active {
   color: red;
 }
@@ -274,12 +296,15 @@ export default {
   align-items: center;
   gap: 0.5rem;
 }
+
 .follow {
   background: #111;
 }
+
 .follow.active {
   background: rgb(92, 92, 255);
 }
+
 .midi.active {
   background: var(--color-1);
 }

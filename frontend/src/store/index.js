@@ -1,11 +1,11 @@
-import Vue from 'vue'
-import Vuex from 'vuex'
+import Vue from 'vue';
+import Vuex from 'vuex';
 
-Vue.use(Vuex)
+
+Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
-    context: null,
     appIsMapping: false,
 
     originNode: null,
@@ -20,84 +20,73 @@ export default new Vuex.Store({
   },
 
   getters: {
-    context: (state) => {
-      return state.context
-    },
-
     //click
     tempo: (state) => {
-      return state.tempo
+      return state.tempo;
     },
 
     secondsPerBeat: (state) => {
-      return state.secondsPerBeat
+      return state.secondsPerBeat;
     },
 
     nextBeatTime: (state) => {
-      return state.nextBeatTime
+      return state.nextBeatTime;
     },
 
     currentBeat: (state) => {
-      return state.currentBeat
+      return state.currentBeat;
     },
 
     totalBeats: (state) => {
-      return state.totalBeats
+      return state.totalBeats;
     },
 
     appIsMapping: (state) => {
-      return state.appIsMapping
+      return state.appIsMapping;
     },
 
     appConnecting: (state) => {
-      return state.appConnecting
+      return state.appConnecting;
     },
 
     originNode: (state) => {
-      return state.originNode
+      return state.originNode;
     }
   },
 
   mutations: {
-    setContext: (state, payload) => {
-      state.context = payload
-    },
-
-    //click
     setTempo: (state, payload) => {
-      state.tempo = payload
+      state.tempo = payload;
     },
 
     setSecondsPerBeat: (state, payload) => {
-      state.secondsPerBeat = payload
+      state.secondsPerBeat = payload;
     },
 
     setNextBeatTime: (state, payload) => {
-      state.nextBeatTime = payload
+      state.nextBeatTime = payload;
     },
 
     setCurrentBeat: (state, payload) => {
-      state.currentBeat = payload
+      state.currentBeat = payload;
     },
 
     setTotalBeats: (state, payload) => {
-      state.totalBeats = payload
+      state.totalBeats = payload;
     },
 
     setAppIsMapping: (state, payload) => {
-      state.appIsMapping = payload
+      state.appIsMapping = payload;
     },
 
     setAppConnecting: (state, payload) => {
-      state.appConnecting = payload
+      state.appConnecting = payload;
     },
 
     setOriginNode: (state, payload) => {
-      state.originNode = payload
+      state.originNode = payload;
     }
   },
-  actions: {
-  },
-  modules: {
-  }
-})
+  actions: {},
+  modules: {}
+});
