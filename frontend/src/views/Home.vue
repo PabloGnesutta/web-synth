@@ -120,13 +120,14 @@
   </div>
 </template>
 
+
 <script>
 const Node = require('../class/Node');
 const Gain = require('../class/Effects/Gain');
-const noteKeys = require('../data/noteKeys');
 
-var fftSize = 1024;
+
 const sampleErrorMargin = 10;
+var fftSize = 1024;
 
 import { mapMutations, mapGetters } from 'vuex';
 import dbObj from '@/db/index.js';
@@ -141,7 +142,7 @@ import Pad from '@/components/user-interface/Pad';
 import ExportModal from '@/components/modals/ExportModal';
 
 import { $ } from '../dom-utils/DomUtils';
-import { cliplist, state, timelineState, trackClips, tracklist } from '../state/vueInstance.js';
+import { cliplist, exportState, state, timelineState, trackClips, tracklist } from '../state/vueInstance.js';
 import { playSingleClip, stopAllClips } from '../functions/playback.js';
 import { loadProject, saveProject } from '../functions/load-save.js';
 import { startExport, finishRecExport } from '../functions/exports.js';
@@ -175,6 +176,12 @@ export default {
       projectIdCount: undefined,
       projectName: 'untitled',
 
+      unsaved: true,
+      octave: 3,
+      transpose: 0,
+      m_pressed: false,
+      focusing: 'tracks',
+
       tracks: tracklist,
       trackIdCount: 0,
       currentTrack: null,
@@ -203,7 +210,6 @@ export default {
 
       //Play/Export
       playing: false,
-      export: {},
       exporting: false,
       exportProgress: 0,
       clipDestination: null,
@@ -214,12 +220,6 @@ export default {
       midiOutputs: [],
       mapping: false,
       refBeignMapped: null,
-
-      unsaved: true,
-      octave: 3,
-      transpose: 0,
-      m_pressed: false,
-      focusing: 'tracks',
     };
   },
 
@@ -835,14 +835,15 @@ export default {
       }
       this.onStopBtn();
       this.onStopBtn(); // call twice to jump to the start of the timeline
-      this.export = { name: exportName };
+      clearObj(exportState);
+      exportState.name = exportName;
       this.exporting = true;
       startExport();
       this.clipDestination = this.masterInput;
       this.playAllTracks();
     },
     cancelExport() {
-      this.export.canceled = true;
+      exportState.canceled = true;
       finishRecExport();
     },
 

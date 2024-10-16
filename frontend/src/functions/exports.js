@@ -1,26 +1,26 @@
 const Node = require("../class/Node");
-const { state } = require("../state/vueInstance");
+const { state, exportState } = require("../state/vueInstance");
 
 
 function startExport() {
     let chunks = [];
     let mediaStreamDestination = Node.context.createMediaStreamDestination();
-    state.instance.exportMediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
+    exportState.mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
 
     state.instance.masterOutput.connect(mediaStreamDestination);
 
-    state.instance.exportMediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
+    exportState.mediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
     // When recording's finished, process data chunk
     // into a Blob, and save it for future use
-    state.instance.exportMediaRecorder.onstop = () => {
+    exportState.mediaRecorder.onstop = () => {
         const blobReader = new FileReader();
         const blob = new Blob(chunks, { type: 'audio/ogg' });
 
         blobReader.onloadend = () => {
             const arrayBuffer = blobReader.result;
             Node.context.decodeAudioData(arrayBuffer, audioBuffer => {
-                state.instance.export.blob = blob;
-                state.instance.export.buffer = audioBuffer;
+                exportState.blob = blob;
+                exportState.buffer = audioBuffer;
                 onRecordExportFinish();
             });
         };
@@ -30,16 +30,16 @@ function startExport() {
         chunks = null;
     };
 
-    state.instance.exportMediaRecorder.start();
+    exportState.mediaRecorder.start();
 }
 
 function onRecordExportFinish() {
-    state.instance.exportMediaRecorder = null;
+    exportState.mediaRecorder = null;
     state.instance.clipDestination = null;
 
-    if (!state.instance.export.canceled) {
-        downloadBlob(state.instance.export.blob, state.instance.export.name);
-        state.instance.export.name = null;
+    if (!exportState.canceled) {
+        downloadBlob(exportState.blob, exportState.name);
+        exportState.name = null;
     }
 }
 
@@ -51,7 +51,7 @@ function downloadBlob(blob, fileName) {
 }
 
 function finishRecExport() {
-    state.instance.exportMediaRecorder.stop();
+    exportState.mediaRecorder.stop();
     state.instance.exporting = false;
     state.instance.onStopBtn();
 }

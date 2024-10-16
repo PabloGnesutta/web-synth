@@ -17,11 +17,6 @@ export default {
   props: {
     exportProgress: { type: Number, default: 50 },
   },
-  data() {
-    return {
-      // exportProgress: 50,
-    };
-  },
 };
 </script>
 
@@ -38,6 +33,7 @@ export default {
   background: rgba(0, 0, 0, 0.4);
   z-index: 100;
 }
+
 .content {
   background: white;
   color: #222;
@@ -48,10 +44,12 @@ export default {
   align-items: center;
   justify-content: center;
 }
+
 h3 {
   margin-bottom: 1rem;
   user-select: none;
 }
+
 .progress-container {
   background: #333;
   width: 100%;
@@ -59,12 +57,14 @@ h3 {
   // margin-bottom: 1rem;
   border-radius: 10px;
 }
+
 .progress {
   background: teal;
   height: 100%;
   transition: width 200ms ease-out;
   border-radius: 10px;
 }
+
 .progress-indicator {
   user-select: none;
   font-weight: bold;
@@ -72,6 +72,7 @@ h3 {
   letter-spacing: 2px;
   transform: translateY(-20px);
 }
+
 .btn {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
@@ -80,6 +81,7 @@ h3 {
   cursor: pointer;
   user-select: none;
 }
+
 .btn:hover {
   color: coral;
 }
