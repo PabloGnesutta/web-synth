@@ -144,16 +144,11 @@ import ExportModal from '@/components/modals/ExportModal';
 
 import { $ } from '../dom-utils/DomUtils';
 import { state } from '../state/vueInstance.js';
-import { createInstrument, createEffect } from '../factory/NodeFactory';
-import {
-  startRecord,
-  startRecordSingleTrack,
-  stopRecord,
-  stopRecordSingleTrack,
-} from '../functions/recording';
-import { startExport, finishRecExport } from '../functions/exports.js';
-import { loadProject, saveProject } from '../functions/load-save.js';
 import { playSingleClip } from '../functions/playback.js';
+import { loadProject, saveProject } from '../functions/load-save.js';
+import { startExport, finishRecExport } from '../functions/exports.js';
+import { createInstrument, createEffect } from '../factory/NodeFactory';
+import { startRecord, startRecordSingleTrack, stopRecord, stopRecordSingleTrack } from '../functions/recording';
 import { clipHandle, duplicateClips, onTimelineMouseUp, resizeOrMoveClips, scrollOrZoomTimeline, selectClipOnHandleClick } from '../functions/timeline-interaction.js';
 
 
@@ -360,10 +355,6 @@ export default {
       this.moveTimielineWithPlayback();
     },
 
-    playClip(clip) {
-      playSingleClip(clip);
-    },
-
     onStopBtn() {
       if (this.playing) {
         this.playing = false;
@@ -485,7 +476,7 @@ export default {
             this.cursorX >= clip.xPos &&
             this.cursorX < clip.xPos + clip.endSample - clip.startSample - sampleErrorMargin
           ) {
-            this.playClip(clip);
+            playSingleClip(clip);
           }
         }
       }
@@ -563,12 +554,8 @@ export default {
     },
 
     // Timeline Interactions
-    onCanvasMouseDown(e, trackId) {
-      selectClipOnHandleClick(e, trackId);
-    },
-    onCanvasContainerWheel(e) {
-      scrollOrZoomTimeline(e);
-    },
+    onCanvasMouseDown: selectClipOnHandleClick,
+    onCanvasContainerWheel: scrollOrZoomTimeline,
     onFollow() {
       this.followCursor = !this.followCursor;
     },
@@ -930,13 +917,8 @@ export default {
       this.renderCursor();
     },
 
-    onSave(newProjectName) {
-      saveProject(newProjectName);
-    },
-
-    onLoad({ projectId, projectName }) {
-      loadProject(projectId, projectName);
-    },
+    onSave: saveProject,
+    onLoad: loadProject,
 
     onLoadFinish(trackClips) {
       console.log('onLoadFinish');
