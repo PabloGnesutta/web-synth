@@ -71,6 +71,7 @@ import BiquadFilterBody from './specific-nodes/BiquadFilterBody.vue';
 import ReverbBody from './specific-nodes/ReverbBody.vue';
 import CompressorBody from './specific-nodes/CompressorBody.vue';
 import DistortionBody from './specific-nodes/DistortionBody.vue';
+import { toggleInstrumentEnabled } from '../functions/track-interaction';
 
 export default {
   name: 'NodeRender',
@@ -153,9 +154,7 @@ export default {
       localStorage.setItem(presetsKey, JSON.stringify(presets));
     },
 
-    toggleInstrumentEnabled() {
-      this.$emit('toggleInstrumentEnabled');
-    },
+    toggleInstrumentEnabled: toggleInstrumentEnabled,
 
     setDryWet(value) {
       this.Node.setDryWet(parseFloat(value));

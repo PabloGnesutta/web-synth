@@ -87,7 +87,7 @@
           <div class="track-instrument">
             <NodeRender :Node="currentTrack.instrument" :analyser="currentTrack.instrumentAnalyser"
               :instrumentEnabled="currentTrack.instrumentEnabled" @deleteNode="deleteTrack"
-              @toggleInstrumentEnabled="toggleInstrumentEnabled" @knobClicked="knobClicked" />
+              @knobClicked="knobClicked" />
           </div>
 
           <!-- Effects -->
@@ -152,6 +152,7 @@ import { clipHandle, onTimelineMouseUp, resizeOrMoveClips, scrollOrZoomTimeline,
 import { renderDataObjects } from '../functions/rendering.js';
 import { keypressListeners, mainKeyDownHandler, mainKeyupHandler, numpadListeners, xyPadListeners } from '../functions/keyboard.js';
 import { clearArray, clearObj } from '../lib/array.js';
+import { selectTrack, toggleRecEnabled } from '../functions/track-interaction.js';
 
 
 export default {
@@ -228,7 +229,6 @@ export default {
   },
 
   beforeDestroy() {
-    this.setContext(null);
     window.removeEventListener('keyup', mainKeyupHandler);
     window.removeEventListener('keydown', mainKeyDownHandler);
     window.removeEventListener('resize', this.onResize);
@@ -282,6 +282,21 @@ export default {
       state.instance = this;
     },
 
+    onPlay: togglePlay,
+    onRec: toggleRecord,
+    onStopBtn: onStopBtnClick,
+
+    onSave: saveProject,
+    onLoad: loadProject,
+    onExport: triggerExport,
+    cancelExport: cancelExport,
+
+    selectTrack: selectTrack,
+    toggleRecEnabled: toggleRecEnabled,
+
+    onCanvasMouseDown: selectClipOnHandleClick,
+    onCanvasContainerWheel: scrollOrZoomTimeline,
+
     setFocus(target) {
       this.focusing = target;
     },
@@ -304,23 +319,6 @@ export default {
       this.moveCanvas(0);
     },
 
-
-    toggleRecEnabled(track) {
-      track.recEnabled = !track.recEnabled;
-      if (!this.recording) {
-        return;
-      }
-      if (track.recEnabled) {
-        startRecordSingleTrack(track);
-      } else {
-        stopRecordSingleTrack(track);
-      }
-    },
-
-    // PLAYBACK
-    onPlay: togglePlay,
-    onRec: toggleRecord,
-    onStopBtn: onStopBtnClick,
 
     // RENDERING
     generateRenderDataObject(track) {
@@ -496,20 +494,8 @@ export default {
       );
     },
 
-    // Timeline Interactions
-    onCanvasMouseDown: selectClipOnHandleClick,
-    onCanvasContainerWheel: scrollOrZoomTimeline,
     onFollow() {
       this.followCursor = !this.followCursor;
-    },
-    selectTrack(t) {
-      if (this.currentTrackIndex === t) {
-        return;
-      }
-
-      this.currentTrackIndex = t;
-      this.currentTrack = null;
-      this.$nextTick(() => this.currentTrack = tracklist[this.currentTrackIndex]);
     },
 
 
@@ -606,8 +592,10 @@ export default {
       // delete from listeners
       let index = keypressListeners.findIndex(listener => listener.trackName === track.name);
       if (index !== -1) keypressListeners.splice(index, 1);
+
       index = numpadListeners.findIndex(listener => listener.trackName === track.name);
       if (index !== -1) numpadListeners.splice(index, 1);
+
       index = xyPadListeners.findIndex(listener => listener.trackName === track.name);
       if (index !== -1) xyPadListeners.splice(index, 1);
 
@@ -636,10 +624,10 @@ export default {
       if (futureTrackIndex > tracklist.length - 1) {
         futureTrackIndex--;
         if (futureTrackIndex >= 0) {
-          this.selectTrack(futureTrackIndex);
+          selectTrack(futureTrackIndex);
         }
       } else {
-        this.selectTrack(futureTrackIndex);
+        selectTrack(futureTrackIndex);
       }
 
       this.$nextTick(() => this.canvasOverlay.height = timelineState.trackHeight * tracklist.length);
@@ -691,25 +679,7 @@ export default {
       this.masterOutput.gain.setValueAtTime(val, 0);
     },
 
-    toggleInstrumentEnabled() {
-      this.currentTrack.instrumentEnabled = !this.currentTrack.instrumentEnabled;
-
-      if (this.currentTrack.instrumentEnabled) {
-        keypressListeners.push({
-          instrument: this.currentTrack.instrument,
-          trackName: this.currentTrack.name,
-        });
-        if (this.currentTrack.instrument.name === 'Mic') this.currentTrack.instrument.setMute(false);
-      } else {
-        const i = keypressListeners.findIndex(kpl => kpl.trackName === this.currentTrack.name);
-        keypressListeners.splice(i, 1);
-        if (this.currentTrack.instrument.name === 'Mic') this.currentTrack.instrument.setMute(true);
-      }
-    },
-
-    // CONTROLS
-
-    // Touch
+    // Touch controls
     onPadTouchStart(currentIndex) {
       const noteKeyIndex = currentIndex;
       let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
@@ -759,9 +729,9 @@ export default {
       this.renderCursor();
     },
 
-    onSave: saveProject,
-    onLoad: loadProject,
 
+
+    // todo: move to load-save
     onLoadFinish(_trackClips) {
       console.log('onLoadFinish');
       clearObj(trackClips);
@@ -791,9 +761,6 @@ export default {
       }
     },
 
-    // EXPORT
-    onExport: triggerExport,
-    cancelExport: cancelExport,
 
     // MIDI
     triggerNoteOn(note, channel) {
