@@ -1,6 +1,6 @@
 const indexedDB = require('../db/index');
 const Node = require("../class/Node");
-const { state } = require('../state/vueInstance');
+const { state, tracklist, timelineState } = require('../state/vueInstance');
 
 
 function saveProject(newProjectName) {
@@ -40,25 +40,25 @@ function saveData() {
     () => console.log('project_data saved')
   );
 
-  const tracks = state.instance.tracks.map(track => ({
+  const tracks_ = tracklist.map(track => ({
     id: track.id,
     instrument: JSON.parse(track.instrument.saveString()),
     effects: track.effects.map(effect => JSON.parse(effect.saveString())),
   }));
 
-  indexedDB.save(state.instance.projectId, 'tracks', tracks, () => console.log('tracks saved'));
+  indexedDB.save(state.instance.projectId, 'tracks', tracks_, () => console.log('tracks saved'));
 
-  const trackClips = {};
+  const trackClips_ = {};
   for (const trackId in state.instance.trackClips) {
     const clips = state.instance.trackClips[trackId];
-    trackClips[trackId] = clips.map(clip => {
+    trackClips_[trackId] = clips.map(clip => {
       const saveClip = { ...clip };
       delete saveClip.buffer;
       delete saveClip.selected;
       return saveClip;
     });
   }
-  indexedDB.save(state.instance.projectId, 'track_clips', trackClips, () => {
+  indexedDB.save(state.instance.projectId, 'track_clips', trackClips_, () => {
     console.log('track_clips saved');
     state.instance.unsaved = false;
   });
@@ -79,16 +79,16 @@ function loadProject({ projectId, projectName }) {
     state.instance.transpose = projectData.transpose;
     // todo: load click values
 
-    indexedDB.get(parseInt(state.instance.projectId), 'tracks', tracks => {
-      console.log('load tracks', tracks);
-      tracks.forEach(track => {
+    indexedDB.get(parseInt(state.instance.projectId), 'tracks', tracks_ => {
+      console.log('load tracks_', tracks_);
+      tracks_.forEach(track => {
         state.instance.loadInstrument(track.instrument, track.id);
         track.effects.forEach(effect => state.instance.loadEffect(effect));
       });
 
-      indexedDB.get(state.instance.projectId, 'track_clips', trackClips => {
-        console.log('load track_clips', trackClips);
-        loadTrackClips(trackClips);
+      indexedDB.get(state.instance.projectId, 'track_clips', trackClips_ => {
+        console.log('load trackClips_', trackClips_);
+        loadTrackClips(trackClips_);
       });
 
       state.instance.unsaved = false;
@@ -120,8 +120,8 @@ function loadTrackClips(trackClips) {
 
           // determine total timeleine width
           const lastSample = clip.xPos + clip.numSamples;
-          if (lastSample > state.instance.timeline.lastSample) {
-            state.instance.timeline.lastSample = lastSample;
+          if (lastSample > timelineState.lastSample) {
+            timelineState.lastSample = lastSample;
           }
           // might fail because of race condition?
           if (++clipsProcessed >= numClips) {

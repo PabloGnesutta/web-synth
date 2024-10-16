@@ -1,5 +1,5 @@
 const { $ } = require("../dom-utils/DomUtils");
-const { state } = require("../state/vueInstance");
+const { state, timelineState } = require("../state/vueInstance");
 
 
 const minSampleWidth = 1;
@@ -50,7 +50,7 @@ function unselectOneCLip(clip) {
 // TODO: Rename this function
 function selectClipOnHandleClick(e, trackId) {
   const xPos =
-    (e.clientX - e.target.getBoundingClientRect().x + state.instance.globalStart) / state.instance.timeline.sampleWidth;
+    (e.clientX - e.target.getBoundingClientRect().x + state.instance.globalStart) / timelineState.sampleWidth;
   const yPos = e.clientY - e.target.getBoundingClientRect().y;
 
   let anyClipSelected = false;
@@ -142,8 +142,8 @@ function resizeOrMoveClips(e) {
       }
     }
 
-    if (clip.xPos + clip.endSample > state.instance.timeline.lastSample) {
-      state.instance.timeline.lastSample = clip.xPos + clip.endSample;
+    if (clip.xPos + clip.endSample > timelineState.lastSample) {
+      timelineState.lastSample = clip.xPos + clip.endSample;
     }
 
     state.instance.renderTrack(clip.trackId);
@@ -153,7 +153,7 @@ function resizeOrMoveClips(e) {
 // onCanvasMouseMove
 function setIfClipWillResize(e) {
   const xPos =
-    (e.clientX - e.target.getBoundingClientRect().x + state.instance.globalStart) / state.instance.timeline.sampleWidth;
+    (e.clientX - e.target.getBoundingClientRect().x + state.instance.globalStart) / timelineState.sampleWidth;
   const yPos = e.clientY - e.target.getBoundingClientRect().y;
 
   let anyHandleHovered = false;
@@ -197,11 +197,11 @@ function scrollOrZoomTimeline(e) {
   }
   if (e.shiftKey) {
     amount = 0;
-    state.instance.timeline.sampleWidth += 1 * delta;
-    if (state.instance.timeline.sampleWidth < minSampleWidth) {
-      state.instance.timeline.sampleWidth = minSampleWidth;
-    } else if (state.instance.timeline.sampleWidth > 3) {
-      state.instance.timeline.sampleWidth = 3;
+    timelineState.sampleWidth += 1 * delta;
+    if (timelineState.sampleWidth < minSampleWidth) {
+      timelineState.sampleWidth = minSampleWidth;
+    } else if (timelineState.sampleWidth > 3) {
+      timelineState.sampleWidth = 3;
     }
   }
 

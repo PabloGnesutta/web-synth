@@ -1,14 +1,17 @@
 const Node = require("../class/Node");
-const { state } = require("../state/vueInstance");
+const { state, tracklist } = require("../state/vueInstance");
+const { renderDataObjects } = require("./rendering");
 
 
 function startRecord() {
   state.instance.totalProcessingTracks = 0;
   state.instance.recording = true;
-  state.instance.renderDataObjects = [];
-  state.instance.tracks
-    .filter(track => track.recEnabled)
-    .forEach(track => startRecordSingleTrack(track));
+
+  for (const track of tracklist) {
+    if (track.recEnabled) {
+      startRecordSingleTrack(track);
+    }
+  }
 
   let cursorStep = 1;
   if (state.instance.playing) {
@@ -75,7 +78,7 @@ function startRecordSingleTrack(track) {
 
   mediaRecorder.start();
 
-  state.instance.renderDataObjects.push(state.instance.generateRenderDataObject(track));
+  renderDataObjects.push(state.instance.generateRenderDataObject(track));
 }
 
 function stopRecord() {
@@ -93,13 +96,18 @@ function stopRecord() {
   cancelAnimationFrame(state.instance.playbackRaf);
   state.instance.recordingRaf = null;
   state.instance.playbackRaf = null;
+
+  // clear previous render data objects, don't use assignment operator to keep the pointer alive
+  while (renderDataObjects.length) {
+    renderDataObjects.splice(0);
+  }
 }
 
 function stopRecordSingleTrack(track) {
   state.instance.mediaRecorders[track.id].stop();
   delete state.instance.mediaRecorders[track.id];
-  let index = state.instance.renderDataObjects.findIndex(o => o.trackId == track.id);
-  state.instance.renderDataObjects.splice(index, 1);
+  let index = renderDataObjects.findIndex(o => o.trackId == track.id);
+  renderDataObjects.splice(index, 1);
 }
 
 

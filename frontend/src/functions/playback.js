@@ -1,5 +1,5 @@
 const Node = require("../class/Node");
-const { state } = require("../state/vueInstance");
+const { state, tracklist } = require("../state/vueInstance");
 
 
 function playSingleClip(clip) {
@@ -10,7 +10,7 @@ function playSingleClip(clip) {
   const offsetStart = (state.instance.cursorX - clip.xPos + clip.startSample) * clip.sampleDuration;
   const offsetEnd = (clip.xPos + clip.endSample - state.instance.cursorX) * clip.sampleDuration;
 
-  const track = state.instance.tracks.find(track => track.id == clip.trackId); // esto es una verga
+  const track = tracklist.find(track => track.id == clip.trackId); // esto es una verga
   clip.source.connect(state.instance.clipDestination || track.trackGain.inputNode);
   clip.source.start(0, offsetStart, offsetEnd);
 
