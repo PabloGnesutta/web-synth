@@ -3,6 +3,8 @@ const state = {
 };
 
 const tracklist = [];
+const cliplist = [];
+const trackClips = {};
 
 const timelineState = {
   trackHeight: 64,
@@ -15,5 +17,7 @@ const timelineState = {
 module.exports = {
   state,
   tracklist,
+  cliplist,
+  trackClips,
   timelineState,
 };

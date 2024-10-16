@@ -1,5 +1,5 @@
 const { $ } = require("../dom-utils/DomUtils");
-const { state, timelineState } = require("../state/vueInstance");
+const { state, timelineState, cliplist, trackClips } = require("../state/vueInstance");
 
 
 const minSampleWidth = 1;
@@ -56,7 +56,7 @@ function selectClipOnHandleClick(e, trackId) {
   let anyClipSelected = false;
   let anyHandleClicked = false;
   if (yPos <= clipHandle.height) {
-    const clips = state.instance.trackClips[trackId];
+    const clips = trackClips[trackId];
     for (var i = 0; i < clips.length; i++) {
       const clip = clips[i];
       if (xPos >= clip.xPos && xPos + clip.startSample <= clip.xPos + clip.endSample) {
@@ -159,7 +159,7 @@ function setIfClipWillResize(e) {
   let anyHandleHovered = false;
   const trackId = e.target.id;
   if (yPos <= clipHandle.height) {
-    const clips = state.instance.trackClips[trackId];
+    const clips = trackClips[trackId];
     for (var i = 0; i < clips.length; i++) {
       const clip = clips[i];
       if (xPos + clip.startSample >= clip.xPos && xPos + clip.startSample <= clip.xPos + clip.endSample) {
@@ -230,8 +230,8 @@ function duplicateClips() {
     const newClip = { ...clip };
     clip.xPos = clip.xPos + clip.endSample - clip.startSample;
     newClip.selected = false;
-    state.instance.clips.push(newClip);
-    state.instance.trackClips[clip.trackId].push(newClip);
+    cliplist.push(newClip);
+    trackClips[clip.trackId].push(newClip);
     state.instance.renderTrack(clip.trackId);
   });
 }

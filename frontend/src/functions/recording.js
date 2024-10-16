@@ -1,5 +1,6 @@
 const Node = require("../class/Node");
-const { state, tracklist } = require("../state/vueInstance");
+const { clearArray } = require("../lib/array");
+const { state, tracklist, cliplist, trackClips } = require("../state/vueInstance");
 const { renderDataObjects } = require("./rendering");
 
 
@@ -43,8 +44,8 @@ function startRecordSingleTrack(track) {
     sampleRate: 0,
     playing: true,
   };
-  state.instance.clips.push(clip);
-  state.instance.trackClips[track.id].push(clip);
+  cliplist.push(clip);
+  trackClips[track.id].push(clip);
 
   mediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
   // When recording's finished, process data chunk
@@ -97,10 +98,7 @@ function stopRecord() {
   state.instance.recordingRaf = null;
   state.instance.playbackRaf = null;
 
-  // clear previous render data objects, don't use assignment operator to keep the pointer alive
-  while (renderDataObjects.length) {
-    renderDataObjects.splice(0);
-  }
+  clearArray(renderDataObjects);
 }
 
 function stopRecordSingleTrack(track) {

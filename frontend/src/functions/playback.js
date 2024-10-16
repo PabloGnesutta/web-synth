@@ -1,5 +1,5 @@
 const Node = require("../class/Node");
-const { state, tracklist } = require("../state/vueInstance");
+const { state, tracklist, cliplist } = require("../state/vueInstance");
 
 
 function playSingleClip(clip) {
@@ -22,7 +22,12 @@ function playSingleClip(clip) {
   };
 }
 
+function stopAllClips() {
+  cliplist.forEach(clip => clip.source && clip.source.stop());
+}
+
 
 module.exports = {
   playSingleClip,
+  stopAllClips,
 };

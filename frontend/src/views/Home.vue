@@ -143,14 +143,15 @@ import Pad from '@/components/user-interface/Pad';
 import ExportModal from '@/components/modals/ExportModal';
 
 import { $ } from '../dom-utils/DomUtils';
-import { state, timelineState, tracklist } from '../state/vueInstance.js';
-import { playSingleClip } from '../functions/playback.js';
+import { cliplist, state, timelineState, trackClips, tracklist } from '../state/vueInstance.js';
+import { playSingleClip, stopAllClips } from '../functions/playback.js';
 import { loadProject, saveProject } from '../functions/load-save.js';
 import { startExport, finishRecExport } from '../functions/exports.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
 import { startRecord, startRecordSingleTrack, stopRecord, stopRecordSingleTrack } from '../functions/recording';
 import { clipHandle, duplicateClips, onTimelineMouseUp, resizeOrMoveClips, scrollOrZoomTimeline, selectClipOnHandleClick } from '../functions/timeline-interaction.js';
 import { renderDataObjects } from '../functions/rendering.js';
+import { clearArray, clearObj } from '../lib/array.js';
 
 
 export default {
@@ -191,8 +192,6 @@ export default {
 
       //REC
       recording: false,
-      clips: [],
-      trackClips: {},
       selectedClips: [],
       clipIdCount: 0,
       mediaRecorders: {},
@@ -353,7 +352,7 @@ export default {
     onStopBtn() {
       if (this.playing) {
         this.playing = false;
-        this.stopAllClips();
+        stopAllClips();
         cancelAnimationFrame(this.playbackRaf);
         this.playbackRaf = null;
       } else {
@@ -371,14 +370,10 @@ export default {
       }
     },
 
-    stopAllClips() {
-      this.clips.forEach(clip => clip.source && clip.source.stop());
-    },
-
     // RENDERING
     generateRenderDataObject(track) {
       const analyser = track.trackGainAnalyser;
-      const clip = this.trackClips[track.id][this.trackClips[track.id].length - 1];
+      const clip = trackClips[track.id][trackClips[track.id].length - 1];
       clip.bars = [];
       return {
         trackId: track.id,
@@ -464,15 +459,16 @@ export default {
       }
 
       // play clip if corresponds
-      for (let c = 0; c < this.clips.length; c++) {
-        const clip = this.clips[c];
-        if (!clip.playing) {
-          if (
-            this.cursorX >= clip.xPos &&
-            this.cursorX < clip.xPos + clip.endSample - clip.startSample - sampleErrorMargin
-          ) {
-            playSingleClip(clip);
-          }
+      for (let c = 0; c < cliplist.length; c++) {
+        const clip = cliplist[c];
+        if (clip.playing) {
+          continue;
+        }
+        if (
+          this.cursorX >= clip.xPos &&
+          this.cursorX < clip.xPos + clip.endSample - clip.startSample - sampleErrorMargin
+        ) {
+          playSingleClip(clip);
         }
       }
     },
@@ -493,12 +489,12 @@ export default {
       }
     },
     renderCanvas() {
-      for (const trackId in this.trackClips) {
+      for (const trackId in trackClips) {
         this.renderTrack(trackId);
       }
     },
     renderTrack(trackId) {
-      const clips = this.trackClips[trackId];
+      const clips = trackClips[trackId];
       const canvas = this.$refs[`track-canvas-${trackId}`][0];
       const ctx = canvas.getContext('2d');
 
@@ -597,7 +593,7 @@ export default {
 
       tracklist.push(track);
 
-      this.trackClips[_trackId] = [];
+      trackClips[_trackId] = [];
       this.canvasOverlay.height = timelineState.trackHeight * tracklist.length;
       this.renderCursor();
 
@@ -651,8 +647,8 @@ export default {
         stopRecordSingleTrack(track);
       }
 
-      delete this.trackClips[track.id];
-      //todo: eliminate clips from this.clips
+      delete trackClips[track.id];
+      //todo: eliminate clips from cliplist
 
       // delete from listeners
       let index = this.keypressListeners.findIndex(listener => listener.trackName === track.name);
@@ -885,9 +881,9 @@ export default {
       this.projectId = undefined;
       this.projectIdCount = undefined;
       this.projectName = 'untitled';
-      this.clips = [];
+      clearArray(cliplist);
       this.clipIdCount = 0;
-      this.trackClips = {};
+      clearObj(trackClips);
       this.trackIdCount = 0;
       this.currentTrack = null;
       this.currentTrackIndex = 0;
@@ -915,9 +911,10 @@ export default {
     onSave: saveProject,
     onLoad: loadProject,
 
-    onLoadFinish(trackClips) {
+    onLoadFinish(_trackClips) {
       console.log('onLoadFinish');
-      this.trackClips = trackClips;
+      clearObj(trackClips);
+      Object.assign(trackClips, _trackClips);
       this.$nextTick(() => {
         this.computeTimelineDimensions();
         this.moveCanvas(0);
@@ -1061,7 +1058,7 @@ export default {
       let max = 0;
       let avg;
 
-      this.clips.forEach(clip => {
+      cliplist.forEach(clip => {
         if (clip.sampleRate < min || c === 0) min = clip.sampleRate;
         if (clip.sampleRate > max) max = clip.sampleRate;
         sum += clip.sampleRate;
