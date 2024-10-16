@@ -1,5 +1,6 @@
 const Node = require("../class/Node");
 const { state, tracklist, cliplist } = require("../state/vueInstance");
+const { stopRecord, startRecord } = require("./recording");
 
 
 function playSingleClip(clip) {
@@ -26,8 +27,54 @@ function stopAllClips() {
   cliplist.forEach(clip => clip.source && clip.source.stop());
 }
 
+function toggleRecord() {
+  state.instance.recording ? stopRecord() : startRecord();
+}
+
+function togglePlay() {
+  if (state.instance.recording) {
+    return;
+  }
+  if (state.instance.playing) {
+    onStopBtnClick();
+    state.instance.cursorX = state.instance.lastCursorPos;
+  }
+  state.instance.lastCursorPos = state.instance.cursorX;
+  playAllTracks();
+}
+
+function playAllTracks() {
+  state.instance.playing = true;
+  state.instance.moveTimielineWithPlayback();
+}
+
+function onStopBtnClick() {
+  if (state.instance.playing) {
+    state.instance.playing = false;
+    stopAllClips();
+    cancelAnimationFrame(state.instance.playbackRaf);
+    state.instance.playbackRaf = null;
+  } else {
+    if (state.instance.globalStart !== 0) {
+      state.instance.globalStart = 0;
+      state.instance.renderCanvas();
+    }
+    if (state.instance.cursorX !== 0) {
+      state.instance.cursorX = 0;
+      state.instance.renderCursor();
+    }
+  }
+  if (state.instance.recording) {
+    stopRecord();
+  }
+}
+
 
 module.exports = {
   playSingleClip,
   stopAllClips,
+  toggleRecord,
+  togglePlay,
+  playAllTracks,
+  onStopBtnClick,
 };

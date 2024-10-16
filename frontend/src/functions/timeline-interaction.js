@@ -1,5 +1,6 @@
 const { $ } = require("../dom-utils/DomUtils");
 const { state, timelineState, cliplist, trackClips } = require("../state/vueInstance");
+const { onStopBtnClick } = require("./playback");
 
 
 const minSampleWidth = 1;
@@ -109,7 +110,7 @@ function positionCursor(xPos) {
   state.instance.cursorX = xPos;
   state.instance.renderCursor();
   if (state.instance.playing) {
-    state.instance.onStopBtn();
+    onStopBtnClick();
   }
 }
 

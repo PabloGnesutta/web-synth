@@ -142,12 +142,12 @@ import Pad from '@/components/user-interface/Pad';
 import ExportModal from '@/components/modals/ExportModal';
 
 import { $ } from '../dom-utils/DomUtils';
-import { cliplist, exportState, state, timelineState, trackClips, tracklist } from '../state/vueInstance.js';
-import { playSingleClip, stopAllClips } from '../functions/playback.js';
+import { cliplist, state, timelineState, trackClips, tracklist } from '../state/vueInstance.js';
+import { onStopBtnClick, playSingleClip, togglePlay, toggleRecord } from '../functions/playback.js';
 import { loadProject, saveProject } from '../functions/load-save.js';
-import { startExport, finishRecExport } from '../functions/exports.js';
+import { finishRecExport, triggerExport, cancelExport } from '../functions/exports.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
-import { startRecord, startRecordSingleTrack, stopRecord, stopRecordSingleTrack } from '../functions/recording';
+import { startRecordSingleTrack, stopRecordSingleTrack } from '../functions/recording';
 import { clipHandle, onTimelineMouseUp, resizeOrMoveClips, scrollOrZoomTimeline, selectClipOnHandleClick, trackProps } from '../functions/timeline-interaction.js';
 import { renderDataObjects } from '../functions/rendering.js';
 import { keypressListeners, mainKeyDownHandler, mainKeyupHandler, numpadListeners, xyPadListeners } from '../functions/keyboard.js';
@@ -304,59 +304,23 @@ export default {
       this.moveCanvas(0);
     },
 
-    // RECORDING
-    onRec() {
-      this.recording ? stopRecord() : startRecord();
-    },
+
     toggleRecEnabled(track) {
       track.recEnabled = !track.recEnabled;
-      if (this.recording) {
-        if (track.recEnabled) {
-          startRecordSingleTrack(track);
-        } else {
-          stopRecordSingleTrack(track);
-        }
+      if (!this.recording) {
+        return;
+      }
+      if (track.recEnabled) {
+        startRecordSingleTrack(track);
+      } else {
+        stopRecordSingleTrack(track);
       }
     },
 
     // PLAYBACK
-    onPlay() {
-      if (this.recording) {
-        return;
-      }
-      if (this.playing) {
-        this.onStopBtn();
-        this.cursorX = this.lastCursorPos;
-      }
-      this.lastCursorPos = this.cursorX;
-      this.playAllTracks();
-    },
-
-    playAllTracks() {
-      this.playing = true;
-      this.moveTimielineWithPlayback();
-    },
-
-    onStopBtn() {
-      if (this.playing) {
-        this.playing = false;
-        stopAllClips();
-        cancelAnimationFrame(this.playbackRaf);
-        this.playbackRaf = null;
-      } else {
-        if (this.globalStart !== 0) {
-          this.globalStart = 0;
-          this.renderCanvas();
-        }
-        if (this.cursorX !== 0) {
-          this.cursorX = 0;
-          this.renderCursor();
-        }
-      }
-      if (this.recording) {
-        stopRecord();
-      }
-    },
+    onPlay: togglePlay,
+    onRec: toggleRecord,
+    onStopBtn: onStopBtnClick,
 
     // RENDERING
     generateRenderDataObject(track) {
@@ -828,24 +792,8 @@ export default {
     },
 
     // EXPORT
-    onExport() {
-      const exportName = prompt('File name?', 'web-synth-export');
-      if (!exportName) {
-        return;
-      }
-      this.onStopBtn();
-      this.onStopBtn(); // call twice to jump to the start of the timeline
-      clearObj(exportState);
-      exportState.name = exportName;
-      this.exporting = true;
-      startExport();
-      this.clipDestination = this.masterInput;
-      this.playAllTracks();
-    },
-    cancelExport() {
-      exportState.canceled = true;
-      finishRecExport();
-    },
+    onExport: triggerExport,
+    cancelExport: cancelExport,
 
     // MIDI
     triggerNoteOn(note, channel) {

@@ -1,6 +1,23 @@
 const Node = require("../class/Node");
+const { clearObj } = require("../lib/array");
 const { state, exportState } = require("../state/vueInstance");
+const { playAllTracks, onStopBtnClick } = require("./playback");
 
+
+function triggerExport() {
+    const exportName = prompt('File name?', 'web-synth-export');
+    if (!exportName) {
+        return;
+    }
+    onStopBtnClick();
+    onStopBtnClick(); // call twice to jump to the start of the timeline
+    clearObj(exportState);
+    exportState.name = exportName;
+    state.instance.exporting = true;
+    startExport();
+    state.instance.clipDestination = state.instance.masterInput;
+    playAllTracks();
+}
 
 function startExport() {
     let chunks = [];
@@ -53,11 +70,18 @@ function downloadBlob(blob, fileName) {
 function finishRecExport() {
     exportState.mediaRecorder.stop();
     state.instance.exporting = false;
-    state.instance.onStopBtn();
+    onStopBtnClick();
+}
+
+function cancelExport() {
+    exportState.canceled = true;
+    finishRecExport();
 }
 
 
 module.exports = {
+    triggerExport,
     startExport,
     finishRecExport,
+    cancelExport,
 };

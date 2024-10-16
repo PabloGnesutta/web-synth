@@ -1,6 +1,7 @@
 const noteFrequencies = require("../data/noteFrequencies");
 const noteKeys = require("../data/noteKeys");
-const { state } = require("../state/vueInstance");
+const { state, tracklist } = require("../state/vueInstance");
+const { onStopBtnClick } = require("./playback");
 
 
 const keyEnabled = Array(222).fill(true);
@@ -49,12 +50,16 @@ function onOtherKeydown(e) {
       case 38: //arrow   up - select track
         if (state.instance.focusing !== 'tracks') return;
         var futureTrackIndex = state.instance.currentTrackIndex - 1;
-        if (futureTrackIndex >= 0) state.instance.selectTrack(futureTrackIndex);
+        if (futureTrackIndex >= 0) {
+          state.instance.selectTrack(futureTrackIndex);
+        }
         break;
       case 40: //arrow down - select track
         if (state.instance.focusing !== 'tracks') return;
         var futureTrackIndex = state.instance.currentTrackIndex + 1;
-        if (futureTrackIndex < tracklist.length) state.instance.selectTrack(futureTrackIndex);ke
+        if (futureTrackIndex < tracklist.length) {
+          state.instance.selectTrack(futureTrackIndex);
+        }
         break;
       case 77: //m
         state.instance.m_pressed = true;
@@ -75,10 +80,10 @@ function onOtherKeyup(e) {
         if (state.instance.focusing !== 'sidebar') state.instance.onRec();
         break;
       case 27: //esc -
-        state.instance.onStopBtn();
+        onStopBtnClick();
         break;
       case 32: //space bar - play/pause
-        if (state.instance.playing) state.instance.onStopBtn();
+        if (state.instance.playing) onStopBtnClick();
         else state.instance.onPlay();
         break;
       case 37: //arrow left - move cursor
