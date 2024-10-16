@@ -123,9 +123,7 @@
 <script>
 const Node = require('../class/Node');
 const Gain = require('../class/Effects/Gain');
-const noteFrequencies = require('../data/noteFrequencies');
 const noteKeys = require('../data/noteKeys');
-const numNotes = noteFrequencies.length;
 
 var fftSize = 1024;
 const sampleErrorMargin = 10;
@@ -149,8 +147,9 @@ import { loadProject, saveProject } from '../functions/load-save.js';
 import { startExport, finishRecExport } from '../functions/exports.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
 import { startRecord, startRecordSingleTrack, stopRecord, stopRecordSingleTrack } from '../functions/recording';
-import { clipHandle, duplicateClips, onTimelineMouseUp, resizeOrMoveClips, scrollOrZoomTimeline, selectClipOnHandleClick } from '../functions/timeline-interaction.js';
+import { clipHandle, onTimelineMouseUp, resizeOrMoveClips, scrollOrZoomTimeline, selectClipOnHandleClick, trackProps } from '../functions/timeline-interaction.js';
 import { renderDataObjects } from '../functions/rendering.js';
+import { keypressListeners, mainKeyDownHandler, mainKeyupHandler, numpadListeners, xyPadListeners } from '../functions/keyboard.js';
 import { clearArray, clearObj } from '../lib/array.js';
 
 
@@ -185,11 +184,6 @@ export default {
       masterInput: null,
       masterOutputKnob: 0.5,
 
-      keyEnabled: [],
-      keypressListeners: [],
-      numpadListeners: [],
-      xyPadListeners: [],
-
       //REC
       recording: false,
       selectedClips: [],
@@ -200,11 +194,6 @@ export default {
       //Rendering
       followCursor: true,
       timeline: timelineState,
-      trackProps: {
-        // todo: get from css
-        rightCtrlsWidth: 247,
-        leftCtrlsWidth: 180,
-      },
       globalStart: 0,
       globalEnd: 0,
       cursorX: 0,
@@ -240,8 +229,8 @@ export default {
 
   beforeDestroy() {
     this.setContext(null);
-    window.removeEventListener('keyup', this.onKeyup);
-    window.removeEventListener('keydown', this.onKeydown);
+    window.removeEventListener('keyup', mainKeyupHandler);
+    window.removeEventListener('keydown', mainKeyDownHandler);
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('mouseup', onTimelineMouseUp);
     window.removeEventListener('mousemove', resizeOrMoveClips);
@@ -249,7 +238,6 @@ export default {
 
   created() {
     this.addConfirmLeaveHandler();
-    this.keyEnabled = Array(222).fill(true);
     if (navigator.requestMIDIAccess) {
       navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
     }
@@ -276,7 +264,7 @@ export default {
 
       this.$nextTick(() => {
         const canvasOverlayContainer = $('.canvas-overlay');
-        canvasOverlayContainer.style.left = this.trackProps.leftCtrlsWidth + 'px';
+        canvasOverlayContainer.style.left = trackProps.leftCtrlsWidth + 'px';
 
         this.canvasOverlay = this.$refs['canvas-overlay'];
         this.canvasOverlayCtx = this.canvasOverlay.getContext('2d');
@@ -287,8 +275,8 @@ export default {
         this.createAndInsertEffect('BiquadFilter');
       });
 
-      window.addEventListener('keyup', this.onKeyup);
-      window.addEventListener('keydown', this.onKeydown);
+      window.addEventListener('keyup', mainKeyupHandler);
+      window.addEventListener('keydown', mainKeyDownHandler);
       window.addEventListener('resize', this.onResize);
 
       state.instance = this;
@@ -301,7 +289,7 @@ export default {
     computeTimelineDimensions() {
       const trackList = $('.tracklist');
       timelineState.viewportWidth =
-        trackList.offsetWidth - this.trackProps.leftCtrlsWidth - this.trackProps.rightCtrlsWidth;
+        trackList.offsetWidth - trackProps.leftCtrlsWidth - trackProps.rightCtrlsWidth;
 
       timelineState.carretSkip = ~~(timelineState.viewportWidth / 3) * -1;
       this.canvasOverlay.width = timelineState.viewportWidth;
@@ -612,16 +600,17 @@ export default {
 
       // key/touch listeners
       if (instrument.nodeType === 'Drumkit') {
-        this.numpadListeners.push({
+        numpadListeners.push({
           instrument,
           trackName: track.name, // todo: should be track id
         });
       } else {
-        this.keypressListeners.push({
+        // TODO? Insted of using an object, using a tuple could improve performance?
+        keypressListeners.push({
           instrument,
           trackName: track.name, // todo: should be track id
         });
-        this.xyPadListeners.push({
+        xyPadListeners.push({
           instrument,
           trackName: track.name, // todo: should be track id
         });
@@ -651,12 +640,12 @@ export default {
       //todo: eliminate clips from cliplist
 
       // delete from listeners
-      let index = this.keypressListeners.findIndex(listener => listener.trackName === track.name);
-      if (index !== -1) this.keypressListeners.splice(index, 1);
-      index = this.numpadListeners.findIndex(listener => listener.trackName === track.name);
-      if (index !== -1) this.numpadListeners.splice(index, 1);
-      index = this.xyPadListeners.findIndex(listener => listener.trackName === track.name);
-      if (index !== -1) this.xyPadListeners.splice(index, 1);
+      let index = keypressListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) keypressListeners.splice(index, 1);
+      index = numpadListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) numpadListeners.splice(index, 1);
+      index = xyPadListeners.findIndex(listener => listener.trackName === track.name);
+      if (index !== -1) xyPadListeners.splice(index, 1);
 
       track.instrument.destroy();
       track.instrument = null;
@@ -742,14 +731,14 @@ export default {
       this.currentTrack.instrumentEnabled = !this.currentTrack.instrumentEnabled;
 
       if (this.currentTrack.instrumentEnabled) {
-        this.keypressListeners.push({
+        keypressListeners.push({
           instrument: this.currentTrack.instrument,
           trackName: this.currentTrack.name,
         });
         if (this.currentTrack.instrument.name === 'Mic') this.currentTrack.instrument.setMute(false);
       } else {
-        const i = this.keypressListeners.findIndex(kpl => kpl.trackName === this.currentTrack.name);
-        this.keypressListeners.splice(i, 1);
+        const i = keypressListeners.findIndex(kpl => kpl.trackName === this.currentTrack.name);
+        keypressListeners.splice(i, 1);
         if (this.currentTrack.instrument.name === 'Mic') this.currentTrack.instrument.setMute(true);
       }
     },
@@ -760,118 +749,16 @@ export default {
     onPadTouchStart(currentIndex) {
       const noteKeyIndex = currentIndex;
       let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-      this.xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(noteIndex));
+      xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(noteIndex));
     },
     onPadTouchEnd(currentIndex) {
       const noteKeyIndex = currentIndex;
       let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-      this.xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(noteIndex));
+      xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(noteIndex));
     },
     onPadTouchCancel(e) { },
     onPadTouchMove(e) { },
 
-    // Keyboard
-    onKeydown(e) {
-      if (!this.keyEnabled[e.keyCode]) return;
-      this.keyEnabled[e.keyCode] = false;
-      const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
-
-      if (noteKeyIndex !== -1) {
-        let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-        if (noteIndex < 0) noteIndex = 0;
-        if (noteIndex > numNotes - 1) noteIndex = numNotes - 1;
-
-        this.keypressListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(noteIndex));
-      } else {
-        this.onOtherKeydown(e);
-      }
-    },
-    onKeyup(e) {
-      this.keyEnabled[e.keyCode] = true;
-      const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
-
-      if (noteKeyIndex !== -1) {
-        const noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
-        this.keypressListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(noteIndex));
-      } else {
-        this.onOtherKeyup(e);
-      }
-    },
-    onOtherKeydown(e) {
-      if (e.keyCode >= 97 && e.keyCode <= 105) {
-        //1-9:
-        this.numpadListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(+e.key));
-      } else {
-        switch (e.keyCode) {
-          case 38: //arrow   up - select track
-            if (this.focusing !== 'tracks') return;
-            var futureTrackIndex = this.currentTrackIndex - 1;
-            if (futureTrackIndex >= 0) this.selectTrack(futureTrackIndex);
-            break;
-          case 40: //arrow down - select track
-            if (this.focusing !== 'tracks') return;
-            var futureTrackIndex = this.currentTrackIndex + 1;
-            if (futureTrackIndex < tracklist.length) this.selectTrack(futureTrackIndex);
-            break;
-          case 77: //m
-            this.m_pressed = true;
-            break;
-        }
-      }
-    },
-    onOtherKeyup(e) {
-      //1-9
-      if (e.keyCode >= 49 && e.keyCode <= 57) {
-        if (this.m_pressed) {
-          tracklist[+e.key - 1].trackGain.toggleMute();
-        }
-      } else {
-        switch (e.keyCode) {
-          case 13: //enter - rec/stop
-            if (this.focusing !== 'sidebar') this.onRec();
-            break;
-          case 27: //esc -
-            this.onStopBtn();
-            break;
-          case 32: //space bar - play/pause
-            if (this.playing) this.onStopBtn();
-            else this.onPlay();
-            break;
-          case 37: //arrow left - move cursor
-            if (!this.recording && !this.playing) this.moveCursor(-20);
-            break;
-          case 39: //arrow right - move cursor
-            if (!this.recording && !this.playing) this.moveCursor(20);
-            break;
-
-          case 46: //delete - delete current track
-            this.deleteTrack(this.currentTrackIndex);
-            break;
-          case 66: //b - duplicate selected clips
-            if (e.ctrlKey) duplicateClips();
-            break;
-          case 77: //m - mute current track
-            this.m_pressed = false;
-            if (e.ctrlKey) this.currentTrack.trackGain.toggleMute();
-            break;
-          case 90: //z - octave down
-            this.octave--;
-            break;
-          case 88: //x - octave up
-            this.octave++;
-            break;
-          case 67: //c - transpose down
-            this.transpose--;
-            break;
-          case 86: //v - transpose up
-            this.transpose++;
-            break;
-          default:
-            console.log(e.keyCode);
-            break;
-        }
-      }
-    },
 
     // LOAD/SAVE
 
@@ -961,14 +848,10 @@ export default {
 
     // MIDI
     triggerNoteOn(note, channel) {
-      this.keypressListeners.forEach(scaleInterface => {
-        scaleInterface.instrument.playNote(note);
-      });
+      keypressListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(note));
     },
     triggerNoteOff(note, channel) {
-      this.keypressListeners.forEach(scaleInterface => {
-        scaleInterface.instrument.stopNote(note);
-      });
+      keypressListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(note));
     },
     onMidiMap() {
       if (this.refBeignMapped) {

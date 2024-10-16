@@ -10,6 +10,11 @@ const clipHandle = {
   color: '#10ff7050',
   selectedColor: '#ff652d96',
 };
+const trackProps = {
+  // todo: get from css
+  rightCtrlsWidth: 247,
+  leftCtrlsWidth: 180,
+};
 
 
 /* Selection */
@@ -239,6 +244,7 @@ function duplicateClips() {
 
 module.exports = {
   clipHandle,
+  trackProps,
   selectClipOnHandleClick,
   resizeOrMoveClips,
   setIfClipWillResize,
