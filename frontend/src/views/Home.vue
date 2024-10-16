@@ -128,13 +128,9 @@ const noteKeys = require('../data/noteKeys');
 const numNotes = noteFrequencies.length;
 
 var fftSize = 1024;
-
-const minSampleWidth = 1;
-const carretMovementAmount = 50;
 const sampleErrorMargin = 10;
 
 import { mapMutations, mapGetters } from 'vuex';
-import { $ } from '../dom-utils/DomUtils';
 import dbObj from '@/db/index.js';
 import NodeRender from '@/components/NodeRender';
 import RightControls from '@/components/RightControls';
@@ -145,6 +141,9 @@ import Click from '@/components/Click';
 import Knob from '@/components/Knob';
 import Pad from '@/components/user-interface/Pad';
 import ExportModal from '@/components/modals/ExportModal';
+
+import { $ } from '../dom-utils/DomUtils';
+import { state } from '../state/vueInstance.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
 import {
   startRecord,
@@ -155,8 +154,7 @@ import {
 import { startExport, finishRecExport } from '../functions/exports.js';
 import { loadProject, saveProject } from '../functions/load-save.js';
 import { playSingleClip } from '../functions/playback.js';
-import { clipHandle, selectClipOnHandleClick } from '../functions/timeline-interaction.js';
-import { state } from '../state/vueInstance.js';
+import { clipHandle, duplicateClips, onTimelineMouseUp, resizeOrMoveClips, scrollOrZoomTimeline, selectClipOnHandleClick } from '../functions/timeline-interaction.js';
 
 
 export default {
@@ -256,8 +254,8 @@ export default {
     window.removeEventListener('keyup', this.onKeyup);
     window.removeEventListener('keydown', this.onKeydown);
     window.removeEventListener('resize', this.onResize);
-    window.removeEventListener('mouseup', this.onMouseUp);
-    window.removeEventListener('mousemove', this.onWindowMousemove);
+    window.removeEventListener('mouseup', onTimelineMouseUp);
+    window.removeEventListener('mousemove', resizeOrMoveClips);
   },
 
   created() {
@@ -331,15 +329,15 @@ export default {
 
     // RECORDING
     onRec() {
-      this.recording ? stopRecord(this) : startRecord(this);
+      this.recording ? stopRecord() : startRecord();
     },
     toggleRecEnabled(track) {
       track.recEnabled = !track.recEnabled;
       if (this.recording) {
         if (track.recEnabled) {
-          startRecordSingleTrack(this, track);
+          startRecordSingleTrack(track);
         } else {
-          stopRecordSingleTrack(this, track);
+          stopRecordSingleTrack(track);
         }
       }
     },
@@ -363,7 +361,7 @@ export default {
     },
 
     playClip(clip) {
-      playSingleClip(this, clip);
+      playSingleClip(clip);
     },
 
     onStopBtn() {
@@ -383,7 +381,7 @@ export default {
         }
       }
       if (this.recording) {
-        stopRecord(this);
+        stopRecord();
       }
     },
 
@@ -425,13 +423,17 @@ export default {
         clip.endSample = clip.numSamples;
 
         // determine total timeleine width
-        if (r === 0)
-          if (clip.xPos + clip.numSamples > this.timeline.lastSample)
+        if (r === 0) {
+          if (clip.xPos + clip.numSamples > this.timeline.lastSample) {
             this.timeline.lastSample = clip.xPos + clip.numSamples;
+          }
+        }
       }
 
       this.moveCursor(cursorStep);
-      if (this.followCursor) this.moveCarret();
+      if (this.followCursor) {
+        this.moveCarret();
+      }
     },
     renderClipBar(clip, ctx, x) {
       const bar = clip.bars[x];
@@ -472,7 +474,7 @@ export default {
         return;
       }
       if (this.exporting && this.cursorX > this.timeline.lastSample) {
-        return finishRecExport(this);
+        return finishRecExport();
       }
 
       // play clip if corresponds
@@ -550,124 +552,6 @@ export default {
       }
     },
 
-    // Timeline Interactions
-    onFollow() {
-      this.followCursor = !this.followCursor;
-    },
-
-    // slect clip on handle clicked
-    onCanvasMouseDown(e, trackId) {
-      selectClipOnHandleClick(this, e, trackId);
-    },
-
-    // set if clip will resize
-    onCanvasMouseMove(e) {
-      const xPos =
-        (e.clientX - e.target.getBoundingClientRect().x + this.globalStart) / this.timeline.sampleWidth;
-      const yPos = e.clientY - e.target.getBoundingClientRect().y;
-
-      let anyHandleHovered = false;
-      const trackId = e.target.id;
-      if (yPos <= clipHandle.height) {
-        const clips = this.trackClips[trackId];
-        for (var i = 0; i < clips.length; i++) {
-          const clip = clips[i];
-          if (xPos + clip.startSample >= clip.xPos && xPos + clip.startSample <= clip.xPos + clip.endSample) {
-            // has hovered over a clip handle
-            anyHandleHovered = true;
-            if (xPos > clip.xPos - 10 && xPos < clip.xPos + clipHandle.hookWidth) {
-              e.target.classList.add('e-resize');
-              clip.willResize = 'start';
-            } else if (
-              xPos + clip.startSample > clip.xPos + clip.endSample - clipHandle.hookWidth &&
-              xPos + clip.startSample < clip.xPos + clip.endSample + clipHandle.hookWidth
-            ) {
-              e.target.classList.add('e-resize');
-              clip.willResize = 'end';
-            } else {
-              e.target.classList.remove('e-resize');
-              clip.willResize = null;
-            }
-          }
-        }
-      }
-
-      if (!anyHandleHovered) {
-        e.target.classList.remove('e-resize');
-      }
-    },
-
-    // resize or move clips
-    onWindowMousemove(e) {
-      for (var i = 0; i < this.selectedClips.length; i++) {
-        const clip = this.selectedClips[i];
-        if (clip.selected) {
-          if (clip.willResize) {
-            if (clip.willResize === 'start') {
-              // resize from start
-              if (clip.startSample + e.movementX >= 0) {
-                if (clip.startSample + e.movementX < clip.endSample - 13) {
-                  // prevent reducing the clip to 0
-                  clip.startSample += e.movementX;
-                  clip.xPos += e.movementX;
-                }
-              } else {
-                clip.startSample = 0;
-              }
-            } else {
-              // resize from end
-              if (clip.endSample + e.movementX <= clip.numSamples) {
-                if (clip.endSample + e.movementX > clip.startSample + 13) {
-                  // prevent reducing the clip to 0
-                  clip.endSample += e.movementX;
-                }
-              } else {
-                clip.endSample = clip.numSamples;
-              }
-            }
-          } else {
-            clip.xPos += e.movementX;
-          }
-        }
-
-        if (clip.xPos + clip.endSample > this.timeline.lastSample) {
-          this.timeline.lastSample = clip.xPos + clip.endSample;
-        }
-
-        this.renderTrack(clip.trackId);
-      }
-    },
-
-    duplicateClips() {
-      this.selectedClips.forEach(clip => {
-        const newClip = { ...clip };
-        clip.xPos = clip.xPos + clip.endSample - clip.startSample;
-        newClip.selected = false;
-        this.clips.push(newClip);
-        this.trackClips[clip.trackId].push(newClip);
-        this.renderTrack(clip.trackId);
-      });
-    },
-
-    onMouseUp(e) {
-      const timelines = $('.timeline');
-      for (var i = 0; i < timelines.length; i++) {
-        timelines[i].addEventListener('mousemove', this.onCanvasMouseMove);
-      }
-      window.removeEventListener('mousemove', this.onWindowMousemove);
-      window.removeEventListener('mouseup', this.onMouseUp);
-    },
-
-    positionCursor(xPos) {
-      if (this.recording) {
-        return;
-      }
-      this.cursorX = xPos;
-      this.renderCursor();
-      if (this.playing) {
-        this.onStopBtn();
-      }
-    },
     renderCursor() {
       this.canvasOverlayCtx.clearRect(0, 0, this.timeline.viewportWidth, this.canvasOverlay.height);
       this.canvasOverlayCtx.fillRect(
@@ -678,30 +562,30 @@ export default {
       );
     },
 
-    onCanvasContainerWheel(event) {
-      event.preventDefault();
-      let amount = carretMovementAmount;
-      let delta = minSampleWidth;
-      if (event.wheelDelta < 0) {
-        delta = -minSampleWidth;
-      }
-      if (event.shiftKey) {
-        amount = 0;
-        this.timeline.sampleWidth += 1 * delta;
-        if (this.timeline.sampleWidth < minSampleWidth) {
-          this.timeline.sampleWidth = minSampleWidth;
-        } else if (this.timeline.sampleWidth > 3) {
-          this.timeline.sampleWidth = 3;
-        }
+    // Timeline Interactions
+    onCanvasMouseDown(e, trackId) {
+      selectClipOnHandleClick(e, trackId);
+    },
+    onCanvasContainerWheel(e) {
+      scrollOrZoomTimeline(e);
+    },
+    onFollow() {
+      this.followCursor = !this.followCursor;
+    },
+    selectTrack(t) {
+      if (this.currentTrackIndex === t) {
+        return;
       }
 
-      if (this.globalStart - amount * delta >= 0) {
-        this.moveCanvas(amount * delta);
-        this.renderCursor();
-      }
+      this.currentTrackIndex = t;
+      this.currentTrack = null;
+      this.$nextTick(() => this.currentTrack = this.tracks[this.currentTrackIndex]);
     },
 
+
     // Tracks, Instruments & Effects
+
+    // TODO: Rename to createAndInsertInstrument
     createInstrument(className) {
       this.createTrack(createInstrument(className));
     },
@@ -782,7 +666,7 @@ export default {
 
       // clips
       if (this.recording && track.recEnabled) {
-        stopRecordSingleTrack(this, track);
+        stopRecordSingleTrack(track);
       }
 
       delete this.trackClips[track.id];
@@ -861,14 +745,6 @@ export default {
       effects[effectIndex].destroy();
       effects[effectIndex] = null;
       effects.splice(effectIndex, 1);
-    },
-
-    selectTrack(t) {
-      if (this.currentTrackIndex === t) return;
-
-      this.currentTrackIndex = t;
-      this.currentTrack = null;
-      this.$nextTick(() => this.currentTrack = this.tracks[this.currentTrackIndex]);
     },
 
     createMasterGain() {
@@ -994,7 +870,7 @@ export default {
             this.deleteTrack(this.currentTrackIndex);
             break;
           case 66: //b - duplicate selected clips
-            if (e.ctrlKey) this.duplicateClips();
+            if (e.ctrlKey) duplicateClips();
             break;
           case 77: //m - mute current track
             this.m_pressed = false;
@@ -1055,11 +931,11 @@ export default {
     },
 
     onSave(newProjectName) {
-      saveProject(this, newProjectName);
+      saveProject(newProjectName);
     },
 
     onLoad({ projectId, projectName }) {
-      loadProject(this, projectId, projectName);
+      loadProject(projectId, projectName);
     },
 
     onLoadFinish(trackClips) {
@@ -1100,13 +976,13 @@ export default {
       this.onStopBtn(); // call twice to jump to the start of the timeline
       this.export = { name: exportName };
       this.exporting = true;
-      startExport(this);
+      startExport();
       this.clipDestination = this.masterInput;
       this.playAllTracks();
     },
     cancelExport() {
       this.export.canceled = true;
-      finishRecExport(this);
+      finishRecExport();
     },
 
     // MIDI

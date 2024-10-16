@@ -1,26 +1,27 @@
 const Node = require("../class/Node");
+const { state } = require("../state/vueInstance");
 
 
-function startExport(vueInstance) {
+function startExport() {
     let chunks = [];
     let mediaStreamDestination = Node.context.createMediaStreamDestination();
-    vueInstance.exportMediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
+    state.instance.exportMediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
 
-    vueInstance.masterOutput.connect(mediaStreamDestination);
+    state.instance.masterOutput.connect(mediaStreamDestination);
 
-    vueInstance.exportMediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
+    state.instance.exportMediaRecorder.ondataavailable = ({ data }) => chunks.push(data);
     // When recording's finished, process data chunk
     // into a Blob, and save it for future use
-    vueInstance.exportMediaRecorder.onstop = () => {
+    state.instance.exportMediaRecorder.onstop = () => {
         const blobReader = new FileReader();
         const blob = new Blob(chunks, { type: 'audio/ogg' });
 
         blobReader.onloadend = () => {
             const arrayBuffer = blobReader.result;
             Node.context.decodeAudioData(arrayBuffer, audioBuffer => {
-                vueInstance.export.blob = blob;
-                vueInstance.export.buffer = audioBuffer;
-                onRecordExportFinish(vueInstance);
+                state.instance.export.blob = blob;
+                state.instance.export.buffer = audioBuffer;
+                onRecordExportFinish();
             });
         };
 
@@ -29,16 +30,16 @@ function startExport(vueInstance) {
         chunks = null;
     };
 
-    vueInstance.exportMediaRecorder.start();
+    state.instance.exportMediaRecorder.start();
 }
 
-function onRecordExportFinish(vueInstance) {
-    vueInstance.exportMediaRecorder = null;
-    vueInstance.clipDestination = null;
+function onRecordExportFinish() {
+    state.instance.exportMediaRecorder = null;
+    state.instance.clipDestination = null;
 
-    if (!vueInstance.export.canceled) {
-        downloadBlob(vueInstance.export.blob, vueInstance.export.name);
-        vueInstance.export.name = null;
+    if (!state.instance.export.canceled) {
+        downloadBlob(state.instance.export.blob, state.instance.export.name);
+        state.instance.export.name = null;
     }
 }
 
@@ -49,14 +50,14 @@ function downloadBlob(blob, fileName) {
     a.click();
 }
 
-function finishRecExport(vueInstance) {
-    vueInstance.exportMediaRecorder.stop();
-    vueInstance.exporting = false;
-    vueInstance.onStopBtn();
+function finishRecExport() {
+    state.instance.exportMediaRecorder.stop();
+    state.instance.exporting = false;
+    state.instance.onStopBtn();
 }
 
 
 module.exports = {
     startExport,
     finishRecExport,
-}
+};
