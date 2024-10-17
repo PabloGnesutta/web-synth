@@ -7,9 +7,6 @@ Vue.use(Vuex);
 export default new Vuex.Store({
   state: {
     originNode: null,
-    appConnecting: false,
-
-    //click
     secondsPerBeat: 0,
     nextBeatTime: 0,
     currentBeat: 1,
@@ -18,63 +15,20 @@ export default new Vuex.Store({
   },
 
   getters: {
-    //click
-    tempo: (state) => {
-      return state.tempo;
-    },
-
-    secondsPerBeat: (state) => {
-      return state.secondsPerBeat;
-    },
-
-    nextBeatTime: (state) => {
-      return state.nextBeatTime;
-    },
-
-    currentBeat: (state) => {
-      return state.currentBeat;
-    },
-
-    totalBeats: (state) => {
-      return state.totalBeats;
-    },
-
-    appConnecting: (state) => {
-      return state.appConnecting;
-    },
-
-    originNode: (state) => {
-      return state.originNode;
-    }
+    originNode: (state) => state.originNode,
+    tempo: (state) => state.tempo,
+    secondsPerBeat: (state) => state.secondsPerBeat,
+    nextBeatTime: (state) => state.nextBeatTime,
+    currentBeat: (state) => state.currentBeat,
+    totalBeats: (state) => state.totalBeats,
   },
 
   mutations: {
-    setTempo: (state, payload) => {
-      state.tempo = payload;
-    },
-
-    setSecondsPerBeat: (state, payload) => {
-      state.secondsPerBeat = payload;
-    },
-
-    setNextBeatTime: (state, payload) => {
-      state.nextBeatTime = payload;
-    },
-
-    setCurrentBeat: (state, payload) => {
-      state.currentBeat = payload;
-    },
-
-    setTotalBeats: (state, payload) => {
-      state.totalBeats = payload;
-    },
-
-    setAppConnecting: (state, payload) => {
-      state.appConnecting = payload;
-    },
-
-    setOriginNode: (state, payload) => {
-      state.originNode = payload;
-    }
+    setTempo: (state, payload) => state.tempo = payload,
+    setSecondsPerBeat: (state, payload) => state.secondsPerBeat = payload,
+    setNextBeatTime: (state, payload) => state.nextBeatTime = payload,
+    setCurrentBeat: (state, payload) => state.currentBeat = payload,
+    setTotalBeats: (state, payload) => state.totalBeats = payload,
+    setOriginNode: (state, payload) => state.originNode = payload,
   },
 });

@@ -63,7 +63,7 @@
                 v-for="(track, t) in tracks"
                 :key="track.id"
                 class="track"
-                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
+                :class="{ selected: currentTrackIndex === t }"
                 @click.self="selectTrack(t)"
               >
                 <div class="left-controls no-scrollbar" @click="selectTrack(t)">
@@ -180,8 +180,6 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
-
 import Knob from '@/components/Knob';
 import Click from '@/components/Click';
 import Header from '@/components/Header';
@@ -287,10 +285,6 @@ export default {
     };
   },
 
-  computed: {
-    ...mapGetters(['appConnecting']),
-  },
-
   created() {
     this.addConfirmLeaveHandler();
     requestMidiAccess();
@@ -353,6 +347,14 @@ export default {
       this.focusing = target;
     },
 
+    // RENDERING
+
+    onResize() {
+      this.computeTimelineDimensions();
+      tracklist.forEach(track => (track.canvas.width = timelineState.viewportWidth));
+      this.moveCanvas(0);
+    },
+
     computeTimelineDimensions() {
       const trackList = $('.tracklist');
       timelineState.viewportWidth =
@@ -364,14 +366,6 @@ export default {
 
       this.globalEnd = this.globalStart + timelineState.viewportWidth;
     },
-
-    onResize() {
-      this.computeTimelineDimensions();
-      tracklist.forEach(track => (track.canvas.width = timelineState.viewportWidth));
-      this.moveCanvas(0);
-    },
-
-    // RENDERING
     generateRenderDataObject(track) {
       const analyser = track.trackGainAnalyser;
       const clip = trackClips[track.id][trackClips[track.id].length - 1];
@@ -436,7 +430,6 @@ export default {
         bar
       );
     },
-
     moveTimielineWithPlayback() {
       this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null));
       this.moveCursor(1);
@@ -447,7 +440,6 @@ export default {
         this.exportProgress = ~~((this.cursorX * 100) / timelineState.lastSample);
       }
     },
-
     moveCursor(amount) {
       this.cursorX += amount;
       this.renderCursor();
@@ -473,7 +465,6 @@ export default {
         }
       }
     },
-
     moveCarret() {
       if ((this.cursorX - this.globalStart) * timelineState.sampleWidth > timelineState.viewportWidth) {
         this.moveCanvas(timelineState.carretSkip);
@@ -481,7 +472,6 @@ export default {
         this.moveCanvas(-timelineState.carretSkip);
       }
     },
-
     moveCanvas(amount) {
       if (this.globalStart - amount >= 0) {
         this.globalStart -= amount;
@@ -534,7 +524,6 @@ export default {
         }
       }
     },
-
     renderCursor() {
       this.canvasOverlayCtx.clearRect(0, 0, timelineState.viewportWidth, this.canvasOverlay.height);
       this.canvasOverlayCtx.fillRect(
