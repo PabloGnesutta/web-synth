@@ -181,23 +181,27 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import dbObj from '@/db/index.js';
-import NodeRender from '@/components/NodeRender';
-import RightControls from '@/components/RightControls';
-import SpectrumWaveshape from '@/components/SpectrumWaveshape';
+
+import Knob from '@/components/Knob';
+import Click from '@/components/Click';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import Click from '@/components/Click';
-import Knob from '@/components/Knob';
+import NodeRender from '@/components/NodeRender';
 import Pad from '@/components/user-interface/Pad';
+import RightControls from '@/components/RightControls';
 import ExportModal from '@/components/modals/ExportModal';
+import SpectrumWaveshape from '@/components/SpectrumWaveshape';
 
 import { $ } from '../dom-utils/DomUtils';
+import { clearArray, clearObj } from '../lib/array.js';
+import { createInstrument, createEffect } from '../factory/NodeFactory';
 import { cliplist, state, timelineState, trackClips, tracklist } from '../state/vueInstance.js';
 import { playSingleClip } from '../functions/playback.js';
-import { finishRecExport, cancelExport } from '../functions/exports.js';
-import { createInstrument, createEffect } from '../factory/NodeFactory';
+import { renderDataObjects } from '../functions/rendering.js';
 import { stopRecordSingleTrack } from '../functions/recording';
+import { knobClicked, requestMidiAccess } from '../functions/midi.js';
+import { finishRecExport, cancelExport } from '../functions/exports.js';
+import { selectTrack, toggleRecEnabled } from '../functions/track-interaction.js';
 import {
   clipHandle,
   onTimelineMouseUp,
@@ -206,7 +210,6 @@ import {
   selectClipOnHandleClick,
   trackProps,
 } from '../functions/timeline-interaction.js';
-import { renderDataObjects } from '../functions/rendering.js';
 import {
   keypressListeners,
   mainKeyDownHandler,
@@ -214,9 +217,7 @@ import {
   numpadListeners,
   xyPadListeners,
 } from '../functions/keyboard.js';
-import { clearArray, clearObj } from '../lib/array.js';
-import { selectTrack, toggleRecEnabled } from '../functions/track-interaction.js';
-import { knobClicked, requestMidiAccess } from '../functions/midi.js';
+import { initializeIndexedDb } from '../functions/load-save.js';
 
 const Node = require('../class/Node');
 const Gain = require('../class/Effects/Gain');
@@ -310,12 +311,10 @@ export default {
   methods: {
     init() {
       $('.home-wrapper').removeEventListener('click', this.init);
+
+      initializeIndexedDb();
+
       Node.context = new (window.AudioContext || window.webkitAudioContext)();
-      dbObj.initDb(dbData => {
-        console.log('db inited', dbData);
-        this.projects = dbData.projects;
-        this.projectIdCount = dbData.projectIdCount;
-      });
 
       this.inited = true;
       this.createMasterGain();
@@ -622,15 +621,15 @@ export default {
           this.$nextTick(() => this.startRecSingleTrack(track));
         }
       }
-      // scroll
+      // TODO: scroll to this track
     },
 
     deleteTrack(trackIndex) {
-      if (typeof trackIndex !== 'number') {
+      if (typeof trackIndex !== 'number' || trackIndex < 0) {
         return;
       }
 
-      const track = tracklist[trackIndex];
+      const track = tracklist.splice(trackIndex, 1)[0];
 
       if (this.recording && track.recEnabled) {
         stopRecordSingleTrack(track);
@@ -638,7 +637,13 @@ export default {
 
       delete trackClips[track.id];
 
-      //TODO: eliminate clips from cliplist
+      for (var i = 0; i < cliplist.length; i++) {
+        const clip = cliplist[i];
+        if (clip.trackId === track.id) {
+          cliplist.splice(i, 1);
+          i--;
+        }
+      }
 
       // delete from listeners
       let index = keypressListeners.findIndex(listener => listener.trackName === track.name);
@@ -671,10 +676,8 @@ export default {
         effect = null;
       });
 
-      // track = null;
       this.currentTrackIndex = null;
       this.currentTrack = null;
-      tracklist.splice(trackIndex, 1);
 
       let futureTrackIndex = trackIndex;
       if (futureTrackIndex > tracklist.length - 1) {

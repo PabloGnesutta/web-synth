@@ -2,6 +2,13 @@ const indexedDB = require('../db/index');
 const Node = require("../class/Node");
 const { state, tracklist, timelineState, cliplist, trackClips } = require('../state/vueInstance');
 
+function initializeIndexedDb() {
+  indexedDB.initDb(dbData => {
+    console.log('db inited', dbData);
+    state.instance.projects = dbData.projects;
+    state.instance.projectIdCount = dbData.projectIdCount;
+  });
+}
 
 function saveProject(newProjectName) {
   if (state.instance.isNew || newProjectName) {
@@ -135,6 +142,7 @@ function loadTrackClips(trackClips) {
 }
 
 module.exports = {
+  initializeIndexedDb,
   saveProject,
   loadProject,
 };

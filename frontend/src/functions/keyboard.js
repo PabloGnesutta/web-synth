@@ -1,7 +1,7 @@
-const noteFrequencies = require("../data/noteFrequencies");
 const noteKeys = require("../data/noteKeys");
+const noteFrequencies = require("../data/noteFrequencies");
 const { state, tracklist } = require("../state/vueInstance");
-const { onStopBtnClick, togglePlay } = require("./playback");
+const { onStopBtnClick, togglePlay, toggleRecord } = require("./playback");
 
 
 const keyEnabled = Array(222).fill(true);
@@ -87,7 +87,7 @@ function onOtherKeyup(e) {
     switch (e.keyCode) {
       case 13: //enter - rec/stop
         if (state.instance.focusing !== 'sidebar') {
-          state.instance.onRec();
+          toggleRecord();
         }
         break;
       case 27: //esc -
