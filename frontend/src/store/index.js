@@ -87,6 +87,4 @@ export default new Vuex.Store({
       state.originNode = payload;
     }
   },
-  actions: {},
-  modules: {}
 });

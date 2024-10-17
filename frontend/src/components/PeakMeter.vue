@@ -2,7 +2,10 @@
   <canvas ref="canvas"></canvas>
 </template>
 
+
 <script>
+const nextTime = 16;
+
 export default {
   name: 'PeakMeter',
   props: ['analyser'],
@@ -14,20 +17,16 @@ export default {
       canvasWidth: null,
       canvasHeight: null,
 
-      dataArray: null,
-      bufferLength: null,
+      bufferLength: this.analyser.fftSize,
+      dataArray: new Float32Array(this.analyser.fftSize),
 
       rAF: null,
       now: 0,
       next: 0,
-      nextTime: 16,
     };
   },
 
   mounted() {
-    this.bufferLength = this.analyser.fftSize;
-    this.dataArray = new Float32Array(this.bufferLength);
-
     this.canvas = this.$refs['canvas'];
     this.canvasWidth = this.canvas.width;
     this.canvasHeight = this.canvas.height;
@@ -49,46 +48,46 @@ export default {
   methods: {
     startAnimation() {
       this.now = performance.now();
-      this.next = this.now + this.nextTime;
+      this.next = this.now + nextTime;
       this.renderPeaks();
     },
 
     renderPeaks() {
       this.rAF = window.requestAnimationFrame(this.renderPeaks);
       this.now = performance.now();
-      if (this.now > this.next) {
-        this.next = this.now + this.nextTime;
-        this.analyser.getFloatTimeDomainData(this.dataArray);
-        if (this.now > this.nextTime + 2000) {
-          this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        }
-
-        let sumOfSquares = 0;
-        // let peakInstantaneousPower = 0;
-        for (let i = 0; i < this.dataArray.length; i++) {
-          const power = this.dataArray[i] ** 2;
-          sumOfSquares += power;
-          // peakInstantaneousPower = Math.max(power, peakInstantaneousPower);
-        }
-        // const peakInstantaneousPowerDecibels = 10 * Math.log10(peakInstantaneousPower);
-        // const avgPowerDecibels = 10 * Math.log10(sumOfSquares / this.dataArray.length);
-        const avgPower = sumOfSquares / this.dataArray.length;
-
-        let barHeight = 0;
-        if (avgPower === 0) {
-          barHeight = 0;
-        } else if (avgPower < 1) {
-          barHeight = avgPower.map(0, 1, 0, this.canvasHeight * 0.75);
-        } else {
-          barHeight = avgPower.map(1, 20, this.canvasHeight * 0.75, this.canvasHeight);
-        }
-
-        this.ctx.fillRect(0, this.canvasHeight, this.canvasWidth, -barHeight);
+      if (this.now <= this.next) {
+        return;
       }
+      this.next = this.now + nextTime;
+      this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+      this.analyser.getFloatTimeDomainData(this.dataArray);
+      let sumOfSquares = 0;
+      // let peakInstantaneousPower = 0;
+      for (let i = 0; i < this.dataArray.length; i++) {
+        const power = this.dataArray[i] ** 2;
+        sumOfSquares += power;
+        // peakInstantaneousPower = Math.max(power, peakInstantaneousPower);
+      }
+      // const peakInstantaneousPowerDecibels = 10 * Math.log10(peakInstantaneousPower);
+      // const avgPowerDecibels = 10 * Math.log10(sumOfSquares / this.dataArray.length);
+      const avgPower = sumOfSquares / this.dataArray.length;
+
+      let barHeight = 0;
+      if (avgPower === 0) {
+        barHeight = 0;
+      } else if (avgPower < 1) {
+        barHeight = avgPower.map(0, 1, 0, this.canvasHeight * 0.75);
+      } else {
+        barHeight = avgPower.map(1, 20, this.canvasHeight * 0.75, this.canvasHeight);
+      }
+
+      this.ctx.fillRect(0, this.canvasHeight, this.canvasWidth, -barHeight);
     },
   },
 };
 </script>
+
 
 <style lang="scss" scoped>
 canvas {

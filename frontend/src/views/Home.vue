@@ -122,13 +122,6 @@
 
 
 <script>
-const Node = require('../class/Node');
-const Gain = require('../class/Effects/Gain');
-
-
-const sampleErrorMargin = 10;
-var fftSize = 1024;
-
 import { mapMutations, mapGetters } from 'vuex';
 import dbObj from '@/db/index.js';
 import NodeRender from '@/components/NodeRender';
@@ -147,13 +140,19 @@ import { onStopBtnClick, playSingleClip, togglePlay, toggleRecord } from '../fun
 import { loadProject, saveProject } from '../functions/load-save.js';
 import { finishRecExport, triggerExport, cancelExport } from '../functions/exports.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
-import { startRecordSingleTrack, stopRecordSingleTrack } from '../functions/recording';
+import { stopRecordSingleTrack } from '../functions/recording';
 import { clipHandle, onTimelineMouseUp, resizeOrMoveClips, scrollOrZoomTimeline, selectClipOnHandleClick, trackProps } from '../functions/timeline-interaction.js';
 import { renderDataObjects } from '../functions/rendering.js';
 import { keypressListeners, mainKeyDownHandler, mainKeyupHandler, numpadListeners, xyPadListeners } from '../functions/keyboard.js';
 import { clearArray, clearObj } from '../lib/array.js';
 import { selectTrack, toggleRecEnabled } from '../functions/track-interaction.js';
 
+const Node = require('../class/Node');
+const Gain = require('../class/Effects/Gain');
+
+
+const fftSize = 1024;
+const sampleErrorMargin = 10;
 
 export default {
   name: 'Home',

@@ -56,8 +56,6 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from 'vuex';
-
 import Knob from './Knob';
 import DelayBody from './specific-nodes/DelayBody';
 import EQ3Body from './specific-nodes/EQ3Body.vue';
@@ -72,6 +70,7 @@ import ReverbBody from './specific-nodes/ReverbBody.vue';
 import CompressorBody from './specific-nodes/CompressorBody.vue';
 import DistortionBody from './specific-nodes/DistortionBody.vue';
 import { toggleInstrumentEnabled } from '../functions/track-interaction';
+
 
 export default {
   name: 'NodeRender',
@@ -96,21 +95,12 @@ export default {
   data() {
     return {
       folded: false,
-      loopStatus: 'CLEARED',
-      presetCandidates: ['Surgeon', 'Femod'],
       presetNames: [],
-      presets: [],
       showPresetNames: false,
     };
   },
 
-  computed: {
-    ...mapGetters(['appConnecting', 'originNode']),
-  },
-
   methods: {
-    ...mapMutations(['setAppConnecting', 'setOriginNode']),
-
     setNodeGain(value) {
       this.Node.setGain(value);
     },
