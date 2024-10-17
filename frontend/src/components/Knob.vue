@@ -1,7 +1,7 @@
 <template>
   <div
     class="knob"
-    :class="{ mapping: thisIsMapping, appIsMapping }"
+    :class="{ mapping: knobIsBeingMapped }"
     @mousedown="onMouseDown"
     @touchstart="onTouchStart"
     @dblclick="resetToDefault"
@@ -9,7 +9,7 @@
     <div class="knob-inner" :style="`transform: rotate(${deg}deg); border-color: ${trackColor}`">
       <div class="knob-handle"></div>
     </div>
-    <div class="mapped-cmd" v-if="appIsMapping">
+    <div class="mapped-cmd" v-if="midiState.mapping">
       {{ mappedCmd }}
     </div>
     <div class="value set-default-value pointer" @click="resetToDefault">
@@ -19,40 +19,37 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+import { midiState } from '../state/vueInstance.js';
+
+const movementMultiplier = 0.5;
+const fineStepMultiplier = 0.3;
+const microStepMultiplier = 0.2;
+const maxTurningDeg = 235;
+const minKnobVal = 0;
+const maxKnobVal = 127;
 
 export default {
   data() {
     return {
+      midiState,
+
       lastYPos: 0,
       knobValue: 0, //0 - 127
-      minKnobVal: 0,
-      maxKnobVal: 127,
       defaultKnobValue: 0,
-
       displayValue: 0,
 
-      movementMultiplier: 0.5,
-      fineStepMultiplier: 0.3,
-      microStepMultiplier: 0.2,
-
-      deg: 0,
-      trackColor: '',
-      maxTurningDeg: 235,
       min_v: 0,
       max_v: 127,
       default_v: null,
+      deg: 0,
+      trackColor: '',
 
-      thisIsMapping: false,
+      knobIsBeingMapped: false,
       mappedCmd: null,
     };
   },
 
   props: ['minVal', 'maxVal', 'initVal', 'unit'],
-
-  computed: {
-    ...mapGetters(['appIsMapping']),
-  },
 
   mounted() {
     this.setParamContraints(this.minVal, this.maxVal, parseFloat(this.initVal));
@@ -69,21 +66,22 @@ export default {
       window.addEventListener('mousemove', this.moveKnob);
       window.addEventListener('mouseup', this.onMouseUp);
     },
+
     moveKnob(e) {
       let translation = this.lastYPos - (e.clientY || e.touches[0].clientY);
 
       this.lastYPos = e.clientY || e.touches[0].clientY;
-      let amount = translation * this.movementMultiplier; // before, amount = 2
+      let amount = translation * movementMultiplier; // before, amount = 2
 
       if (e.ctrlKey && e.altKey) {
-        amount *= this.microStepMultiplier;
+        amount *= microStepMultiplier;
       } else if (e.ctrlKey && e.altKey) {
-        amount *= this.fineStepMultiplier;
+        amount *= fineStepMultiplier;
       }
 
       let knobValue = this.knobValue + amount;
-      if (knobValue < this.minKnobVal) knobValue = this.minKnobVal;
-      else if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
+      if (knobValue < minKnobVal) knobValue = minKnobVal;
+      else if (knobValue > maxKnobVal) knobValue = maxKnobVal;
 
       this.setKnobValueAndPosition(knobValue);
       this.emitWithKnobValue(knobValue);
@@ -91,19 +89,18 @@ export default {
 
     resetToDefault() {
       this.setKnobValueAndPosition(parseFloat(this.defaultKnobValue));
-      // this.emitWithKnobValue(this.defaultKnobValue);
       this.emitKnobTurned(this.default_v.toFixed(2));
     },
 
     setKnobValueAndPosition(knobValue) {
       this.knobValue = knobValue;
-      this.deg = knobValue.map(0, this.maxKnobVal, 0, this.maxTurningDeg);
-      const colorAmount = knobValue.map(0, this.maxKnobVal, 255, 10);
+      this.deg = knobValue.map(0, maxKnobVal, 0, maxTurningDeg);
+      const colorAmount = knobValue.map(0, maxKnobVal, 255, 10);
       this.trackColor = `rgb(100, ${colorAmount}, 200)`;
     },
 
     emitWithKnobValue(knobValue) {
-      const emitValue = knobValue.map(0, this.maxKnobVal, this.min_v, this.max_v).toFixed(2);
+      const emitValue = knobValue.map(0, maxKnobVal, this.min_v, this.max_v).toFixed(2);
       this.emitKnobTurned(emitValue);
     },
 
@@ -117,7 +114,7 @@ export default {
       this.max_v = parseFloat(maxVal);
       this.default_v = initVal;
 
-      this.knobValue = Math.round(initVal.map(this.min_v, this.max_v, this.minKnobVal, this.maxKnobVal));
+      this.knobValue = Math.round(initVal.map(this.min_v, this.max_v, minKnobVal, maxKnobVal));
       this.defaultKnobValue = this.knobValue;
 
       const emitValue = initVal.toFixed(2);
@@ -130,10 +127,6 @@ export default {
         emitValue >= 1000 ? (emitValue / 1000).toFixed(2) + 'k' : parseFloat(emitValue).toFixed(2);
 
       this.displayValue = this.displayValue + (this.unit || '');
-    },
-
-    log10(x) {
-      return Math.log(Math.abs(x)) / Math.LN10;
     },
 
     onTouchStart(e) {
@@ -152,22 +145,16 @@ export default {
     },
 
     // MIDI:
-    startMapping() {
-      this.thisIsMapping = true;
-    },
-    stopMapping() {
-      this.thisIsMapping = false;
+    setKnobMappingStatus(isBeingMapped) {
+      this.knobIsBeingMapped = isBeingMapped;
     },
     assignMap(cmd, note) {
       this.mappedCmd = cmd + '/' + note;
     },
 
-    receiveMidi(value) {
-      let knobValue = value;
-
-      if (knobValue < this.minKnobVal) knobValue = this.minKnobVal;
-      if (knobValue > this.maxKnobVal) knobValue = this.maxKnobVal;
-
+    receiveMidi(knobValue) {
+      if (knobValue < minKnobVal) knobValue = minKnobVal;
+      if (knobValue > maxKnobVal) knobValue = maxKnobVal;
       this.setKnobValueAndPosition(knobValue);
       this.emitWithKnobValue(knobValue);
     },

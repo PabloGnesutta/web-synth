@@ -13,8 +13,12 @@
               <div class="has-submenu" @mouseenter="loadMenuOpen = true" @mouseleave="loadMenuOpen = false">
                 <div class="menu-item" :class="{ active: loadMenuOpen }">Open</div>
                 <div v-if="loadMenuOpen" class="sub-menu">
-                  <div v-for="(project, key) in projects" :key="key" class="menu-item"
-                    @click="onLoad(key, project.name)">
+                  <div
+                    v-for="(project, key) in projects"
+                    :key="key"
+                    class="menu-item"
+                    @click="onLoad(key, project.name)"
+                  >
                     {{ project.name }}
                   </div>
                 </div>
@@ -47,7 +51,7 @@
 
         <div class="right">
           <div class="btn follow" :class="{ active: following }" @click="onFollow">Follow</div>
-          <div class="btn midi" :class="{ active: mapping }" @click="onMidiMap">Map MIDI</div>
+          <div class="btn midi" :class="{ active: midiState.mapping }" @click="onMidiMap">Map MIDI</div>
           <div class="select-none">octave: {{ octave }} | transpose: {{ transpose }}</div>
         </div>
       </div>
@@ -56,10 +60,14 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from 'vuex';
+import { mapMutations } from 'vuex';
+
 import PlayIcon from '@/components/icons/PlayIcon';
 import RecIcon from '@/components/icons/RecIcon';
 import StopIcon from '@/components/icons/StopIcon';
+import { midiState } from '../state/vueInstance.js';
+import { onMidiMap } from '../functions/midi.js';
+
 export default {
   name: 'Header',
   components: { PlayIcon, RecIcon, StopIcon },
@@ -68,7 +76,6 @@ export default {
     'playing',
     'exporting',
     'following',
-    'mapping',
     'octave',
     'transpose',
     'lastSample',
@@ -76,10 +83,12 @@ export default {
     'projectName',
     'projectId',
     'unsaved',
-    'isNew'
+    'isNew',
   ],
   data() {
     return {
+      midiState,
+
       saves: [],
       saveNames: [],
       showSavedWorks: false,
@@ -98,9 +107,6 @@ export default {
     ...mapMutations(['setTempo', 'setTotalBeats']),
 
     onFileMenuLeave() {
-      this.closeMenu();
-    },
-    closeMenu() {
       this.fileMenuOpen = false;
     },
 
@@ -115,8 +121,9 @@ export default {
     },
 
     onExport() {
-      if (this.exporting || this.recording || !this.lastSample) return;
-
+      if (this.exporting || this.recording || !this.lastSample) {
+        return;
+      }
       this.$emit('onExport');
     },
     onNew() {
@@ -152,14 +159,15 @@ export default {
       this.$emit('onLoad', { projectId, projectName });
     },
 
-    deleteSave() { },
+    deleteSave() {
+      console.log('Delete save not implemented');
+    },
 
     onFollow() {
       this.$emit('onFollow');
     },
-    onMidiMap() {
-      this.$emit('onMidiMap');
-    },
+
+    onMidiMap: onMidiMap,
 
     nameExists(projectName) {
       for (const id in this.projects) {

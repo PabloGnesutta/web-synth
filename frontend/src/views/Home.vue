@@ -3,18 +3,42 @@
     <div v-if="inited" class="home-inner">
       <!-- Top Section -->
       <div class="top-section">
-        <Header :ref="'header'" @onRec="onRec" @onPlay="onPlay" @onStop="onStopBtn" @onNew="hardReset(true)"
-          @onSave="onSave" @onLoad="onLoad" @onExport="onExport" @onFollow="onFollow" @onMidiMap="onMidiMap"
-          :playing="playing" :recording="recording" :exporting="exporting" :following="followCursor" :mapping="mapping"
-          :octave="octave" :transpose="transpose" :projects="projects" :projectName="projectName" :projectId="projectId"
-          :lastSample="timeline.lastSample" :unsaved="unsaved" :isNew="isNew" />
+        <Header
+          :ref="'header'"
+          @onRec="onRec"
+          @onPlay="onPlay"
+          @onStop="onStopBtn"
+          @onNew="hardReset(true)"
+          @onSave="onSave"
+          @onLoad="onLoad"
+          @onExport="onExport"
+          @onFollow="onFollow"
+          :playing="playing"
+          :recording="recording"
+          :exporting="exporting"
+          :following="followCursor"
+          :octave="octave"
+          :transpose="transpose"
+          :projects="projects"
+          :projectName="projectName"
+          :projectId="projectId"
+          :lastSample="timeline.lastSample"
+          :unsaved="unsaved"
+          :isNew="isNew"
+        />
       </div>
 
       <!-- Mid Section -->
       <div class="mid-section">
-        <Sidebar class="left-col" @createInstrument="createInstrument" @createEffect="createAndInsertEffect"
-          @loadPreset="loadPreset" @onFocus="setFocus" :instrument-is-loaded="!!currentTrack"
-          :focused="focusing === 'sidebar'" />
+        <Sidebar
+          class="left-col"
+          @createInstrument="createInstrument"
+          @createEffect="createAndInsertEffect"
+          @loadPreset="loadPreset"
+          @onFocus="setFocus"
+          :instrument-is-loaded="!!currentTrack"
+          :focused="focusing === 'sidebar'"
+        />
 
         <div class="right-col" :class="{ focused: focusing === 'tracks' }" @click="setFocus('tracks')">
           <div class="top-controls">
@@ -22,8 +46,11 @@
             <Click ref="click" />
             <!-- Info -->
             <div class="info-wrapper select-none">
-              <div class="info-container no-scrollbar" :style="{ width: timeline.viewportWidth + 'px' }"
-                @click="logInfo">
+              <div
+                class="info-container no-scrollbar"
+                :style="{ width: timeline.viewportWidth + 'px' }"
+                @click="logInfo"
+              >
                 <div class="info-item">{{ globalStart }}</div>
                 <!-- <div class="info-item">vpW: {{ timeline.viewportWidth }}</div> -->
                 <div class="info-item">curr: {{ cursorX }}</div>
@@ -38,8 +65,13 @@
           <!-- Tracks -->
           <div class="tracklist-wrapper custom-scrollbar">
             <div class="tracklist">
-              <div v-for="(track, t) in tracks" :key="track.id" class="track"
-                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }" @click.self="selectTrack(t)">
+              <div
+                v-for="(track, t) in tracks"
+                :key="track.id"
+                class="track"
+                :class="{ selected: currentTrackIndex === t, connecting: appConnecting }"
+                @click.self="selectTrack(t)"
+              >
                 <div class="left-controls no-scrollbar" @click="selectTrack(t)">
                   <div class="left-ctrls-inner">
                     <div @click.stop="deleteTrack(t)" class="pointer">[X]</div>
@@ -49,17 +81,30 @@
                 </div>
 
                 <!-- Track Timeline -->
-                <div class="timeline" :ref="`timeline-${track.id}`" @mousedown="onCanvasMouseDown($event, track.id)"
-                  @mousewheel="onCanvasContainerWheel">
-                  <canvas :ref="`track-canvas-${track.id}`" :id="track.id" :height="timeline.trackHeight"></canvas>
+                <div
+                  class="timeline"
+                  :ref="`timeline-${track.id}`"
+                  @mousedown="onCanvasMouseDown($event, track.id)"
+                  @mousewheel="onCanvasContainerWheel"
+                >
+                  <canvas
+                    :ref="`track-canvas-${track.id}`"
+                    :id="track.id"
+                    :height="timeline.trackHeight"
+                  ></canvas>
                 </div>
 
                 <!-- Right Controls -->
                 <div class="right-controls-wrapper">
-                  <RightControls :Node="track.trackGain" :analyser="track.trackGainAnalyser"
-                    :recEnabled="track.recEnabled" :selected="currentTrackIndex === t"
-                    @toggleRecEnabled="toggleRecEnabled(track)" @knobClicked="knobClicked"
-                    @selectTrack="selectTrack(t)" />
+                  <RightControls
+                    :Node="track.trackGain"
+                    :analyser="track.trackGainAnalyser"
+                    :recEnabled="track.recEnabled"
+                    :selected="currentTrackIndex === t"
+                    @toggleRecEnabled="toggleRecEnabled(track)"
+                    @knobClicked="knobClicked"
+                    @selectTrack="selectTrack(t)"
+                  />
                 </div>
               </div>
 
@@ -72,8 +117,13 @@
             <div class="track master">
               <div class="left-controls">Master</div>
               <div class="master-knob-wrapper" @click="knobClicked('MasterGain')">
-                <Knob :ref="'MasterGain'" minVal="0" maxVal="1" :initVal="masterOutputKnob"
-                  @knobTurned="setMasterGainValue" />
+                <Knob
+                  :ref="'MasterGain'"
+                  minVal="0"
+                  maxVal="1"
+                  :initVal="masterOutputKnob"
+                  @knobTurned="setMasterGainValue"
+                />
               </div>
             </div>
           </div>
@@ -82,19 +132,34 @@
 
       <!-- Bottom section: Current Track detail -->
       <div class="bottom-section">
-        <div v-if="currentTrack" class="track-detail custom-scrollbar" :class="'track-detail_' + currentTrackIndex">
+        <div
+          v-if="currentTrack"
+          class="track-detail custom-scrollbar"
+          :class="'track-detail_' + currentTrackIndex"
+        >
           <!-- Instrument -->
           <div class="track-instrument">
-            <NodeRender :Node="currentTrack.instrument" :analyser="currentTrack.instrumentAnalyser"
-              :instrumentEnabled="currentTrack.instrumentEnabled" @deleteNode="deleteTrack"
-              @knobClicked="knobClicked" />
+            <NodeRender
+              :Node="currentTrack.instrument"
+              :analyser="currentTrack.instrumentAnalyser"
+              :instrumentEnabled="currentTrack.instrumentEnabled"
+              @deleteNode="deleteTrack"
+              @knobClicked="knobClicked"
+            />
           </div>
 
           <!-- Effects -->
           <div class="track-effects">
-            <NodeRender v-for="(Node, effectIndex) in currentTrack.effects" :Node="Node" :analyser="Node.analyser"
-              :key="Node.id" :ref="'Node-' + effectIndex" @deleteNode="deleteEffect(effectIndex)"
-              @levelClicked="levelClicked(Node)" @knobClicked="knobClicked" />
+            <NodeRender
+              v-for="(Node, effectIndex) in currentTrack.effects"
+              :Node="Node"
+              :analyser="Node.analyser"
+              :key="Node.id"
+              :ref="'Node-' + effectIndex"
+              @deleteNode="deleteEffect(effectIndex)"
+              @levelClicked="levelClicked(Node)"
+              @knobClicked="knobClicked"
+            />
             <div class="placeholder"></div>
           </div>
           <div class="analyser-render-wrapper">
@@ -120,9 +185,8 @@
   </div>
 </template>
 
-
 <script>
-import { mapMutations, mapGetters } from 'vuex';
+import { mapGetters } from 'vuex';
 import dbObj from '@/db/index.js';
 import NodeRender from '@/components/NodeRender';
 import RightControls from '@/components/RightControls';
@@ -141,15 +205,28 @@ import { loadProject, saveProject } from '../functions/load-save.js';
 import { finishRecExport, triggerExport, cancelExport } from '../functions/exports.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
 import { stopRecordSingleTrack } from '../functions/recording';
-import { clipHandle, onTimelineMouseUp, resizeOrMoveClips, scrollOrZoomTimeline, selectClipOnHandleClick, trackProps } from '../functions/timeline-interaction.js';
+import {
+  clipHandle,
+  onTimelineMouseUp,
+  resizeOrMoveClips,
+  scrollOrZoomTimeline,
+  selectClipOnHandleClick,
+  trackProps,
+} from '../functions/timeline-interaction.js';
 import { renderDataObjects } from '../functions/rendering.js';
-import { keypressListeners, mainKeyDownHandler, mainKeyupHandler, numpadListeners, xyPadListeners } from '../functions/keyboard.js';
+import {
+  keypressListeners,
+  mainKeyDownHandler,
+  mainKeyupHandler,
+  numpadListeners,
+  xyPadListeners,
+} from '../functions/keyboard.js';
 import { clearArray, clearObj } from '../lib/array.js';
 import { selectTrack, toggleRecEnabled } from '../functions/track-interaction.js';
+import { knobClicked, requestMidiAccess } from '../functions/midi.js';
 
 const Node = require('../class/Node');
 const Gain = require('../class/Effects/Gain');
-
 
 const fftSize = 1024;
 const sampleErrorMargin = 10;
@@ -213,18 +290,20 @@ export default {
       exporting: false,
       exportProgress: 0,
       clipDestination: null,
-
-      //MIDI
-      midiMappings: [],
-      midiInputs: [],
-      midiOutputs: [],
-      mapping: false,
-      refBeignMapped: null,
     };
   },
 
   computed: {
-    ...mapGetters(['appIsMapping', 'appConnecting']),
+    ...mapGetters(['appConnecting']),
+  },
+
+  created() {
+    this.addConfirmLeaveHandler();
+    requestMidiAccess();
+  },
+
+  mounted() {
+    $('.home-wrapper').addEventListener('click', this.init);
   },
 
   beforeDestroy() {
@@ -235,20 +314,7 @@ export default {
     window.removeEventListener('mousemove', resizeOrMoveClips);
   },
 
-  created() {
-    this.addConfirmLeaveHandler();
-    if (navigator.requestMIDIAccess) {
-      navigator.requestMIDIAccess().then(this.onMIDISuccess, this.onMIDIFailure);
-    }
-  },
-
-  mounted() {
-    $('.home-wrapper').addEventListener('click', this.init);
-  },
-
   methods: {
-    ...mapMutations(['setAppIsMapping']),
-
     init() {
       $('.home-wrapper').removeEventListener('click', this.init);
       Node.context = new (window.AudioContext || window.webkitAudioContext)();
@@ -296,6 +362,8 @@ export default {
     onCanvasMouseDown: selectClipOnHandleClick,
     onCanvasContainerWheel: scrollOrZoomTimeline,
 
+    knobClicked: knobClicked,
+
     setFocus(target) {
       this.focusing = target;
     },
@@ -314,10 +382,9 @@ export default {
 
     onResize() {
       this.computeTimelineDimensions();
-      tracklist.forEach(track => track.canvas.width = timelineState.viewportWidth);
+      tracklist.forEach(track => (track.canvas.width = timelineState.viewportWidth));
       this.moveCanvas(0);
     },
-
 
     // RENDERING
     generateRenderDataObject(track) {
@@ -497,7 +564,6 @@ export default {
       this.followCursor = !this.followCursor;
     },
 
-
     // Tracks, Instruments & Effects
 
     // TODO: Rename to createAndInsertInstrument
@@ -629,7 +695,7 @@ export default {
         selectTrack(futureTrackIndex);
       }
 
-      this.$nextTick(() => this.canvasOverlay.height = timelineState.trackHeight * tracklist.length);
+      this.$nextTick(() => (this.canvasOverlay.height = timelineState.trackHeight * tracklist.length));
     },
 
     // Effects:
@@ -689,9 +755,8 @@ export default {
       let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
       xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(noteIndex));
     },
-    onPadTouchCancel(e) { },
-    onPadTouchMove(e) { },
-
+    onPadTouchCancel(e) {},
+    onPadTouchMove(e) {},
 
     // LOAD/SAVE
 
@@ -728,8 +793,6 @@ export default {
       this.renderCursor();
     },
 
-
-
     // todo: move to load-save
     onLoadFinish(_trackClips) {
       console.log('onLoadFinish');
@@ -760,84 +823,6 @@ export default {
       }
     },
 
-
-    // MIDI
-    triggerNoteOn(note, channel) {
-      keypressListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(note));
-    },
-    triggerNoteOff(note, channel) {
-      keypressListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(note));
-    },
-    onMidiMap() {
-      if (this.refBeignMapped) {
-        this.refBeignMapped.stopMapping();
-        this.refBeignMapped = null;
-      }
-      this.mapping = !this.mapping;
-      this.setAppIsMapping(this.mapping);
-    },
-    knobClicked(knobRef) {
-      if (!this.mapping) return;
-      if (this.refBeignMapped) {
-        this.refBeignMapped.stopMapping();
-        this.refBeignMapped = null;
-      }
-      this.refBeignMapped = knobRef;
-      knobRef.startMapping();
-    },
-    onMIDIMessage(event) {
-      let data = event.data;
-      const status = data[0];
-      const note = data[1];
-      const value = data[2];
-      if (this.mapping) {
-        let refName = this.refBeignMapped.$vnode.data.ref;
-        const existingMap = this.midiMappings.find(m => m.refName === refName);
-        if (!existingMap) {
-          this.midiMappings.push({
-            ref: this.refBeignMapped,
-            refName,
-            cmd: status,
-            note,
-          });
-        } else {
-          existingMap.cmd = status;
-          existingMap.note = note;
-        }
-        const knob = this.refBeignMapped;
-        knob.assignMap(status, note);
-      } else {
-        const binary = status.toString(2);
-        const command = binary.substr(0, 4);
-        const channel = parseInt(binary.substr(4, 4), 2) + 1;
-
-        if (command === '1001') {
-          // note on
-          this.triggerNoteOn(note, channel);
-        } else if (command === '1000') {
-          // note off
-          this.triggerNoteOff(note, channel);
-        } else if (command === '1011') {
-          // sustain pedal
-        } else {
-          // knob
-          const mappedItem = this.midiMappings.find(m => m.cmd === status && m.note === note);
-          if (!mappedItem) return;
-          const knob = mappedItem.ref;
-          knob.receiveMidi(value);
-        }
-      }
-    },
-    onMIDISuccess(midiAccess) {
-      this.midiInputs = midiAccess.inputs;
-      this.midiOutputs = midiAccess.outputs;
-
-      for (var input of this.midiInputs.values()) {
-        input.onmidimessage = this.onMIDIMessage;
-      }
-    },
-    onMIDIFailure() { },
-
     addConfirmLeaveHandler() {
       window.onbeforeunload = function (e) {
         // TODO: remove if statement to enable
@@ -855,7 +840,6 @@ export default {
       let min = 0;
       let max = 0;
       let avg;
-
       cliplist.forEach(clip => {
         if (clip.sampleRate < min || c === 0) min = clip.sampleRate;
         if (clip.sampleRate > max) max = clip.sampleRate;

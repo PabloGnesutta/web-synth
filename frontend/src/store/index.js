@@ -6,8 +6,6 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
-    appIsMapping: false,
-
     originNode: null,
     appConnecting: false,
 
@@ -41,10 +39,6 @@ export default new Vuex.Store({
       return state.totalBeats;
     },
 
-    appIsMapping: (state) => {
-      return state.appIsMapping;
-    },
-
     appConnecting: (state) => {
       return state.appConnecting;
     },
@@ -73,10 +67,6 @@ export default new Vuex.Store({
 
     setTotalBeats: (state, payload) => {
       state.totalBeats = payload;
-    },
-
-    setAppIsMapping: (state, payload) => {
-      state.appIsMapping = payload;
     },
 
     setAppConnecting: (state, payload) => {
