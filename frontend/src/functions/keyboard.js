@@ -1,7 +1,7 @@
 const noteFrequencies = require("../data/noteFrequencies");
 const noteKeys = require("../data/noteKeys");
 const { state, tracklist } = require("../state/vueInstance");
-const { onStopBtnClick } = require("./playback");
+const { onStopBtnClick, togglePlay } = require("./playback");
 
 
 const keyEnabled = Array(222).fill(true);
@@ -20,8 +20,12 @@ function mainKeyDownHandler(e) {
 
   if (noteKeyIndex !== -1) {
     let noteIndex = noteKeyIndex + 12 * state.instance.octave + state.instance.transpose;
-    if (noteIndex < 0) noteIndex = 0;
-    if (noteIndex > numNotes - 1) noteIndex = numNotes - 1;
+    if (noteIndex < 0) {
+      noteIndex = 0;
+    }
+    else if (noteIndex > numNotes - 1) {
+      noteIndex = numNotes - 1;
+    }
 
     keypressListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(noteIndex));
   } else {
@@ -46,17 +50,22 @@ function onOtherKeydown(e) {
     //numpad
     numpadListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(+e.key));
   } else {
+    let futureTrackIndex
     switch (e.keyCode) {
       case 38: //arrow   up - select track
-        if (state.instance.focusing !== 'tracks') return;
-        var futureTrackIndex = state.instance.currentTrackIndex - 1;
+        if (state.instance.focusing !== 'tracks') {
+          return;
+        }
+        futureTrackIndex = state.instance.currentTrackIndex - 1;
         if (futureTrackIndex >= 0) {
           state.instance.selectTrack(futureTrackIndex);
         }
         break;
       case 40: //arrow down - select track
-        if (state.instance.focusing !== 'tracks') return;
-        var futureTrackIndex = state.instance.currentTrackIndex + 1;
+        if (state.instance.focusing !== 'tracks') {
+          return;
+        }
+        futureTrackIndex = state.instance.currentTrackIndex + 1;
         if (futureTrackIndex < tracklist.length) {
           state.instance.selectTrack(futureTrackIndex);
         }
@@ -77,31 +86,44 @@ function onOtherKeyup(e) {
   } else {
     switch (e.keyCode) {
       case 13: //enter - rec/stop
-        if (state.instance.focusing !== 'sidebar') state.instance.onRec();
+        if (state.instance.focusing !== 'sidebar') {
+          state.instance.onRec();
+        }
         break;
       case 27: //esc -
         onStopBtnClick();
         break;
       case 32: //space bar - play/pause
-        if (state.instance.playing) onStopBtnClick();
-        else state.instance.onPlay();
+        if (state.instance.playing) {
+          onStopBtnClick();
+        } else {
+          togglePlay();
+        }
         break;
       case 37: //arrow left - move cursor
-        if (!state.instance.recording && !state.instance.playing) state.instance.moveCursor(-20);
+        if (!state.instance.recording && !state.instance.playing) {
+          state.instance.moveCursor(-20);
+        }
         break;
       case 39: //arrow right - move cursor
-        if (!state.instance.recording && !state.instance.playing) state.instance.moveCursor(20);
+        if (!state.instance.recording && !state.instance.playing) {
+          state.instance.moveCursor(20);
+        }
         break;
 
       case 46: //delete - delete current track
         state.instance.deleteTrack(state.instance.currentTrackIndex);
         break;
       case 66: //b - duplicate selected clips
-        if (e.ctrlKey) duplicateClips();
+        if (e.ctrlKey) {
+          duplicateClips();
+        }
         break;
       case 77: //m - mute current track
         state.instance.m_pressed = false;
-        if (e.ctrlKey) state.instance.currentTrack.trackGain.toggleMute();
+        if (e.ctrlKey) {
+          state.instance.currentTrack.trackGain.toggleMute();
+        }
         break;
       case 90: //z - octave down
         state.instance.octave--;
@@ -116,7 +138,7 @@ function onOtherKeyup(e) {
         state.instance.transpose++;
         break;
       default:
-        console.log(e.keyCode);
+        console.log('key', e.keyCode);
         break;
     }
   }

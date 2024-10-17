@@ -67,6 +67,9 @@ import RecIcon from '@/components/icons/RecIcon';
 import StopIcon from '@/components/icons/StopIcon';
 import { midiState } from '../state/vueInstance.js';
 import { onMidiMap } from '../functions/midi.js';
+import { onStopBtnClick, togglePlay, toggleRecord } from '../functions/playback.js';
+import { loadProject, saveProject } from '../functions/load-save.js';
+import { triggerExport } from '../functions/exports.js';
 
 export default {
   name: 'Header',
@@ -110,22 +113,13 @@ export default {
       this.fileMenuOpen = false;
     },
 
-    onPlay() {
-      this.$emit('onPlay');
-    },
-    onRec() {
-      this.$emit('onRec');
-    },
-    onStop() {
-      this.$emit('onStop');
-    },
+    onPlay: togglePlay,
+    onRec: toggleRecord,
+    onStop: onStopBtnClick,
 
-    onExport() {
-      if (this.exporting || this.recording || !this.lastSample) {
-        return;
-      }
-      this.$emit('onExport');
-    },
+    onMidiMap: onMidiMap,
+    onLoad: loadProject,
+
     onNew() {
       this.$emit('onNew');
     },
@@ -140,7 +134,8 @@ export default {
           return alert('Name already exists');
         }
       }
-      this.$emit('onSave', newProjectName);
+
+      saveProject(newProjectName);
     },
 
     onSaveAs() {
@@ -151,12 +146,16 @@ export default {
         if (this.nameExists(newProjectName)) {
           return alert('exists');
         }
-        this.$emit('onSave', newProjectName);
+
+        saveProject(newProjectName);
       }
     },
 
-    onLoad(projectId, projectName) {
-      this.$emit('onLoad', { projectId, projectName });
+    onExport() {
+      if (this.exporting || this.recording || !this.lastSample) {
+        return;
+      }
+      triggerExport();
     },
 
     deleteSave() {
@@ -166,8 +165,6 @@ export default {
     onFollow() {
       this.$emit('onFollow');
     },
-
-    onMidiMap: onMidiMap,
 
     nameExists(projectName) {
       for (const id in this.projects) {

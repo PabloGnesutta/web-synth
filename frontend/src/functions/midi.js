@@ -19,7 +19,6 @@ function onMidiMap() {
     midiState.refBeignMapped = null;
   }
   midiState.mapping = !midiState.mapping;
-  return midiState;
 }
 
 function knobClicked(knobRef) {

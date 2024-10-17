@@ -5,13 +5,7 @@
       <div class="top-section">
         <Header
           :ref="'header'"
-          @onRec="onRec"
-          @onPlay="onPlay"
-          @onStop="onStopBtn"
           @onNew="hardReset(true)"
-          @onSave="onSave"
-          @onLoad="onLoad"
-          @onExport="onExport"
           @onFollow="onFollow"
           :playing="playing"
           :recording="recording"
@@ -200,9 +194,8 @@ import ExportModal from '@/components/modals/ExportModal';
 
 import { $ } from '../dom-utils/DomUtils';
 import { cliplist, state, timelineState, trackClips, tracklist } from '../state/vueInstance.js';
-import { onStopBtnClick, playSingleClip, togglePlay, toggleRecord } from '../functions/playback.js';
-import { loadProject, saveProject } from '../functions/load-save.js';
-import { finishRecExport, triggerExport, cancelExport } from '../functions/exports.js';
+import { playSingleClip } from '../functions/playback.js';
+import { finishRecExport, cancelExport } from '../functions/exports.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
 import { stopRecordSingleTrack } from '../functions/recording';
 import {
@@ -347,13 +340,6 @@ export default {
       state.instance = this;
     },
 
-    onPlay: togglePlay,
-    onRec: toggleRecord,
-    onStopBtn: onStopBtnClick,
-
-    onSave: saveProject,
-    onLoad: loadProject,
-    onExport: triggerExport,
     cancelExport: cancelExport,
 
     selectTrack: selectTrack,
@@ -644,25 +630,31 @@ export default {
         return;
       }
 
-      let track = tracklist[trackIndex];
+      const track = tracklist[trackIndex];
 
-      // clips
       if (this.recording && track.recEnabled) {
         stopRecordSingleTrack(track);
       }
 
       delete trackClips[track.id];
-      //todo: eliminate clips from cliplist
+
+      //TODO: eliminate clips from cliplist
 
       // delete from listeners
       let index = keypressListeners.findIndex(listener => listener.trackName === track.name);
-      if (index !== -1) keypressListeners.splice(index, 1);
+      if (index !== -1) {
+        keypressListeners.splice(index, 1);
+      }
 
       index = numpadListeners.findIndex(listener => listener.trackName === track.name);
-      if (index !== -1) numpadListeners.splice(index, 1);
+      if (index !== -1) {
+        numpadListeners.splice(index, 1);
+      }
 
       index = xyPadListeners.findIndex(listener => listener.trackName === track.name);
-      if (index !== -1) xyPadListeners.splice(index, 1);
+      if (index !== -1) {
+        xyPadListeners.splice(index, 1);
+      }
 
       track.instrument.destroy();
       track.instrument = null;
@@ -679,10 +671,9 @@ export default {
         effect = null;
       });
 
+      // track = null;
       this.currentTrackIndex = null;
       this.currentTrack = null;
-
-      track = null;
       tracklist.splice(trackIndex, 1);
 
       let futureTrackIndex = trackIndex;
@@ -761,7 +752,6 @@ export default {
     // LOAD/SAVE
 
     hardReset(generateSomeNodes) {
-      console.log('hardReset');
       this.projects = {};
       this.projectId = undefined;
       this.projectIdCount = undefined;
@@ -795,7 +785,6 @@ export default {
 
     // todo: move to load-save
     onLoadFinish(_trackClips) {
-      console.log('onLoadFinish');
       clearObj(trackClips);
       Object.assign(trackClips, _trackClips);
       this.$nextTick(() => {

@@ -64,7 +64,7 @@ function saveData() {
   });
 }
 
-function loadProject({ projectId, projectName }) {
+function loadProject(projectId, projectName) {
   // TODO: Set some flag on for a loading modal or smth
   state.instance.hardReset();
   state.instance.projectId = parseInt(projectId);
