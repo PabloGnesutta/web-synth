@@ -9,6 +9,8 @@ import './assets/css/main.css';
 
 Vue.config.productionTip = false;
 
+// TODO: Delete store (vuex), and maybe router too
+
 new Vue({
   router,
   store,

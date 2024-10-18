@@ -1,12 +1,12 @@
 {
   "name": "web-synth",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A basic digital audio workstation",
+  "main": "web-synth.entrypoint.js",
   "scripts": {
     "start": "node web-synth.entrypoint.js"
   },
-  "author": "",
+  "author": "Pablo Gnesutta",
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1"
