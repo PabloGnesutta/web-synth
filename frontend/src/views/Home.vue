@@ -12,7 +12,7 @@
       <!-- Mid Section -->
       <div class="mid-section">
         <Sidebar class="left-col" @createInstrument="createInstrument" @createEffect="createAndInsertEffect"
-          @loadPreset="loadPreset" @onFocus="setFocus" :instrument-is-loaded="!!currentTrack"
+          @loadPreset="loadPreset" @onFocus="setFocus" :instrument-is-loaded="!!trackState.currentTrack"
           :focused="focusing === 'sidebar'" />
 
         <div class="right-col" :class="{ focused: focusing === 'tracks' }" @click="setFocus('tracks')">
@@ -38,7 +38,7 @@
           <div class="tracklist-wrapper custom-scrollbar">
             <div class="tracklist">
               <div v-for="(track, t) in tracklist" :key="track.id" class="track"
-                :class="{ selected: currentTrackIndex === t }" @click.self="selectTrack(t)">
+                :class="{ selected: trackState.currentTrackIndex === t }" @click.self="selectTrack(t)">
                 <div class="left-controls no-scrollbar" @click="selectTrack(t)">
                   <div class="left-ctrls-inner">
                     <div @click.stop="deleteTrack(t)" class="pointer">[X]</div>
@@ -56,7 +56,7 @@
                 <!-- Right Controls -->
                 <div class="right-controls-wrapper">
                   <RightControls :Node="track.trackGain" :analyser="track.trackGainAnalyser"
-                    :recEnabled="track.recEnabled" :selected="currentTrackIndex === t"
+                    :recEnabled="track.recEnabled" :selected="trackState.currentTrackIndex === t"
                     @toggleRecEnabled="toggleRecEnabled(track)" @knobClicked="knobClicked"
                     @selectTrack="selectTrack(t)" />
                 </div>
@@ -81,23 +81,25 @@
 
       <!-- Bottom section: Current Track detail -->
       <div class="bottom-section">
-        <div v-if="currentTrack" class="track-detail custom-scrollbar" :class="'track-detail_' + currentTrackIndex">
+        <div v-if="trackState.currentTrack" class="track-detail custom-scrollbar"
+          :class="'track-detail_' + trackState.currentTrackIndex">
           <!-- Instrument -->
           <div class="track-instrument">
-            <NodeRender :Node="currentTrack.instrument" :analyser="currentTrack.instrumentAnalyser"
-              :instrumentEnabled="currentTrack.instrumentEnabled" @deleteNode="deleteTrack"
+            <NodeRender :Node="trackState.currentTrack.instrument"
+              :analyser="trackState.currentTrack.instrumentAnalyser"
+              :instrumentEnabled="trackState.currentTrack.instrumentEnabled" @deleteNode="deleteTrack"
               @knobClicked="knobClicked" />
           </div>
 
           <!-- Effects -->
           <div class="track-effects">
-            <NodeRender v-for="(Node, effectIndex) in currentTrack.effects" :Node="Node" :analyser="Node.analyser"
-              :key="Node.id" :ref="'Node-' + effectIndex" @deleteNode="deleteEffect(effectIndex)"
-              @levelClicked="levelClicked(Node)" @knobClicked="knobClicked" />
+            <NodeRender v-for="(Node, effectIndex) in trackState.currentTrack.effects" :Node="Node"
+              :analyser="Node.analyser" :key="Node.id" :ref="'Node-' + effectIndex"
+              @deleteNode="deleteEffect(effectIndex)" @levelClicked="levelClicked(Node)" @knobClicked="knobClicked" />
             <div class="placeholder"></div>
           </div>
           <div class="analyser-render-wrapper">
-            <SpectrumWaveshape :analyser="currentTrack.trackGainAnalyser" />
+            <SpectrumWaveshape :analyser="trackState.currentTrack.trackGainAnalyser" />
           </div>
         </div>
         <div v-else class="current-track-empty-state select-none">Double click an instrumentto start</div>
@@ -131,7 +133,7 @@ import SpectrumWaveshape from '@/components/SpectrumWaveshape';
 import { $ } from '../dom-utils/DomUtils';
 import { clearArray, clearObj } from '../lib/array.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
-import { cliplist, state, timelineState, trackClips, tracklist } from '../state/vueInstance.js';
+import { cliplist, state, timelineState, trackClips, tracklist, trackState } from '../state/vueInstance.js';
 import { playSingleClip } from '../functions/playback.js';
 import { renderDataObjects } from '../functions/rendering.js';
 import { stopRecordSingleTrack } from '../functions/recording';
@@ -178,29 +180,25 @@ export default {
     return {
       timelineState,
       tracklist,
+      trackState,
 
       inited: false,
       isNew: true,
+      unsaved: true,
+
       projects: null,
       projectId: undefined,
       projectIdCount: undefined,
       projectName: 'untitled',
 
-      unsaved: true,
       octave: 3,
       transpose: 0,
       m_pressed: false,
       focusing: 'tracks',
 
-      trackIdCount: 0,
-      currentTrack: null,
-      currentTrackIndex: 0,
-
       masterOutput: null,
       masterInput: null,
       masterOutputKnob: 0.5,
-
-      clipIdCount: 0, //
 
       //Rendering
       followCursor: true,
@@ -488,8 +486,8 @@ export default {
       trackGain.connectNativeNode(trackGainAnalyser, 'Analyser');
       trackGain.connectNativeNode(this.masterInput, 'Mixer Gain');
 
-      this.trackIdCount++;
-      const _trackId = trackId || this.trackIdCount;
+      trackState.trackIdCount++;
+      const _trackId = trackId || trackState.trackIdCount;
       const track = {
         id: _trackId,
         name: 'Track ' + _trackId,
@@ -518,8 +516,8 @@ export default {
         timelineState.viewportWidth = canvas.width;
       });
 
-      this.currentTrack = track;
-      this.currentTrackIndex = tracklist.length - 1;
+      trackState.currentTrack = track;
+      trackState.currentTrackIndex = tracklist.length - 1;
 
       // key/touch listeners
       if (instrument.nodeType === 'Drumkit') {
@@ -599,8 +597,8 @@ export default {
         effect = null;
       });
 
-      this.currentTrackIndex = null;
-      this.currentTrack = null;
+      trackState.currentTrackIndex = null;
+      trackState.currentTrack = null;
 
       let futureTrackIndex = trackIndex;
       if (futureTrackIndex > tracklist.length - 1) {
@@ -621,14 +619,14 @@ export default {
       this.insertEffect(Node);
     },
     insertEffect(Node) {
-      const effects = this.currentTrack.effects;
-      const prev = effects[effects.length - 1] || this.currentTrack.instrument;
-      const next = this.currentTrack.trackGain;
+      const effects = trackState.currentTrack.effects;
+      const prev = effects[effects.length - 1] || trackState.currentTrack.instrument;
+      const next = trackState.currentTrack.trackGain;
 
       prev.disconnect().connect(Node).connect(next);
       effects.push(Node);
       this.$nextTick(() => {
-        const trackInnerClass = '.track-detail_' + this.currentTrackIndex;
+        const trackInnerClass = '.track-detail_' + trackState.currentTrackIndex;
         const trackInner = $(trackInnerClass);
         if (trackInner) {
           trackInner.scrollTo(trackInner.offsetWidth, 0);
@@ -637,9 +635,9 @@ export default {
     },
 
     deleteEffect(effectIndex) {
-      const effects = this.currentTrack.effects;
-      const prev = effects[effectIndex - 1] || this.currentTrack.instrument;
-      const next = effects[effectIndex + 1] || this.currentTrack.trackGain;
+      const effects = trackState.currentTrack.effects;
+      const prev = effects[effectIndex - 1] || trackState.currentTrack.instrument;
+      const next = effects[effectIndex + 1] || trackState.currentTrack.trackGain;
 
       prev.disconnect().connect(next);
 
@@ -681,11 +679,11 @@ export default {
       this.projectIdCount = undefined;
       this.projectName = 'untitled';
       clearArray(cliplist);
-      this.clipIdCount = 0;
+      trackState.clipIdCount = 0;
       clearObj(trackClips);
-      this.trackIdCount = 0;
-      this.currentTrack = null;
-      this.currentTrackIndex = 0;
+      trackState.trackIdCount = 0;
+      trackState.currentTrack = null;
+      trackState.currentTrackIndex = 0;
       timelineState.lastSample = 0;
       timelineState.viewportWidth = undefined;
       this.globalStart = 0;

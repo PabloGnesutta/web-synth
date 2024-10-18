@@ -8,6 +8,13 @@ const tracklist = [];
 const cliplist = [];
 const trackClips = {};
 
+const trackState = {
+  trackIdCount: 0,
+  clipIdCount: 0,
+  currentTrack: null,
+  currentTrackIndex: 0,
+};
+
 const exportState = {
   name: undefined,
   mediaRecorder: null,
@@ -39,6 +46,7 @@ module.exports = {
   tracklist,
   cliplist,
   trackClips,
+  trackState,
   timelineState,
   exportState,
   midiState,

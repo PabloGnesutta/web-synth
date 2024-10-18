@@ -1,6 +1,6 @@
 const Node = require("../class/Node");
 const { clearArray } = require("../lib/array");
-const { state, tracklist, cliplist, trackClips } = require("../state/vueInstance");
+const { state, tracklist, cliplist, trackClips, trackState } = require("../state/vueInstance");
 const { renderDataObjects } = require("./rendering");
 
 
@@ -39,7 +39,7 @@ function startRecordSingleTrack(track) {
   // init clip
   const clip = {
     trackId: track.id,
-    id: ++state.instance.clipIdCount,
+    id: ++trackState.clipIdCount,
     xPos: state.instance.cursorX,
     startSample: 0,
     endSample: 0,

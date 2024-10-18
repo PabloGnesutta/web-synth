@@ -1,6 +1,6 @@
 const noteKeys = require("../data/noteKeys");
 const noteFrequencies = require("../data/noteFrequencies");
-const { state, tracklist } = require("../state/vueInstance");
+const { state, tracklist, trackState } = require("../state/vueInstance");
 const { onStopBtnClick, togglePlay, toggleRecord } = require("./playback");
 
 
@@ -50,13 +50,13 @@ function onOtherKeydown(e) {
     //numpad
     numpadListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(+e.key));
   } else {
-    let futureTrackIndex
+    let futureTrackIndex;
     switch (e.keyCode) {
       case 38: //arrow   up - select track
         if (state.instance.focusing !== 'tracks') {
           return;
         }
-        futureTrackIndex = state.instance.currentTrackIndex - 1;
+        futureTrackIndex = trackState.currentTrackIndex - 1;
         if (futureTrackIndex >= 0) {
           state.instance.selectTrack(futureTrackIndex);
         }
@@ -65,7 +65,7 @@ function onOtherKeydown(e) {
         if (state.instance.focusing !== 'tracks') {
           return;
         }
-        futureTrackIndex = state.instance.currentTrackIndex + 1;
+        futureTrackIndex = trackState.currentTrackIndex + 1;
         if (futureTrackIndex < tracklist.length) {
           state.instance.selectTrack(futureTrackIndex);
         }
@@ -112,7 +112,7 @@ function onOtherKeyup(e) {
         break;
 
       case 46: //delete - delete current track
-        state.instance.deleteTrack(state.instance.currentTrackIndex);
+        state.instance.deleteTrack(trackState.currentTrackIndex);
         break;
       case 66: //b - duplicate selected clips
         if (e.ctrlKey) {
@@ -122,7 +122,7 @@ function onOtherKeyup(e) {
       case 77: //m - mute current track
         state.instance.m_pressed = false;
         if (e.ctrlKey) {
-          state.instance.currentTrack.trackGain.toggleMute();
+          trackState.currentTrack.trackGain.toggleMute();
         }
         break;
       case 90: //z - octave down

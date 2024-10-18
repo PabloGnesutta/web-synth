@@ -1,33 +1,34 @@
-const { state, tracklist } = require("../state/vueInstance");
+const { state, tracklist, trackState } = require("../state/vueInstance");
 const { keypressListeners } = require("./keyboard");
 const { startRecordSingleTrack, stopRecordSingleTrack } = require("./recording");
 
+
 function selectTrack(t) {
-  if (state.instance.currentTrackIndex === t) {
+  if (trackState.currentTrackIndex === t) {
     return;
   }
 
-  state.instance.currentTrackIndex = t;
-  state.instance.currentTrack = null;
-  state.instance.$nextTick(() => state.instance.currentTrack = tracklist[state.instance.currentTrackIndex]);
+  trackState.currentTrackIndex = t;
+  trackState = null;
+  state.instance.$nextTick(() => trackState = tracklist[trackState.currentTrackIndex]);
 }
 
 function toggleInstrumentEnabled() {
-  state.instance.currentTrack.instrumentEnabled = !state.instance.currentTrack.instrumentEnabled;
+  trackState.instrumentEnabled = !trackState.instrumentEnabled;
 
-  if (state.instance.currentTrack.instrumentEnabled) {
+  if (trackState.instrumentEnabled) {
     keypressListeners.push({
-      instrument: state.instance.currentTrack.instrument,
-      trackName: state.instance.currentTrack.name,
+      instrument: trackState.instrument,
+      trackName: trackState.name,
     });
-    if (state.instance.currentTrack.instrument.name === 'Mic') {
-      state.instance.currentTrack.instrument.setMute(false);
+    if (trackState.instrument.name === 'Mic') {
+      trackState.instrument.setMute(false);
     }
   } else {
-    const i = keypressListeners.findIndex(kpl => kpl.trackName === state.instance.currentTrack.name);
+    const i = keypressListeners.findIndex(kpl => kpl.trackName === trackState.name);
     keypressListeners.splice(i, 1);
-    if (state.instance.currentTrack.instrument.name === 'Mic') {
-      state.instance.currentTrack.instrument.setMute(true);
+    if (trackState.instrument.name === 'Mic') {
+      trackState.instrument.setMute(true);
     }
   }
 }
