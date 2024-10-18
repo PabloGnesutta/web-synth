@@ -72,9 +72,7 @@ import { onStopBtnClick, togglePlay, toggleRecord } from '../functions/playback.
 export default {
   name: 'Header',
   components: { PlayIcon, RecIcon, StopIcon },
-  props: [
-    'lastSample',
-  ],
+  props: ['lastSample'],
   data() {
     return {
       appState,
@@ -83,8 +81,6 @@ export default {
 
       saves: [],
       saveNames: [],
-      showSavedWorks: false,
-      currentSave: undefined,
       fileMenuOpen: false,
       loadMenuOpen: false,
     };
@@ -98,30 +94,33 @@ export default {
   methods: {
     ...mapMutations(['setTempo', 'setTotalBeats']),
 
-    onFileMenuLeave() {
-      this.fileMenuOpen = false;
-    },
-
     onPlay: togglePlay,
     onRec: toggleRecord,
     onStop: onStopBtnClick,
+    onLoad: loadProject,
 
     onMidiMap: onMidiMap,
-    onLoad: loadProject,
 
     onNew() {
       this.$emit('onNew');
     },
+
+    onFileMenuLeave() {
+      this.fileMenuOpen = false;
+    },
+
     onSave() {
-      let newProjectName = undefined;
-      if (appState.isNew) {
-        newProjectName = prompt('Project name', 'WebDaw Project');
-        if (!newProjectName) {
-          return;
-        }
-        if (this.nameExists(newProjectName)) {
-          return alert('Name already exists');
-        }
+      if (!appState.isNew) {
+        return saveProject();
+      }
+
+      // New project
+      const newProjectName = prompt('Project name', 'WebDaw Project');
+      if (!newProjectName) {
+        return alert('Project name is required');
+      }
+      if (this.nameExists(newProjectName)) {
+        return alert('Name already exists');
       }
 
       saveProject(newProjectName);
@@ -129,15 +128,16 @@ export default {
 
     onSaveAs() {
       const newProjectName = prompt('Project name', projectsState.projectName);
-      if (newProjectName === projectsState.projectName) {
-        this.onSave();
-      } else {
-        if (this.nameExists(newProjectName)) {
-          return alert('exists');
-        }
-
-        saveProject(newProjectName);
+      if (newProjectName.toLowerCase() === projectsState.projectName.toLowerCase()) {
+        return saveProject();
       }
+
+      // New project
+      if (this.nameExists(newProjectName)) {
+        return alert('Project name already exists');
+      }
+
+      saveProject(newProjectName);
     },
 
     onExport() {

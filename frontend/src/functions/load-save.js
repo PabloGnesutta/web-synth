@@ -12,26 +12,27 @@ function initializeIndexedDb() {
 }
 
 function saveProject(newProjectName) {
-  if (appState.isNew || newProjectName) {
+  if (newProjectName) {
     // new project
     const newId = projectsState.projectIdCount + 1;
-    const projectsObj = { ...projectsState.projects };
-    projectsObj[newId] = { id: newId, name: newProjectName };
-    indexedDB.updateProjectsList({ projects: projectsObj, idCount: newId }, () => {
+
+    projectsState.projects = projectsState.projects || {};
+    projectsState.projects[newId] = { id: newId, name: newProjectName };
+
+    indexedDB.updateProjectsList({ projects: projectsState.projects, idCount: newId }, () => {
       projectsState.projectId = newId;
       projectsState.projectName = newProjectName;
       projectsState.projectIdCount = newId;
       appState.isNew = false;
-      projectsState.projects[newId] = projectsObj;
-      saveData();
+      saveDataForProject();
       console.log('projects updated');
     });
   } else {
-    saveData();
+    saveDataForProject();
   }
 }
 
-function saveData() {
+function saveDataForProject() {
   indexedDB.save(
     projectsState.projectId,
     'project_data',
@@ -52,7 +53,6 @@ function saveData() {
     instrument: JSON.parse(track.instrument.saveString()),
     effects: track.effects.map(effect => JSON.parse(effect.saveString())),
   }));
-
   indexedDB.save(projectsState.projectId, 'tracks', tracks, () => console.log('tracks saved'));
 
   const track_clips = {};

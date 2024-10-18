@@ -3,8 +3,7 @@
     <div v-if="inited" class="home-inner">
       <!-- Top Section -->
       <div class="top-section">
-        <Header :ref="'header'" @onNew="hardReset(true)" :projects="projectsState.projects"
-          :lastSample="timelineState.lastSample" />
+        <Header :ref="'header'" @onNew="hardReset(true)" :lastSample="timelineState.lastSample" />
       </div>
 
       <!-- Mid Section -->
