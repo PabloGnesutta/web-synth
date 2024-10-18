@@ -5,40 +5,22 @@
         {{ Node.status }}
       </div>
       <div class="control-btns params-container">
-        <div
-          v-if="!Node.recording && Node.playing"
-          class="control-btn rec-btn"
-          @click="scheduleLoopStartRecording"
-        >
+        <div v-if="!Node.recording && Node.playing" class="control-btn rec-btn" @click="scheduleLoopStartRecording">
           OVERDUB
         </div>
-        <div
-          v-if="!Node.recording && !Node.playing && !Node.loopAvailable"
-          class="control-btn rec-btn"
-          @click="scheduleLoopStartRecording"
-        >
+        <div v-if="!Node.recording && !Node.playing && !Node.loopAvailable" class="control-btn rec-btn"
+          @click="scheduleLoopStartRecording">
           REC
         </div>
         <div v-if="Node.recording" class="control-btn stop-rec" @click="scheduleLoopStopRecording">PLAY</div>
-        <div
-          v-if="Node.status === 'PLAYING' && !Node.recording"
-          class="control-btn pause-loop"
-          @click="stopLoop"
-        >
+        <div v-if="Node.status === 'PLAYING' && !Node.recording" class="control-btn pause-loop" @click="stopLoop">
           PAUSE
         </div>
-        <div
-          v-if="Node.loopAvailable && !Node.playing && !Node.recording"
-          class="control-btn play-loop"
-          @click="startLoop"
-        >
+        <div v-if="Node.loopAvailable && !Node.playing && !Node.recording" class="control-btn play-loop"
+          @click="startLoop">
           PLAY
         </div>
-        <div
-          v-if="Node.loopAvailable && Node.status === 'STOPPED'"
-          class="control-btn clear-btn"
-          @click="clearLoop"
-        >
+        <div v-if="Node.loopAvailable && Node.status === 'STOPPED'" class="control-btn clear-btn" @click="clearLoop">
           CLEAR
         </div>
       </div>
@@ -56,9 +38,12 @@
   </div>
 </template>
 
+
 <script>
 import { mapGetters } from 'vuex';
 import Knob from '../Knob';
+
+
 export default {
   name: 'LooperBody',
   components: { Knob },
@@ -71,7 +56,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['context', 'tempo', 'totalBeats', 'currentBeat', 'nextBeatTime', 'secondsPerBeat']),
+    ...mapGetters(['tempo', 'totalBeats', 'currentBeat', 'nextBeatTime', 'secondsPerBeat']),
   },
 
   mounted() {
@@ -89,7 +74,6 @@ export default {
     scheduleLoopStopRecording() {
       const beatsRemainingTo1 = this.totalBeats - this.currentBeat;
       const nextBeatTime = this.nextBeatTime + beatsRemainingTo1 * this.secondsPerBeat;
-
       // this.Node.nextBeatTime = nextBeatTime;
       this.Node.stopRecording(nextBeatTime);
     },
@@ -165,23 +149,28 @@ export default {
   gap: 0.5em;
   min-height: 70px;
 }
+
 .control-btn {
   padding: 0.4em;
   min-width: 60px;
   cursor: pointer;
   background: var(--color-1);
+
   &.rec-btn {
     background: crimson;
   }
+
   &.clear-btn {
     background: black;
   }
 }
+
 .upload-loop {
   margin-top: 0.5em;
   width: 100%;
   background: #222;
   position: relative;
+
   .label {
     padding: 0.3em;
     // width: 200px;
@@ -189,6 +178,7 @@ export default {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
   input {
     opacity: 0;
     position: absolute;
@@ -205,12 +195,14 @@ export default {
 
 .download-loop {
   margin-top: 0.2em;
+
   .label {
     cursor: default;
     user-select: none;
     color: #bbb;
     padding: 0.2em;
   }
+
   .label:hover {
     color: var(--color-2);
   }

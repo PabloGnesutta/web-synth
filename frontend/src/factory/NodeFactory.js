@@ -1,4 +1,3 @@
-// Instruments
 const Mic = require('../class/Instruments/Mic');
 const Femod = require('../class/Instruments/Femod');
 const Surgeon = require('../class/Instruments/Surgeon');
@@ -6,6 +5,16 @@ const Carrier = require('../class/Instruments/Carrier');
 const Drumkit = require('../class/Instruments/Drumkit');
 const Sampler = require('../class/Instruments/Sampler');
 const WhiteNoise = require('../class/Instruments/WhiteNoise');
+
+const EQ3 = require('../class/Effects/EQ3');
+const Delay = require('../class/Effects/Delay');
+const Distortion = require('../class/Effects/Distortion');
+const Reverb = require('../class/Effects/Reverb');
+const Looper = require('../class/Effects/Looper');
+const Compressor = require('../class/Effects/Compressor');
+const BiquadFilter = require('../class/Effects/BiquadFilter');
+
+
 const instrumentsDict = new Map([
   ['Femod', Femod],
   ['Carrier', Carrier],
@@ -15,14 +24,6 @@ const instrumentsDict = new Map([
   ['WhiteNoise', WhiteNoise],
 ]);
 
-// Effects
-const EQ3 = require('../class/Effects/EQ3');
-const Delay = require('../class/Effects/Delay');
-const Distortion = require('../class/Effects/Distortion');
-const Reverb = require('../class/Effects/Reverb');
-const Looper = require('../class/Effects/Looper');
-const Compressor = require('../class/Effects/Compressor');
-const BiquadFilter = require('../class/Effects/BiquadFilter');
 const effectsDict = new Map([
   ['EQ3', EQ3],
   ['Delay', Delay],
@@ -53,8 +54,9 @@ function createMic() {
     });
 }
 
+
 export {
   createInstrument,
   createEffect,
-  createMic
+  createMic,
 };

@@ -1,41 +1,26 @@
 <template>
-  <div class="sidebar-wrapper" :class="{ focused }" @click="$emit('onFocus', 'sidebar')">
+  <div class="sidebar-wrapper" :class="{ focused }" @click="focusSidebar">
     <div v-if="presetNamesLoaded" class="sidebar custom-scrollbar">
       <!-- Instruments -->
       <div class="menu instruments">
         <div class="label">Instruments</div>
         <div v-for="(instrument, i) in instruments" :key="instrument.className" class="nodes-container">
-          <div
-            class="node-item"
-            :class="{ selected: selectedType === 'instruments' && selectedParentIndex === i }"
-          >
-            <span
-              @click="togglePresetsDropdown(instrument)"
-              class="arrow"
-              :class="{ rotate: instrument.showPresets }"
-              >></span
-            >
-            <span
-              class="node-item-name"
-              @click="selectParent('instruments', i)"
-              @dblclick="createInstrument(instrument.className)"
-            >
+          <div class="node-item" :class="{ selected: selectedType === 'instruments' && selectedParentIndex === i }">
+            <span @click="togglePresetsDropdown(instrument)" class="arrow"
+              :class="{ rotate: instrument.showPresets }">></span>
+            <span class="node-item-name" @click="selectParent('instruments', i)"
+              @dblclick="createInstrument(instrument.className)">
               {{ instrument.displayName }}
             </span>
           </div>
           <div v-if="instrument.showPresets" class="presets-container">
-            <div
-              v-for="(presetName, presetIndex) in instrument.presetNames"
-              :key="presetName"
-              class="preset-item"
+            <div v-for="(presetName, presetIndex) in instrument.presetNames" :key="presetName" class="preset-item"
               :class="{
                 selected:
                   selectedType === 'instruments' &&
                   selectedParentIndex === i &&
                   selectedChildIndex === presetIndex,
-              }"
-              @dblclick="loadPreset(instrument.className, presetIndex, 'instrument')"
-            >
+              }" @dblclick="loadPreset(instrument.className, presetIndex, 'instrument')">
               {{ presetName }}
             </div>
           </div>
@@ -46,28 +31,15 @@
       <div class="menu effects">
         <div class="label">Effects</div>
         <div v-for="(effect, e) in effects" :key="effect.className" class="nodes-container">
-          <div
-            class="node-item"
-            :class="{ selected: selectedType === 'effects' && selectedParentIndex === e }"
-          >
-            <span @click="togglePresetsDropdown(effect)" class="arrow" :class="{ rotate: effect.showPresets }"
-              >></span
-            >
-            <span
-              @click="selectParent('effects', e)"
-              @dblclick="createEffect(effect.className)"
-              class="node-item-name"
-            >
+          <div class="node-item" :class="{ selected: selectedType === 'effects' && selectedParentIndex === e }">
+            <span @click="togglePresetsDropdown(effect)" class="arrow" :class="{ rotate: effect.showPresets }">></span>
+            <span @click="selectParent('effects', e)" @dblclick="createEffect(effect.className)" class="node-item-name">
               {{ effect.displayName }}
             </span>
           </div>
           <div v-if="effect.showPresets" class="presets-container">
-            <div
-              v-for="(presetName, presetIndex) in effect.presetNames"
-              :key="presetName"
-              class="preset-item"
-              @dblclick="loadPreset(effect.className, presetIndex, 'effect')"
-            >
+            <div v-for="(presetName, presetIndex) in effect.presetNames" :key="presetName" class="preset-item"
+              @dblclick="loadPreset(effect.className, presetIndex, 'effect')">
               {{ presetName }}
             </div>
           </div>
@@ -78,9 +50,11 @@
 </template>
 
 <script>
+import { appState } from '../state/vueInstance';
+
 export default {
   name: 'Sidebar',
-  props: ['instrumentIsLoaded', 'focused'],
+  props: ['instrumentIsLoaded'],
   data() {
     return {
       instruments: [
@@ -104,6 +78,11 @@ export default {
       selectedChildIndex: -1,
       selectedType: null,
     };
+  },
+  computed: {
+    focused() {
+      return appState.focusing === 'sidebar';
+    }
   },
   watch: {
     focused() {
@@ -135,6 +114,9 @@ export default {
   },
 
   methods: {
+    focusSidebar() {
+      appState.focusing = 'sidebar';
+    },
     selectParent(nodeType, index) {
       this.selectedType = nodeType;
       this.selectedParentIndex = index;
@@ -231,9 +213,11 @@ export default {
   border-right: 1px solid transparent;
   border-top: 1px solid transparent;
 }
+
 .sidebar-wrapper.focused {
   border-color: rgb(156, 156, 0);
 }
+
 .sidebar {
   padding: 0 0.25rem;
   height: var(--mid-section-height);
@@ -253,12 +237,14 @@ export default {
   user-select: none;
   cursor: default;
 }
+
 .menu {
   width: 100%;
 }
 
 .nodes-container {
   text-align: left;
+
   .node-item {
     display: flex;
     align-items: center;
@@ -266,13 +252,16 @@ export default {
     user-select: none;
     cursor: default;
   }
+
   .node-item-name {
     flex: 1;
     padding: 0.25rem;
   }
+
   .node-item:hover {
     background: #333;
   }
+
   .node-item.selected {
     background: #444;
   }
@@ -284,9 +273,11 @@ export default {
   margin-bottom: 0.25rem;
   user-select: none;
   cursor: default;
+
   &:hover {
     background: #333;
   }
+
   &.selected {
     background: #444;
   }
@@ -297,6 +288,7 @@ export default {
   padding: 0 0.25rem;
   cursor: pointer;
 }
+
 .rotate {
   transform: rotate(90deg);
 }

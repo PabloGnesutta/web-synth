@@ -1,6 +1,6 @@
 const request = indexedDB.open("web_synth", 1); //version
-let hasUpgraded = false;
-let db;
+var hasUpgraded = false;
+var db = null;
 
 request.onupgradeneeded = function () {
   // The database did not previously exist, so create object stores and indexes.
@@ -23,8 +23,9 @@ request.onsuccess = function () {
   }
 };
 
+// TODO: Promisify
 
-export default {
+module.exports = {
   initDb(cb) {
     const numRequests = 2;
     var projects = {};
