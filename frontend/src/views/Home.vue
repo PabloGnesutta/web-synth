@@ -3,36 +3,17 @@
     <div v-if="inited" class="home-inner">
       <!-- Top Section -->
       <div class="top-section">
-        <Header
-          :ref="'header'"
-          @onNew="hardReset(true)"
-          @onFollow="onFollow"
-          :playing="playing"
-          :recording="recording"
-          :exporting="exporting"
-          :following="followCursor"
-          :octave="octave"
-          :transpose="transpose"
-          :projects="projects"
-          :projectName="projectName"
-          :projectId="projectId"
-          :lastSample="timeline.lastSample"
-          :unsaved="unsaved"
-          :isNew="isNew"
-        />
+        <Header :ref="'header'" @onNew="hardReset(true)" @onFollow="onFollow" :playing="playing" :recording="recording"
+          :exporting="exporting" :following="followCursor" :octave="octave" :transpose="transpose" :projects="projects"
+          :projectName="projectName" :projectId="projectId" :lastSample="timelineState.lastSample" :unsaved="unsaved"
+          :isNew="isNew" />
       </div>
 
       <!-- Mid Section -->
       <div class="mid-section">
-        <Sidebar
-          class="left-col"
-          @createInstrument="createInstrument"
-          @createEffect="createAndInsertEffect"
-          @loadPreset="loadPreset"
-          @onFocus="setFocus"
-          :instrument-is-loaded="!!currentTrack"
-          :focused="focusing === 'sidebar'"
-        />
+        <Sidebar class="left-col" @createInstrument="createInstrument" @createEffect="createAndInsertEffect"
+          @loadPreset="loadPreset" @onFocus="setFocus" :instrument-is-loaded="!!currentTrack"
+          :focused="focusing === 'sidebar'" />
 
         <div class="right-col" :class="{ focused: focusing === 'tracks' }" @click="setFocus('tracks')">
           <div class="top-controls">
@@ -40,16 +21,13 @@
             <Click ref="click" />
             <!-- Info -->
             <div class="info-wrapper select-none">
-              <div
-                class="info-container no-scrollbar"
-                :style="{ width: timeline.viewportWidth + 'px' }"
-                @click="logInfo"
-              >
+              <div class="info-container no-scrollbar" :style="{ width: timelineState.viewportWidth + 'px' }"
+                @click="logInfo">
                 <div class="info-item">{{ globalStart }}</div>
-                <!-- <div class="info-item">vpW: {{ timeline.viewportWidth }}</div> -->
+                <!-- <div class="info-item">vpW: {{ timelineState.viewportWidth }}</div> -->
                 <div class="info-item">curr: {{ cursorX }}</div>
-                <div class="info-item">last: {{ timeline.lastSample }}</div>
-                <!-- <div class="info-item">zoom: {{ timeline.sampleWidth }}</div> -->
+                <div class="info-item">last: {{ timelineState.lastSample }}</div>
+                <!-- <div class="info-item">zoom: {{ timelineState.sampleWidth }}</div> -->
                 <div class="info-item">{{ focusing }}</div>
                 <div class="info-item last">{{ globalEnd }}</div>
               </div>
@@ -59,13 +37,8 @@
           <!-- Tracks -->
           <div class="tracklist-wrapper custom-scrollbar">
             <div class="tracklist">
-              <div
-                v-for="(track, t) in tracks"
-                :key="track.id"
-                class="track"
-                :class="{ selected: currentTrackIndex === t }"
-                @click.self="selectTrack(t)"
-              >
+              <div v-for="(track, t) in tracklist" :key="track.id" class="track"
+                :class="{ selected: currentTrackIndex === t }" @click.self="selectTrack(t)">
                 <div class="left-controls no-scrollbar" @click="selectTrack(t)">
                   <div class="left-ctrls-inner">
                     <div @click.stop="deleteTrack(t)" class="pointer">[X]</div>
@@ -75,35 +48,22 @@
                 </div>
 
                 <!-- Track Timeline -->
-                <div
-                  class="timeline"
-                  :ref="`timeline-${track.id}`"
-                  @mousedown="onCanvasMouseDown($event, track.id)"
-                  @mousewheel="onCanvasContainerWheel"
-                >
-                  <canvas
-                    :ref="`track-canvas-${track.id}`"
-                    :id="track.id"
-                    :height="timeline.trackHeight"
-                  ></canvas>
+                <div class="timeline" :ref="`timeline-${track.id}`" @mousedown="onCanvasMouseDown($event, track.id)"
+                  @mousewheel="onCanvasContainerWheel">
+                  <canvas :ref="`track-canvas-${track.id}`" :id="track.id" :height="timelineState.trackHeight"></canvas>
                 </div>
 
                 <!-- Right Controls -->
                 <div class="right-controls-wrapper">
-                  <RightControls
-                    :Node="track.trackGain"
-                    :analyser="track.trackGainAnalyser"
-                    :recEnabled="track.recEnabled"
-                    :selected="currentTrackIndex === t"
-                    @toggleRecEnabled="toggleRecEnabled(track)"
-                    @knobClicked="knobClicked"
-                    @selectTrack="selectTrack(t)"
-                  />
+                  <RightControls :Node="track.trackGain" :analyser="track.trackGainAnalyser"
+                    :recEnabled="track.recEnabled" :selected="currentTrackIndex === t"
+                    @toggleRecEnabled="toggleRecEnabled(track)" @knobClicked="knobClicked"
+                    @selectTrack="selectTrack(t)" />
                 </div>
               </div>
 
               <div class="canvas-overlay">
-                <canvas ref="canvas-overlay" :width="timeline.viewportWidth"></canvas>
+                <canvas ref="canvas-overlay" :width="timelineState.viewportWidth"></canvas>
               </div>
             </div>
 
@@ -111,13 +71,8 @@
             <div class="track master">
               <div class="left-controls">Master</div>
               <div class="master-knob-wrapper" @click="knobClicked('MasterGain')">
-                <Knob
-                  :ref="'MasterGain'"
-                  minVal="0"
-                  maxVal="1"
-                  :initVal="masterOutputKnob"
-                  @knobTurned="setMasterGainValue"
-                />
+                <Knob :ref="'MasterGain'" minVal="0" maxVal="1" :initVal="masterOutputKnob"
+                  @knobTurned="setMasterGainValue" />
               </div>
             </div>
           </div>
@@ -126,34 +81,19 @@
 
       <!-- Bottom section: Current Track detail -->
       <div class="bottom-section">
-        <div
-          v-if="currentTrack"
-          class="track-detail custom-scrollbar"
-          :class="'track-detail_' + currentTrackIndex"
-        >
+        <div v-if="currentTrack" class="track-detail custom-scrollbar" :class="'track-detail_' + currentTrackIndex">
           <!-- Instrument -->
           <div class="track-instrument">
-            <NodeRender
-              :Node="currentTrack.instrument"
-              :analyser="currentTrack.instrumentAnalyser"
-              :instrumentEnabled="currentTrack.instrumentEnabled"
-              @deleteNode="deleteTrack"
-              @knobClicked="knobClicked"
-            />
+            <NodeRender :Node="currentTrack.instrument" :analyser="currentTrack.instrumentAnalyser"
+              :instrumentEnabled="currentTrack.instrumentEnabled" @deleteNode="deleteTrack"
+              @knobClicked="knobClicked" />
           </div>
 
           <!-- Effects -->
           <div class="track-effects">
-            <NodeRender
-              v-for="(Node, effectIndex) in currentTrack.effects"
-              :Node="Node"
-              :analyser="Node.analyser"
-              :key="Node.id"
-              :ref="'Node-' + effectIndex"
-              @deleteNode="deleteEffect(effectIndex)"
-              @levelClicked="levelClicked(Node)"
-              @knobClicked="knobClicked"
-            />
+            <NodeRender v-for="(Node, effectIndex) in currentTrack.effects" :Node="Node" :analyser="Node.analyser"
+              :key="Node.id" :ref="'Node-' + effectIndex" @deleteNode="deleteEffect(effectIndex)"
+              @levelClicked="levelClicked(Node)" @knobClicked="knobClicked" />
             <div class="placeholder"></div>
           </div>
           <div class="analyser-render-wrapper">
@@ -165,8 +105,6 @@
       <!-- <Pad
         @onPadTouchStart="onPadTouchStart"
         @onPadTouchEnd="onPadTouchEnd"
-        @onPadTouchCancel="onPadTouchCancel"
-        @onPadTouchMove="onPadTouchMove"
       /> -->
     </div>
 
@@ -238,6 +176,9 @@ export default {
   },
   data() {
     return {
+      timelineState,
+      tracklist,
+
       inited: false,
       isNew: true,
       projects: null,
@@ -251,7 +192,6 @@ export default {
       m_pressed: false,
       focusing: 'tracks',
 
-      tracks: tracklist,
       trackIdCount: 0,
       currentTrack: null,
       currentTrackIndex: 0,
@@ -260,28 +200,22 @@ export default {
       masterInput: null,
       masterOutputKnob: 0.5,
 
-      //REC
-      recording: false,
-      selectedClips: [],
-      clipIdCount: 0,
-      mediaRecorders: {},
-      totalProcessingTracks: 0,
+      clipIdCount: 0, //
 
       //Rendering
       followCursor: true,
-      timeline: timelineState,
       globalStart: 0,
       globalEnd: 0,
       cursorX: 0,
       lastCursorPos: 0,
-      recordingRaf: null,
+      recordingRaf: null, //
       playbackRaf: null,
 
       //Play/Export
       playing: false,
       exporting: false,
+      recording: false,
       exportProgress: 0,
-      clipDestination: null,
     };
   },
 
@@ -738,8 +672,6 @@ export default {
       let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
       xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(noteIndex));
     },
-    onPadTouchCancel(e) {},
-    onPadTouchMove(e) {},
 
     // LOAD/SAVE
 

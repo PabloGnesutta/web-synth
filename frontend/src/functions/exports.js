@@ -15,7 +15,7 @@ function triggerExport() {
     exportState.name = exportName;
     state.instance.exporting = true;
     startExport();
-    state.instance.clipDestination = state.instance.masterInput;
+    exportState.clipDestination = state.instance.masterInput;
     playAllTracks();
 }
 
@@ -52,7 +52,7 @@ function startExport() {
 
 function onRecordExportFinish() {
     exportState.mediaRecorder = null;
-    state.instance.clipDestination = null;
+    exportState.clipDestination = null;
 
     if (!exportState.canceled) {
         downloadBlob(exportState.blob, exportState.name);

@@ -4,8 +4,11 @@ const { state, tracklist, cliplist, trackClips } = require("../state/vueInstance
 const { renderDataObjects } = require("./rendering");
 
 
+var mediaRecorders = {};
+var totalProcessingTracks = 0;
+
 function startRecord() {
-  state.instance.totalProcessingTracks = 0;
+  totalProcessingTracks = 0;
   state.instance.recording = true;
 
   for (const track of tracklist) {
@@ -24,13 +27,13 @@ function startRecord() {
 }
 
 function startRecordSingleTrack(track) {
-  state.instance.totalProcessingTracks++;
+  totalProcessingTracks++;
 
   let chunks = [];
   let mediaStreamDestination = Node.context.createMediaStreamDestination();
   const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
 
-  state.instance.mediaRecorders[track.id] = mediaRecorder;
+  mediaRecorders[track.id] = mediaRecorder;
   track.trackGain.connectNativeNode(mediaStreamDestination);
 
   // init clip
@@ -65,8 +68,8 @@ function startRecordSingleTrack(track) {
         clip.sampleDuration = clip.buffer.duration / clip.numSamples;
         clip.playing = false;
         clip.sampleRate = Math.round(clip.buffer.length / clip.numSamples);
-        state.instance.totalProcessingTracks--;
-        if (state.instance.totalProcessingTracks <= 0) {
+        totalProcessingTracks--;
+        if (totalProcessingTracks <= 0) {
           state.instance.logInfo();
         }
       });
@@ -86,12 +89,12 @@ function stopRecord() {
   state.instance.recording = false;
   state.instance.playing = false;
 
-  for (const trackId in state.instance.mediaRecorders) {
-    state.instance.mediaRecorders[trackId].stop();
-    delete state.instance.mediaRecorders[trackId];
+  for (const trackId in mediaRecorders) {
+    mediaRecorders[trackId].stop();
+    delete mediaRecorders[trackId];
   }
 
-  state.instance.mediaRecorders = {};
+  mediaRecorders = {};
 
   cancelAnimationFrame(state.instance.recordingRaf);
   cancelAnimationFrame(state.instance.playbackRaf);
@@ -102,9 +105,9 @@ function stopRecord() {
 }
 
 function stopRecordSingleTrack(track) {
-  state.instance.mediaRecorders[track.id].stop();
-  delete state.instance.mediaRecorders[track.id];
-  let index = renderDataObjects.findIndex(o => o.trackId == track.id);
+  mediaRecorders[track.id].stop();
+  delete mediaRecorders[track.id];
+  const index = renderDataObjects.findIndex(o => o.trackId == track.id);
   renderDataObjects.splice(index, 1);
 }
 

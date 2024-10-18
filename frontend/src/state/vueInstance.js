@@ -14,6 +14,7 @@ const exportState = {
   blob: null,
   buffer: null,
   canceled: false,
+  clipDestination: null,
 };
 
 const midiState = {

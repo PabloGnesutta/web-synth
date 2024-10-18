@@ -1,53 +1,58 @@
 const { $ } = require("../dom-utils/DomUtils");
+const { clearArray } = require("../lib/array");
 const { state, timelineState, cliplist, trackClips } = require("../state/vueInstance");
 const { onStopBtnClick } = require("./playback");
 
 
 const minSampleWidth = 1;
 const carretMovementAmount = 50;
+
 const clipHandle = {
   height: 20,
   hookWidth: 10,
   color: '#10ff7050',
   selectedColor: '#ff652d96',
 };
+
 const trackProps = {
   // todo: get from css
   rightCtrlsWidth: 247,
   leftCtrlsWidth: 180,
 };
 
+var selectedClips = [];
+
 
 /* Selection */
 
 function unselectClips() {
-  if (!state.instance.selectedClips.length) {
+  if (!selectedClips.length) {
     return;
   }
 
-  state.instance.selectedClips.forEach(clip => {
+  selectedClips.forEach(clip => {
     clip.selected = false;
     state.instance.renderTrack(clip.trackId);
   });
-  state.instance.selectedClips = [];
+  selectedClips = [];
 }
 
 function selectOneClip(clip) {
   const trackIds = new Set([clip.trackId]);
 
-  state.instance.selectedClips.forEach(selectedClip => {
-    selectedClip.selected = false;
-    trackIds.add(selectedClip.trackId);
+  selectedClips.forEach(_clip => {
+    _clip.selected = false;
+    trackIds.add(_clip.trackId);
   });
   clip.selected = true;
-  state.instance.selectedClips = [clip];
+  selectedClips = [clip];
   trackIds.forEach(trackId => state.instance.renderTrack(trackId));
 }
 
 function unselectOneCLip(clip) {
   clip.selected = false;
-  const index = state.instance.selectedClips.findIndex(selectedClip => selectedClip.id === clip.id);
-  state.instance.selectedClips.splice(index, 1);
+  const index = selectedClips.findIndex(selectedClip => selectedClip.id === clip.id);
+  selectedClips.splice(index, 1);
   const trackId = clip.trackId;
   state.instance.renderTrack(trackId);
 }
@@ -71,7 +76,7 @@ function selectClipOnHandleClick(e, trackId) {
         if (e.ctrlKey) {
           if (!clip.selected) {
             clip.selected = true;
-            state.instance.selectedClips.push(clip);
+            selectedClips.push(clip);
             anyClipSelected = true;
           } else {
             unselectOneCLip(clip);
@@ -117,8 +122,8 @@ function positionCursor(xPos) {
 // onWindowMousemove
 function resizeOrMoveClips(e) {
   // TODO: Moving multiple clips work, resizing multiple clips don't
-  for (var i = 0; i < state.instance.selectedClips.length; i++) {
-    const clip = state.instance.selectedClips[i];
+  for (var i = 0; i < selectedClips.length; i++) {
+    const clip = selectedClips[i];
     if (clip.selected) {
       if (clip.willResize) {
         if (clip.willResize === 'start') {
@@ -232,7 +237,7 @@ function onTimelineMouseUp(e) {
 }
 
 function duplicateClips() {
-  state.instance.selectedClips.forEach(clip => {
+  selectedClips.forEach(clip => {
     const newClip = { ...clip };
     clip.xPos = clip.xPos + clip.endSample - clip.startSample;
     newClip.selected = false;
