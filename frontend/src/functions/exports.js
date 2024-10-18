@@ -1,6 +1,6 @@
 const Node = require("../class/Node");
 const { clearObj } = require("../lib/array");
-const { state, exportState } = require("../state/vueInstance");
+const { state, exportState, appState } = require("../state/vueInstance");
 const { playAllTracks, onStopBtnClick } = require("./playback");
 
 
@@ -13,7 +13,7 @@ function triggerExport() {
     onStopBtnClick(); // call twice to jump to the start of the timeline
     clearObj(exportState);
     exportState.name = exportName;
-    state.instance.exporting = true;
+    appState.exporting = true;
     startExport();
     exportState.clipDestination = state.instance.masterInput;
     playAllTracks();
@@ -69,7 +69,7 @@ function downloadBlob(blob, fileName) {
 
 function finishRecExport() {
     exportState.mediaRecorder.stop();
-    state.instance.exporting = false;
+    appState.exporting = false;
     onStopBtnClick();
 }
 

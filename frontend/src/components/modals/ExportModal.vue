@@ -3,19 +3,28 @@
     <div class="content">
       <h3>Processing audio for export</h3>
       <div class="progress-container">
-        <div class="progress" :style="{ width: exportProgress + '%' }"></div>
+        <div class="progress" :style="{ width: appState.exportProgress + '%' }"></div>
       </div>
-      <div class="progress-indicator">{{ exportProgress }}%</div>
-      <div class="btn" @click="$emit('onCancel')">Cancel</div>
+      <div class="progress-indicator">{{ appState.exportProgress }}%</div>
+      <div class="btn" @click=onCancelExport>Cancel</div>
     </div>
   </div>
 </template>
 
 <script>
+import { appState } from '../../state/vueInstance';
+import { cancelExport } from '../../functions/exports';
+
 export default {
   name: 'ExportModal',
-  props: {
-    exportProgress: { type: Number, default: 50 },
+  data() {
+    return {
+      appState,
+    };
+  },
+
+  methods: {
+    onCancelExport: cancelExport,
   },
 };
 </script>

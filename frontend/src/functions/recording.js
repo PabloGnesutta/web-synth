@@ -1,6 +1,6 @@
 const Node = require("../class/Node");
 const { clearArray } = require("../lib/array");
-const { state, tracklist, cliplist, trackClips, trackState } = require("../state/vueInstance");
+const { state, tracklist, cliplist, trackClips, trackState, appState } = require("../state/vueInstance");
 const { renderDataObjects } = require("./rendering");
 
 
@@ -9,7 +9,7 @@ var totalProcessingTracks = 0;
 
 function startRecord() {
   totalProcessingTracks = 0;
-  state.instance.recording = true;
+  appState.recording = true;
 
   for (const track of tracklist) {
     if (track.recEnabled) {
@@ -18,11 +18,11 @@ function startRecord() {
   }
 
   let cursorStep = 1;
-  if (state.instance.playing) {
+  if (appState.playing) {
     cursorStep = 0;
   }
 
-  state.instance.playing = true;
+  appState.playing = true;
   state.instance.captureBarsLoop(cursorStep);
 }
 
@@ -86,8 +86,8 @@ function startRecordSingleTrack(track) {
 }
 
 function stopRecord() {
-  state.instance.recording = false;
-  state.instance.playing = false;
+  appState.recording = false;
+  appState.playing = false;
 
   for (const trackId in mediaRecorders) {
     mediaRecorders[trackId].stop();

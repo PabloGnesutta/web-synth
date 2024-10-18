@@ -1,6 +1,7 @@
 const indexedDB = require('../db/index');
 const Node = require("../class/Node");
-const { state, tracklist, timelineState, cliplist, trackClips } = require('../state/vueInstance');
+const { state, tracklist, timelineState, cliplist, trackClips, appState } = require('../state/vueInstance');
+
 
 function initializeIndexedDb() {
   indexedDB.initDb(dbData => {
@@ -11,9 +12,8 @@ function initializeIndexedDb() {
 }
 
 function saveProject(newProjectName) {
-  if (state.instance.isNew || newProjectName) {
+  if (appState.isNew || newProjectName) {
     // new project
-    console.log('isnew', state.instance.isNew);
     const newId = state.instance.projectIdCount + 1;
     const projectsObj = { ...state.instance.projects };
     projectsObj[newId] = { id: newId, name: newProjectName };
@@ -21,7 +21,7 @@ function saveProject(newProjectName) {
       state.instance.projectId = newId;
       state.instance.projectName = newProjectName;
       state.instance.projectIdCount = newId;
-      state.instance.isNew = false;
+      appState.isNew = false;
       state.instance.projects[newId] = projectsObj;
       saveData();
       console.log('projects updated');
@@ -39,10 +39,10 @@ function saveData() {
       globalStart: state.instance.globalStart,
       cursorX: state.instance.cursorX,
       tempo: state.instance.tempo,
-      octave: state.instance.octave,
-      transpose: state.instance.transpose,
+      octave: appState.octave,
+      transpose: appState.transpose,
       masterOutputKnob: state.instance.masterOutputKnob,
-      followCursor: state.instance.followCursor,
+      followCursor: appState.followCursor,
     },
     () => console.log('project_data saved')
   );
@@ -67,7 +67,7 @@ function saveData() {
   }
   indexedDB.save(state.instance.projectId, 'track_clips', track_clips, () => {
     console.log('track_clips saved');
-    state.instance.unsaved = false;
+    appState.unsaved = false;
   });
 }
 
@@ -81,9 +81,9 @@ function loadProject(projectId, projectName) {
     state.instance.globalStart = projectData.globalStart;
     state.instance.cursorX = projectData.cursorX;
     state.instance.masterOutputKnob = projectData.masterOutputKnob;
-    state.instance.followCursor = projectData.followCursor;
-    state.instance.octave = projectData.octave;
-    state.instance.transpose = projectData.transpose;
+    appState.followCursor = projectData.followCursor;
+    appState.octave = projectData.octave;
+    appState.transpose = projectData.transpose;
     // todo: load click values
 
     indexedDB.get(parseInt(state.instance.projectId), 'tracks', tracks => {
@@ -98,8 +98,8 @@ function loadProject(projectId, projectName) {
         loadTrackClips(track_clips);
       });
 
-      state.instance.unsaved = false;
-      state.instance.isNew = false;
+      appState.unsaved = false;
+      appState.isNew = false;
       // TODO: Set said flag back off
     });
   });

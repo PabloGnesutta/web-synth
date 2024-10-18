@@ -1,4 +1,4 @@
-const { state, tracklist, trackState } = require("../state/vueInstance");
+const { state, tracklist, trackState, appState } = require("../state/vueInstance");
 const { keypressListeners } = require("./keyboard");
 const { startRecordSingleTrack, stopRecordSingleTrack } = require("./recording");
 
@@ -8,9 +8,9 @@ function selectTrack(t) {
     return;
   }
 
+  trackState.currentTrack = null;
   trackState.currentTrackIndex = t;
-  trackState = null;
-  state.instance.$nextTick(() => trackState = tracklist[trackState.currentTrackIndex]);
+  state.instance.$nextTick(() => trackState.currentTrack = tracklist[trackState.currentTrackIndex]);
 }
 
 function toggleInstrumentEnabled() {
@@ -35,7 +35,7 @@ function toggleInstrumentEnabled() {
 
 function toggleRecEnabled(track) {
   track.recEnabled = !track.recEnabled;
-  if (!state.instance.recording) {
+  if (!appState.recording) {
     return;
   }
   if (track.recEnabled) {

@@ -1,6 +1,5 @@
 const { $ } = require("../dom-utils/DomUtils");
-const { clearArray } = require("../lib/array");
-const { state, timelineState, cliplist, trackClips } = require("../state/vueInstance");
+const { state, timelineState, cliplist, trackClips, appState } = require("../state/vueInstance");
 const { onStopBtnClick } = require("./playback");
 
 
@@ -109,12 +108,12 @@ function selectClipOnHandleClick(e, trackId) {
 }
 
 function positionCursor(xPos) {
-  if (state.instance.recording) {
+  if (appState.recording) {
     return;
   }
   state.instance.cursorX = xPos;
   state.instance.renderCursor();
-  if (state.instance.playing) {
+  if (appState.playing) {
     onStopBtnClick();
   }
 }

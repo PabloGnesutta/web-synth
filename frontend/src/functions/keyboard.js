@@ -1,6 +1,6 @@
 const noteKeys = require("../data/noteKeys");
 const noteFrequencies = require("../data/noteFrequencies");
-const { state, tracklist, trackState } = require("../state/vueInstance");
+const { state, tracklist, trackState, keyboardState, appState } = require("../state/vueInstance");
 const { onStopBtnClick, togglePlay, toggleRecord } = require("./playback");
 
 
@@ -19,7 +19,7 @@ function mainKeyDownHandler(e) {
   const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
 
   if (noteKeyIndex !== -1) {
-    let noteIndex = noteKeyIndex + 12 * state.instance.octave + state.instance.transpose;
+    let noteIndex = noteKeyIndex + 12 * appState.octave + appState.transpose;
     if (noteIndex < 0) {
       noteIndex = 0;
     }
@@ -38,7 +38,7 @@ function mainKeyupHandler(e) {
   const noteKeyIndex = noteKeys.findIndex(noteKey => e.key === noteKey);
 
   if (noteKeyIndex !== -1) {
-    const noteIndex = noteKeyIndex + 12 * state.instance.octave + state.instance.transpose;
+    const noteIndex = noteKeyIndex + 12 * appState.octave + appState.transpose;
     keypressListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(noteIndex));
   } else {
     onOtherKeyup(e);
@@ -53,7 +53,7 @@ function onOtherKeydown(e) {
     let futureTrackIndex;
     switch (e.keyCode) {
       case 38: //arrow   up - select track
-        if (state.instance.focusing !== 'tracks') {
+        if (appState.focusing !== 'tracks') {
           return;
         }
         futureTrackIndex = trackState.currentTrackIndex - 1;
@@ -62,7 +62,7 @@ function onOtherKeydown(e) {
         }
         break;
       case 40: //arrow down - select track
-        if (state.instance.focusing !== 'tracks') {
+        if (appState.focusing !== 'tracks') {
           return;
         }
         futureTrackIndex = trackState.currentTrackIndex + 1;
@@ -71,7 +71,7 @@ function onOtherKeydown(e) {
         }
         break;
       case 77: //m
-        state.instance.m_pressed = true;
+        keyboardState.m_pressed = true;
         break;
     }
   }
@@ -80,13 +80,13 @@ function onOtherKeydown(e) {
 function onOtherKeyup(e) {
   if (e.keyCode >= 49 && e.keyCode <= 57) {
     //1-9
-    if (state.instance.m_pressed) {
+    if (keyboardState.m_pressed) {
       tracklist[+e.key - 1].trackGain.toggleMute();
     }
   } else {
     switch (e.keyCode) {
       case 13: //enter - rec/stop
-        if (state.instance.focusing !== 'sidebar') {
+        if (appState.focusing !== 'sidebar') {
           toggleRecord();
         }
         break;
@@ -94,19 +94,19 @@ function onOtherKeyup(e) {
         onStopBtnClick();
         break;
       case 32: //space bar - play/pause
-        if (state.instance.playing) {
+        if (appState.playing) {
           onStopBtnClick();
         } else {
           togglePlay();
         }
         break;
       case 37: //arrow left - move cursor
-        if (!state.instance.recording && !state.instance.playing) {
+        if (!appState.recording && !appState.playing) {
           state.instance.moveCursor(-20);
         }
         break;
       case 39: //arrow right - move cursor
-        if (!state.instance.recording && !state.instance.playing) {
+        if (!appState.recording && !appState.playing) {
           state.instance.moveCursor(20);
         }
         break;
@@ -120,22 +120,22 @@ function onOtherKeyup(e) {
         }
         break;
       case 77: //m - mute current track
-        state.instance.m_pressed = false;
+        keyboardState.m_pressed = false;
         if (e.ctrlKey) {
           trackState.currentTrack.trackGain.toggleMute();
         }
         break;
       case 90: //z - octave down
-        state.instance.octave--;
+        appState.octave--;
         break;
       case 88: //x - octave up
-        state.instance.octave++;
+        appState.octave++;
         break;
       case 67: //c - transpose down
-        state.instance.transpose--;
+        appState.transpose--;
         break;
       case 86: //v - transpose up
-        state.instance.transpose++;
+        appState.transpose++;
         break;
       default:
         console.log('key', e.keyCode);

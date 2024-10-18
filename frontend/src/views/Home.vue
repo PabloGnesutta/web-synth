@@ -3,22 +3,20 @@
     <div v-if="inited" class="home-inner">
       <!-- Top Section -->
       <div class="top-section">
-        <Header :ref="'header'" @onNew="hardReset(true)" @onFollow="onFollow" :playing="playing" :recording="recording"
-          :exporting="exporting" :following="followCursor" :octave="octave" :transpose="transpose" :projects="projects"
-          :projectName="projectName" :projectId="projectId" :lastSample="timelineState.lastSample" :unsaved="unsaved"
-          :isNew="isNew" />
+        <Header :ref="'header'" @onNew="hardReset(true)" :projects="projects" :projectName="projectName"
+          :projectId="projectId" :lastSample="timelineState.lastSample" />
       </div>
 
       <!-- Mid Section -->
       <div class="mid-section">
         <Sidebar class="left-col" @createInstrument="createInstrument" @createEffect="createAndInsertEffect"
-          @loadPreset="loadPreset" @onFocus="setFocus" :instrument-is-loaded="!!trackState.currentTrack"
-          :focused="focusing === 'sidebar'" />
+          @loadPreset="loadPreset" />
 
-        <div class="right-col" :class="{ focused: focusing === 'tracks' }" @click="setFocus('tracks')">
+        <div class=" right-col" :class="{ focused: appState.focusing === 'tracks' }" @click="setFocus('tracks')">
           <div class="top-controls">
-            <!-- Click -->
+
             <Click ref="click" />
+
             <!-- Info -->
             <div class="info-wrapper select-none">
               <div class="info-container no-scrollbar" :style="{ width: timelineState.viewportWidth + 'px' }"
@@ -28,7 +26,7 @@
                 <div class="info-item">curr: {{ cursorX }}</div>
                 <div class="info-item">last: {{ timelineState.lastSample }}</div>
                 <!-- <div class="info-item">zoom: {{ timelineState.sampleWidth }}</div> -->
-                <div class="info-item">{{ focusing }}</div>
+                <div class="info-item">{{ appState.focusing }}</div>
                 <div class="info-item last">{{ globalEnd }}</div>
               </div>
             </div>
@@ -115,7 +113,7 @@
       <p>Click anywhere to Start!</p>
     </div>
 
-    <ExportModal v-if="exporting" :exportProgress="exportProgress" @onCancel="cancelExport" />
+    <ExportModal v-if="appState.exporting" />
   </div>
 </template>
 
@@ -133,12 +131,13 @@ import SpectrumWaveshape from '@/components/SpectrumWaveshape';
 import { $ } from '../dom-utils/DomUtils';
 import { clearArray, clearObj } from '../lib/array.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
-import { cliplist, state, timelineState, trackClips, tracklist, trackState } from '../state/vueInstance.js';
+import { appState, cliplist, state, timelineState, trackClips, tracklist, trackState } from '../state/vueInstance.js';
 import { playSingleClip } from '../functions/playback.js';
 import { renderDataObjects } from '../functions/rendering.js';
 import { stopRecordSingleTrack } from '../functions/recording';
+import { initializeIndexedDb } from '../functions/load-save.js';
 import { knobClicked, requestMidiAccess } from '../functions/midi.js';
-import { finishRecExport, cancelExport } from '../functions/exports.js';
+import { finishRecExport } from '../functions/exports.js';
 import { selectTrack, toggleRecEnabled } from '../functions/track-interaction.js';
 import {
   clipHandle,
@@ -155,7 +154,6 @@ import {
   numpadListeners,
   xyPadListeners,
 } from '../functions/keyboard.js';
-import { initializeIndexedDb } from '../functions/load-save.js';
 
 const Node = require('../class/Node');
 const Gain = require('../class/Effects/Gain');
@@ -178,42 +176,29 @@ export default {
   },
   data() {
     return {
+      appState,
       timelineState,
       tracklist,
       trackState,
 
       inited: false,
-      isNew: true,
-      unsaved: true,
 
       projects: null,
       projectId: undefined,
       projectIdCount: undefined,
       projectName: 'untitled',
 
-      octave: 3,
-      transpose: 0,
-      m_pressed: false,
-      focusing: 'tracks',
-
       masterOutput: null,
       masterInput: null,
       masterOutputKnob: 0.5,
 
       //Rendering
-      followCursor: true,
       globalStart: 0,
       globalEnd: 0,
       cursorX: 0,
       lastCursorPos: 0,
       recordingRaf: null, //
       playbackRaf: null,
-
-      //Play/Export
-      playing: false,
-      exporting: false,
-      recording: false,
-      exportProgress: 0,
     };
   },
 
@@ -265,7 +250,37 @@ export default {
       state.instance = this;
     },
 
-    cancelExport: cancelExport,
+    hardReset(generateSomeNodes) {
+      this.projects = {};
+      this.projectId = undefined;
+      this.projectIdCount = undefined;
+      this.projectName = 'untitled';
+      clearArray(cliplist);
+      trackState.clipIdCount = 0;
+      clearObj(trackClips);
+      trackState.trackIdCount = 0;
+      trackState.currentTrack = null;
+      trackState.currentTrackIndex = 0;
+      timelineState.lastSample = 0;
+      timelineState.viewportWidth = undefined;
+      this.globalStart = 0;
+      this.globalEnd = 0;
+      this.cursorX = 0;
+      appState.unsaved = true;
+      this.computeTimelineDimensions();
+
+      while (tracklist.length) {
+        this.deleteTrack(0);
+      }
+      // todo: reset Nodes' Ids
+      if (generateSomeNodes) {
+        this.createTrack(createInstrument('Drumkit'));
+        this.createTrack(createInstrument('Femod'));
+        this.createAndInsertEffect('BiquadFilter');
+      }
+      this.renderCanvas();
+      this.renderCursor();
+    },
 
     selectTrack: selectTrack,
     toggleRecEnabled: toggleRecEnabled,
@@ -276,7 +291,7 @@ export default {
     knobClicked: knobClicked,
 
     setFocus(target) {
-      this.focusing = target;
+      appState.focusing = target;
     },
 
     // RENDERING
@@ -311,7 +326,7 @@ export default {
       };
     },
     captureBarsLoop(cursorStep = 1) {
-      this.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, cursorStep));
+      state.instance.recordingRaf = requestAnimationFrame(this.captureBarsLoop.bind(null, cursorStep));
       for (var r = 0; r < renderDataObjects.length; r++) {
         const renderDataObject = renderDataObjects[r];
         let { analyser, dataArray, clip, ctx } = renderDataObject;
@@ -339,7 +354,7 @@ export default {
       }
 
       this.moveCursor(cursorStep);
-      if (this.followCursor) {
+      if (appState.followCursor) {
         this.moveCarret();
       }
     },
@@ -365,21 +380,21 @@ export default {
     moveTimielineWithPlayback() {
       this.playbackRaf = requestAnimationFrame(this.moveTimielineWithPlayback.bind(null));
       this.moveCursor(1);
-      if (this.followCursor) {
+      if (appState.followCursor) {
         this.moveCarret();
       }
-      if (this.exporting) {
-        this.exportProgress = ~~((this.cursorX * 100) / timelineState.lastSample);
+      if (appState.exporting) {
+        appState.exportProgress = ~~((this.cursorX * 100) / timelineState.lastSample);
       }
     },
     moveCursor(amount) {
       this.cursorX += amount;
       this.renderCursor();
 
-      if (this.recording || !this.playing) {
+      if (appState.recording || !appState.playing) {
         return;
       }
-      if (this.exporting && this.cursorX > timelineState.lastSample) {
+      if (appState.exporting && this.cursorX > timelineState.lastSample) {
         return finishRecExport();
       }
 
@@ -466,10 +481,6 @@ export default {
       );
     },
 
-    onFollow() {
-      this.followCursor = !this.followCursor;
-    },
-
     // Tracks, Instruments & Effects
 
     // TODO: Rename to createAndInsertInstrument
@@ -537,7 +548,7 @@ export default {
         });
       }
 
-      if (this.recording) {
+      if (appState.recording) {
         if (track.recEnabled) {
           this.$nextTick(() => this.startRecSingleTrack(track));
         }
@@ -552,7 +563,7 @@ export default {
 
       const track = tracklist.splice(trackIndex, 1)[0];
 
-      if (this.recording && track.recEnabled) {
+      if (appState.recording && track.recEnabled) {
         stopRecordSingleTrack(track);
       }
 
@@ -662,48 +673,16 @@ export default {
     // Touch controls
     onPadTouchStart(currentIndex) {
       const noteKeyIndex = currentIndex;
-      let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+      let noteIndex = noteKeyIndex + 12 * appState.octave + appState.transpose;
       xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.playNote(noteIndex));
     },
     onPadTouchEnd(currentIndex) {
       const noteKeyIndex = currentIndex;
-      let noteIndex = noteKeyIndex + 12 * this.octave + this.transpose;
+      let noteIndex = noteKeyIndex + 12 * appState.octave + appState.transpose;
       xyPadListeners.forEach(scaleInterface => scaleInterface.instrument.stopNote(noteIndex));
     },
 
     // LOAD/SAVE
-
-    hardReset(generateSomeNodes) {
-      this.projects = {};
-      this.projectId = undefined;
-      this.projectIdCount = undefined;
-      this.projectName = 'untitled';
-      clearArray(cliplist);
-      trackState.clipIdCount = 0;
-      clearObj(trackClips);
-      trackState.trackIdCount = 0;
-      trackState.currentTrack = null;
-      trackState.currentTrackIndex = 0;
-      timelineState.lastSample = 0;
-      timelineState.viewportWidth = undefined;
-      this.globalStart = 0;
-      this.globalEnd = 0;
-      this.cursorX = 0;
-      this.unsaved = true;
-      this.computeTimelineDimensions();
-
-      while (tracklist.length) {
-        this.deleteTrack(0);
-      }
-      // todo: reset Nodes' Ids
-      if (generateSomeNodes) {
-        this.createTrack(createInstrument('Drumkit'));
-        this.createTrack(createInstrument('Femod'));
-        this.createAndInsertEffect('BiquadFilter');
-      }
-      this.renderCanvas();
-      this.renderCursor();
-    },
 
     // todo: move to load-save
     onLoadFinish(_trackClips) {

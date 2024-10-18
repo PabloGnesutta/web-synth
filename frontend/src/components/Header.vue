@@ -1,6 +1,6 @@
 <template>
   <div class="Header" @click="$emit('onFocus', 'header')">
-    <div class="header" :class="{ recording, playing }">
+    <div class="header" :class="{ recording: appState.recording, playing: appState.playing }">
       <div class="main-container">
         <!-- SAVES -->
         <div class="left">
@@ -13,12 +13,8 @@
               <div class="has-submenu" @mouseenter="loadMenuOpen = true" @mouseleave="loadMenuOpen = false">
                 <div class="menu-item" :class="{ active: loadMenuOpen }">Open</div>
                 <div v-if="loadMenuOpen" class="sub-menu">
-                  <div
-                    v-for="(project, key) in projects"
-                    :key="key"
-                    class="menu-item"
-                    @click="onLoad(key, project.name)"
-                  >
+                  <div v-for="(project, key) in projects" :key="key" class="menu-item"
+                    @click="onLoad(key, project.name)">
                     {{ project.name }}
                   </div>
                 </div>
@@ -28,19 +24,19 @@
           </div>
           <div v-if="projectName" class="current-save-name">
             [{{ projectId }}] {{ projectName }}
-            <span v-if="unsaved">[*]</span>
+            <span v-if="appState.unsaved">[*]</span>
           </div>
           <div v-if="fileMenuOpen" class="backdrop" @click="fileMenuOpen = false"></div>
         </div>
 
         <div class="mid">
           <!-- PLAY -->
-          <div class="playback-btn play" :class="{ active: playing }" @click="onPlay">
+          <div class="playback-btn play" :class="{ active: appState.playing }" @click="onPlay">
             <PlayIcon />
           </div>
           <!-- REC -->
-          <div class="playback-btn rec" :class="{ active: recording }" @click="onRec">
-            <RecIcon :active="recording" />
+          <div class="playback-btn rec" :class="{ active: appState.recording }" @click="onRec">
+            <RecIcon :active="appState.recording" />
           </div>
           <!-- STOP -->
           <div class="playback-btn stop" @click="onStop">
@@ -50,9 +46,9 @@
         </div>
 
         <div class="right">
-          <div class="btn follow" :class="{ active: following }" @click="onFollow">Follow</div>
+          <div class="btn follow" :class="{ active: appState.followCursor }" @click="onFollow">Follow</div>
           <div class="btn midi" :class="{ active: midiState.mapping }" @click="onMidiMap">Map MIDI</div>
-          <div class="select-none">octave: {{ octave }} | transpose: {{ transpose }}</div>
+          <div class="select-none">octave: {{ appState.octave }} | transpose: {{ appState.transpose }}</div>
         </div>
       </div>
     </div>
@@ -63,33 +59,27 @@
 import { mapMutations } from 'vuex';
 
 import PlayIcon from '@/components/icons/PlayIcon';
-import RecIcon from '@/components/icons/RecIcon';
 import StopIcon from '@/components/icons/StopIcon';
-import { midiState } from '../state/vueInstance.js';
+import RecIcon from '@/components/icons/RecIcon';
+
+import { appState, midiState } from '../state/vueInstance.js';
 import { onMidiMap } from '../functions/midi.js';
-import { onStopBtnClick, togglePlay, toggleRecord } from '../functions/playback.js';
-import { loadProject, saveProject } from '../functions/load-save.js';
 import { triggerExport } from '../functions/exports.js';
+import { loadProject, saveProject } from '../functions/load-save.js';
+import { onStopBtnClick, togglePlay, toggleRecord } from '../functions/playback.js';
 
 export default {
   name: 'Header',
   components: { PlayIcon, RecIcon, StopIcon },
   props: [
-    'recording',
-    'playing',
-    'exporting',
-    'following',
-    'octave',
-    'transpose',
     'lastSample',
     'projects',
     'projectName',
     'projectId',
-    'unsaved',
-    'isNew',
   ],
   data() {
     return {
+      appState,
       midiState,
 
       saves: [],
@@ -125,7 +115,7 @@ export default {
     },
     onSave() {
       let newProjectName = undefined;
-      if (this.isNew) {
+      if (appState.isNew) {
         newProjectName = prompt('Project name', 'WebDaw Project');
         if (!newProjectName) {
           return;
@@ -152,7 +142,7 @@ export default {
     },
 
     onExport() {
-      if (this.exporting || this.recording || !this.lastSample) {
+      if (appState.exporting || appState.recording || !this.lastSample) {
         return;
       }
       triggerExport();
@@ -163,7 +153,7 @@ export default {
     },
 
     onFollow() {
-      this.$emit('onFollow');
+      appState.followCursor = !appState.followCursor;
     },
 
     nameExists(projectName) {

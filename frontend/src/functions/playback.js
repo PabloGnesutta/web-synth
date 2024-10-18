@@ -1,5 +1,5 @@
 const Node = require("../class/Node");
-const { state, tracklist, cliplist, exportState } = require("../state/vueInstance");
+const { state, tracklist, cliplist, exportState, appState } = require("../state/vueInstance");
 const { stopRecord, startRecord } = require("./recording");
 
 
@@ -28,14 +28,14 @@ function stopAllClips() {
 }
 
 function toggleRecord() {
-  state.instance.recording ? stopRecord() : startRecord();
+  appState.recording ? stopRecord() : startRecord();
 }
 
 function togglePlay() {
-  if (state.instance.recording) {
+  if (appState.recording) {
     return;
   }
-  if (state.instance.playing) {
+  if (appState.playing) {
     onStopBtnClick();
     state.instance.cursorX = state.instance.lastCursorPos;
   }
@@ -44,13 +44,13 @@ function togglePlay() {
 }
 
 function playAllTracks() {
-  state.instance.playing = true;
+  appState.playing = true;
   state.instance.moveTimielineWithPlayback();
 }
 
 function onStopBtnClick() {
-  if (state.instance.playing) {
-    state.instance.playing = false;
+  if (appState.playing) {
+    appState.playing = false;
     stopAllClips();
     cancelAnimationFrame(state.instance.playbackRaf);
     state.instance.playbackRaf = null;
@@ -64,7 +64,7 @@ function onStopBtnClick() {
       state.instance.renderCursor();
     }
   }
-  if (state.instance.recording) {
+  if (appState.recording) {
     stopRecord();
   }
 }

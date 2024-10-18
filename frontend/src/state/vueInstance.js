@@ -8,6 +8,19 @@ const tracklist = [];
 const cliplist = [];
 const trackClips = {};
 
+const appState = {
+  isNew: true,
+  unsaved: true,
+  playing: false,
+  recording: false,
+  exporting: false,
+  exportProgress: 0,
+  followCursor: true,
+  focusing: 'tracks',
+  octave: 3,
+  transpose: 0,
+};
+
 const trackState = {
   trackIdCount: 0,
   clipIdCount: 0,
@@ -40,14 +53,20 @@ const timelineState = {
   carretSkip: 0,
 };
 
+const keyboardState = {
+  m_pressed: false,
+};
+
 
 module.exports = {
   state,
   tracklist,
   cliplist,
   trackClips,
+  appState,
   trackState,
   timelineState,
   exportState,
   midiState,
+  keyboardState,
 };
