@@ -23,7 +23,7 @@
             </div>
           </div>
           <div v-if="projectName" class="current-save-name">
-            [{{ projectId }}] {{ projectName }}
+            {{ projectName }} <span v-if="projectId"> || id: {{ projectId }}</span>
             <span v-if="appState.unsaved">[*]</span>
           </div>
           <div v-if="fileMenuOpen" class="backdrop" @click="fileMenuOpen = false"></div>

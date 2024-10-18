@@ -251,22 +251,23 @@ export default {
     },
 
     hardReset(generateSomeNodes) {
-      this.projects = {};
+      // this.projects = {};
+      // this.projectIdCount = undefined;
       this.projectId = undefined;
-      this.projectIdCount = undefined;
       this.projectName = 'untitled';
       clearArray(cliplist);
-      trackState.clipIdCount = 0;
       clearObj(trackClips);
+      trackState.clipIdCount = 0;
       trackState.trackIdCount = 0;
       trackState.currentTrack = null;
       trackState.currentTrackIndex = 0;
       timelineState.lastSample = 0;
       timelineState.viewportWidth = undefined;
+      appState.unsaved = true;
+
       this.globalStart = 0;
       this.globalEnd = 0;
       this.cursorX = 0;
-      appState.unsaved = true;
       this.computeTimelineDimensions();
 
       while (tracklist.length) {
