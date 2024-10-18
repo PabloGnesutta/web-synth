@@ -9,11 +9,11 @@
             <div v-if="fileMenuOpen" class="menu">
               <div class="menu-item" @click="onNew">New</div>
               <div class="menu-item" @click="onSave">Save</div>
-              <div v-if="projectId" class="menu-item" @click="onSaveAs">Save as</div>
+              <div v-if="projectsState.projectId" class="menu-item" @click="onSaveAs">Save as</div>
               <div class="has-submenu" @mouseenter="loadMenuOpen = true" @mouseleave="loadMenuOpen = false">
                 <div class="menu-item" :class="{ active: loadMenuOpen }">Open</div>
                 <div v-if="loadMenuOpen" class="sub-menu">
-                  <div v-for="(project, key) in projects" :key="key" class="menu-item"
+                  <div v-for="(project, key) in projectsState.projects" :key="key" class="menu-item"
                     @click="onLoad(key, project.name)">
                     {{ project.name }}
                   </div>
@@ -22,8 +22,9 @@
               <div v-if="lastSample" class="menu-item" @click="onExport">Export</div>
             </div>
           </div>
-          <div v-if="projectName" class="current-save-name">
-            {{ projectName }} <span v-if="projectId"> || id: {{ projectId }}</span>
+          <div v-if="projectsState.projectName" class="current-save-name">
+            {{ projectsState.projectName }} <span v-if="projectsState.projectId"> || id:
+              {{ projectsState.projectId }}</span>
             <span v-if="appState.unsaved">[*]</span>
           </div>
           <div v-if="fileMenuOpen" class="backdrop" @click="fileMenuOpen = false"></div>
@@ -62,7 +63,7 @@ import PlayIcon from '@/components/icons/PlayIcon';
 import StopIcon from '@/components/icons/StopIcon';
 import RecIcon from '@/components/icons/RecIcon';
 
-import { appState, midiState } from '../state/vueInstance.js';
+import { appState, midiState, projectsState } from '../state/vueInstance.js';
 import { onMidiMap } from '../functions/midi.js';
 import { triggerExport } from '../functions/exports.js';
 import { loadProject, saveProject } from '../functions/load-save.js';
@@ -73,13 +74,11 @@ export default {
   components: { PlayIcon, RecIcon, StopIcon },
   props: [
     'lastSample',
-    'projects',
-    'projectName',
-    'projectId',
   ],
   data() {
     return {
       appState,
+      projectsState,
       midiState,
 
       saves: [],
@@ -129,8 +128,8 @@ export default {
     },
 
     onSaveAs() {
-      const newProjectName = prompt('Project name', this.projectName);
-      if (newProjectName === this.projectName) {
+      const newProjectName = prompt('Project name', projectsState.projectName);
+      if (newProjectName === projectsState.projectName) {
         this.onSave();
       } else {
         if (this.nameExists(newProjectName)) {
@@ -157,8 +156,8 @@ export default {
     },
 
     nameExists(projectName) {
-      for (const id in this.projects) {
-        if (this.projects[id].name.toLowerCase() === projectName.toLowerCase()) {
+      for (const id in projectsState.projects) {
+        if (projectsState.projects[id].name.toLowerCase() === projectName.toLowerCase()) {
           return true;
         }
       }

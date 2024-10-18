@@ -3,8 +3,8 @@
     <div v-if="inited" class="home-inner">
       <!-- Top Section -->
       <div class="top-section">
-        <Header :ref="'header'" @onNew="hardReset(true)" :projects="projects" :projectName="projectName"
-          :projectId="projectId" :lastSample="timelineState.lastSample" />
+        <Header :ref="'header'" @onNew="hardReset(true)" :projects="projectsState.projects"
+          :lastSample="timelineState.lastSample" />
       </div>
 
       <!-- Mid Section -->
@@ -131,7 +131,7 @@ import SpectrumWaveshape from '@/components/SpectrumWaveshape';
 import { $ } from '../dom-utils/DomUtils';
 import { clearArray, clearObj } from '../lib/array.js';
 import { createInstrument, createEffect } from '../factory/NodeFactory';
-import { appState, cliplist, state, timelineState, trackClips, tracklist, trackState } from '../state/vueInstance.js';
+import { appState, cliplist, projectsState, state, timelineState, trackClips, tracklist, trackState } from '../state/vueInstance.js';
 import { playSingleClip } from '../functions/playback.js';
 import { renderDataObjects } from '../functions/rendering.js';
 import { stopRecordSingleTrack } from '../functions/recording';
@@ -177,16 +177,12 @@ export default {
   data() {
     return {
       appState,
+      projectsState,
       timelineState,
       tracklist,
       trackState,
 
       inited: false,
-
-      projects: null,
-      projectId: undefined,
-      projectIdCount: undefined,
-      projectName: 'untitled',
 
       masterOutput: null,
       masterInput: null,
@@ -250,11 +246,11 @@ export default {
       state.instance = this;
     },
 
-    hardReset(generateSomeNodes) {
-      // this.projects = {};
-      // this.projectIdCount = undefined;
-      this.projectId = undefined;
-      this.projectName = 'untitled';
+    hardReset(isNew) {
+      // projectsState.projects = {};
+      // projectsState.projectIdCount = undefined;
+      projectsState.projectId = undefined;
+      projectsState.projectName = 'untitled';
       clearArray(cliplist);
       clearObj(trackClips);
       trackState.clipIdCount = 0;
@@ -264,6 +260,7 @@ export default {
       timelineState.lastSample = 0;
       timelineState.viewportWidth = undefined;
       appState.unsaved = true;
+      appState.isNew = isNew;
 
       this.globalStart = 0;
       this.globalEnd = 0;
@@ -274,7 +271,7 @@ export default {
         this.deleteTrack(0);
       }
       // todo: reset Nodes' Ids
-      if (generateSomeNodes) {
+      if (isNew) {
         this.createTrack(createInstrument('Drumkit'));
         this.createTrack(createInstrument('Femod'));
         this.createAndInsertEffect('BiquadFilter');

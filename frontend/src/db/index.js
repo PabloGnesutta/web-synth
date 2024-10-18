@@ -1,6 +1,6 @@
 const request = indexedDB.open("web_synth", 1); //version
-let hasUpgraded = false;
-let db;
+var hasUpgraded = false;
+var db = null;
 
 request.onupgradeneeded = function () {
   // The database did not previously exist, so create object stores and indexes.
@@ -22,7 +22,6 @@ request.onsuccess = function () {
     store.put(0, 'projectIdCount');
   }
 };
-
 
 // TODO: Promisify
 

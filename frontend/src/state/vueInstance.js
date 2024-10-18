@@ -21,6 +21,13 @@ const appState = {
   transpose: 0,
 };
 
+const projectsState = {
+  projects: null,
+  projectId: undefined,
+  projectIdCount: undefined,
+  projectName: 'untitled',
+};
+
 const trackState = {
   trackIdCount: 0,
   clipIdCount: 0,
@@ -64,6 +71,7 @@ module.exports = {
   cliplist,
   trackClips,
   appState,
+  projectsState,
   trackState,
   timelineState,
   exportState,
