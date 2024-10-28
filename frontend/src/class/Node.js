@@ -25,8 +25,8 @@ class Node {
 
     this.destroyers = [() => {
       this.outputNode.disconnect();
-      this.outputNode = null;
       this.inputNode.disconnect();
+      this.outputNode = null;
       this.inputNode = null;
 
       if (this.node) {
@@ -37,7 +37,7 @@ class Node {
   }
 
   destroy() {
-    this.destroyers.forEach(destroyer => { destroyer(); });
+    this.destroyers.forEach(destroyer => destroyer());
   }
 
   connect(Node) {
@@ -60,8 +60,11 @@ class Node {
 
   setMute(muted) {
     this.muted = muted;
-    if (muted) this.outputNode.gain.setValueAtTime(0, 0);
-    else this.outputNode.gain.setValueAtTime(this.gain, 0);
+    if (muted) {
+      this.outputNode.gain.setValueAtTime(0, 0);
+    } else {
+      this.outputNode.gain.setValueAtTime(this.gain, 0);
+    }
   }
 
   toggleMute() {
@@ -69,5 +72,6 @@ class Node {
     this.setMute(this.muted);
   }
 }
+
 
 module.exports = Node;
