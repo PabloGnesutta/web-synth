@@ -9,7 +9,7 @@
       <!-- Mid Section -->
       <div class="mid-section">
         <Sidebar class="left-col" @createInstrument="createInstrument" @createEffect="createAndInsertEffect"
-          @loadPreset="loadPreset" />
+          @loadPreset="loadPreset" :instrumentIsLoaded="!!trackState.currentTrack" />
 
         <div class=" right-col" :class="{ focused: appState.focusing === 'tracks' }" @click="setFocus('tracks')">
           <div class="top-controls">
@@ -623,6 +623,7 @@ export default {
 
     // Effects:
     createAndInsertEffect(className) {
+      console.log('create effect');
       const Node = createEffect(className);
       this.insertEffect(Node);
     },

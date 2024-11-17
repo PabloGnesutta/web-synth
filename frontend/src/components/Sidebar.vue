@@ -184,7 +184,9 @@ export default {
       this.$emit('createInstrument', className);
     },
     createEffect(className) {
-      if (this.instrumentIsLoaded) this.$emit('createEffect', className);
+      if (this.instrumentIsLoaded) {
+        this.$emit('createEffect', className);
+      }
     },
     // Presets
     togglePresetsDropdown(instrumentOrEffect) {
